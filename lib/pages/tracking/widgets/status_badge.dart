@@ -4,8 +4,8 @@
 // Hidden during RideStatus.assigned (no badge per spec).
 
 import 'package:flutter/material.dart';
-import '../../../../../../theme/app_colors.dart';
-import '../ride_model.dart';
+import 'package:moviroo_driver_app/theme/app_colors.dart';
+import 'package:moviroo_driver_app/pages/tracking/ride_model.dart';
 
 class StatusBadge extends StatelessWidget {
   final RideStatus status;
@@ -16,7 +16,8 @@ class StatusBadge extends StatelessWidget {
     switch (status) {
       case RideStatus.onTheWay:  return AppColors.primaryPurple;
       case RideStatus.arrived:   return AppColors.success;
-      case RideStatus.inTrip:    return AppColors.warning;
+      case RideStatus.startRide: return AppColors.warning;
+      case RideStatus.completed: return AppColors.success;
       default:                   return AppColors.primaryPurple;
     }
   }
@@ -33,9 +34,9 @@ class StatusBadge extends StatelessWidget {
         key: ValueKey(status),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.12),
+          color: color.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: color.withOpacity(0.3)),
+          border: Border.all(color: color.withValues(alpha: 0.3)),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,

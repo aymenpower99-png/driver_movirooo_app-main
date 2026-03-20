@@ -4,41 +4,52 @@ enum RideStatus {
   assigned,
   onTheWay,
   arrived,
-  inTrip,
+  startRide,
+  completed,
 }
 
 extension RideStatusX on RideStatus {
-  // Step indicator label (short)
   String get stepLabel {
     switch (this) {
-      case RideStatus.assigned:  return 'ASSIGNED';
-      case RideStatus.onTheWay:  return 'ON THE WAY';
-      case RideStatus.arrived:   return 'ARRIVED';
-      case RideStatus.inTrip:    return 'START RIDE';
+      case RideStatus.assigned:  return 'Assigned';
+      case RideStatus.onTheWay:  return 'On the Way';
+      case RideStatus.arrived:   return 'Arrived';
+      case RideStatus.startRide: return 'Start Ride';
+      case RideStatus.completed: return 'Complete';
     }
   }
 
-  // Primary CTA button label
   String get primaryButtonLabel {
     switch (this) {
       case RideStatus.assigned:  return 'Go to Pickup';
       case RideStatus.onTheWay:  return "I've Arrived";
       case RideStatus.arrived:   return 'Start Ride';
-      case RideStatus.inTrip:    return 'Complete Ride';
+      case RideStatus.startRide: return 'Complete Ride';
+      case RideStatus.completed: return 'Done';
     }
   }
 
-  bool get showContactButtons => this != RideStatus.assigned;
-  bool get showBadge          => this != RideStatus.assigned;
-  bool get showMeta           => this == RideStatus.assigned || this == RideStatus.onTheWay;
-  bool get showDropoffMarker  => this == RideStatus.inTrip;
+  bool get showContactButtons =>
+      this != RideStatus.assigned;
+
+  bool get showBadge =>
+      this != RideStatus.assigned;
+
+  bool get showMeta =>
+      this == RideStatus.assigned || this == RideStatus.onTheWay;
+
+  bool get showDropoffMarker =>
+      this == RideStatus.startRide || this == RideStatus.completed;
+
+  bool get isTerminal => this == RideStatus.completed;
 
   RideStatus? get next {
     switch (this) {
       case RideStatus.assigned:  return RideStatus.onTheWay;
       case RideStatus.onTheWay:  return RideStatus.arrived;
-      case RideStatus.arrived:   return RideStatus.inTrip;
-      case RideStatus.inTrip:    return null;
+      case RideStatus.arrived:   return RideStatus.startRide;
+      case RideStatus.startRide: return RideStatus.completed;
+      case RideStatus.completed: return null;
     }
   }
 }

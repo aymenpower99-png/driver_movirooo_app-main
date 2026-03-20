@@ -4,8 +4,8 @@
 // Sections: header · route · contact buttons (conditional) · report/cancel
 
 import 'package:flutter/material.dart';
-import '../../../../../../theme/app_colors.dart';
-import '../ride_model.dart';
+import 'package:moviroo_driver_app/theme/app_colors.dart';
+import 'package:moviroo_driver_app/pages/tracking/ride_model.dart';
 
 class PassengerInfoCard extends StatelessWidget {
   final PassengerModel passenger;

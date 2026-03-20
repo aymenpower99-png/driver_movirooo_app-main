@@ -7,11 +7,12 @@
 //
 // ── With GoRouter ─────────────────────────────────────────────────
 //   context.push('/tracking', extra: trackingRide);
+
 import 'package:flutter/material.dart';
-import '../../../../../theme/app_colors.dart';  // ← same depth as rides_page.dart
-import 'ride_model.dart';
-import 'tracking_bottom_sheet.dart';
-import 'widgets/status_step_indicator.dart';
+import 'package:moviroo_driver_app/theme/app_colors.dart';
+import 'package:moviroo_driver_app/pages/tracking/ride_model.dart';
+import 'package:moviroo_driver_app/pages/tracking/tracking_bottom_sheet.dart';
+import 'package:moviroo_driver_app/pages/tracking/widgets/status_step_indicator.dart';
 
 class TrackPassengerPage extends StatefulWidget {
   final RideModel ride;
@@ -96,7 +97,7 @@ class _CircleMarker extends StatelessWidget {
     width: 44, height: 44,
     decoration: BoxDecoration(
       color: color, shape: BoxShape.circle,
-      boxShadow: [BoxShadow(color: color.withOpacity(0.4), blurRadius: 16, spreadRadius: 4)],
+      boxShadow: [BoxShadow(color: color.withValues(alpha: 0.4), blurRadius: 16, spreadRadius: 4)],
     ),
     child: Icon(icon, color: Colors.white, size: 22),
   );
@@ -115,14 +116,14 @@ class _LabeledMarker extends StatelessWidget {
       Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(color: color, shape: BoxShape.circle,
-          boxShadow: [BoxShadow(color: color.withOpacity(0.3), blurRadius: 10)]),
+          boxShadow: [BoxShadow(color: color.withValues(alpha: 0.3), blurRadius: 10)]),
         child: Icon(icon, color: Colors.white, size: 16),
       ),
       const SizedBox(height: 4),
       Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
         decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(8),
-          boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 6)]),
+          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.1), blurRadius: 6)]),
         child: Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color)),
       ),
     ],
@@ -144,7 +145,7 @@ class _RoutePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final p = Paint()
-      ..color = const Color(0xFFA855F7).withOpacity(0.55)
+      ..color = const Color(0xFFA855F7).withValues(alpha: 0.55)
       ..strokeWidth = 2.5
       ..style = PaintingStyle.stroke;
     canvas.drawPath(
