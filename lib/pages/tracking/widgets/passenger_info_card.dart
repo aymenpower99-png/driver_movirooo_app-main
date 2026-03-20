@@ -1,10 +1,7 @@
 // lib/pages/tabs/[driver]/Rides/tracking/widgets/passenger_info_card.dart
 //
-// Redesigned card matching the Figma reference:
-// - Photo avatar (circle) with name + rating + ETA + distance
-// - PICKUP / DROP-OFF labeled rows with icons
-// - Call / Message / Copy buttons row
-// - Bottom: Report Issue | Cancel Ride
+// Single flat card — no nested card, no copy address.
+// Sections: header · route · contact buttons (conditional) · report/cancel
 
 import 'package:flutter/material.dart';
 import '../../../../../../theme/app_colors.dart';
@@ -19,7 +16,6 @@ class PassengerInfoCard extends StatelessWidget {
   final bool showContactButtons;
   final VoidCallback? onCall;
   final VoidCallback? onMessage;
-  final VoidCallback? onCopyAddress;
   final VoidCallback? onReportIssue;
   final VoidCallback? onCancelRide;
 
@@ -33,58 +29,41 @@ class PassengerInfoCard extends StatelessWidget {
     required this.showContactButtons,
     this.onCall,
     this.onMessage,
-    this.onCopyAddress,
     this.onReportIssue,
     this.onCancelRide,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ── Passenger header ─────────────────────────────────────
+          // ── Header: avatar + name + rating + ETA ──────────────
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 14),
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Avatar
-                _PassengerAvatar(passenger: passenger),
-                const SizedBox(width: 14),
-
-                // Name + rating
+                _Avatar(passenger: passenger),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
                         passenger.name,
-                        style: const TextStyle(
-                          fontSize: 17,
+                        style: TextStyle(
+                          fontSize: 15,
                           fontWeight: FontWeight.w700,
-                          color: Color(0xFF141414),
+                          color: AppColors.text(context),
                         ),
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 3),
                       _StarRating(rating: passenger.rating),
                     ],
                   ),
                 ),
-
-                // ETA + Distance
+                // ETA + distance
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -92,15 +71,15 @@ class PassengerInfoCard extends StatelessWidget {
                       text: TextSpan(
                         children: [
                           TextSpan(
-                            text: '$etaMinutes ',
+                            text: '$etaMinutes',
                             style: const TextStyle(
-                              fontSize: 20,
+                              fontSize: 18,
                               fontWeight: FontWeight.w800,
                               color: AppColors.primaryPurple,
                             ),
                           ),
                           const TextSpan(
-                            text: 'MIN',
+                            text: ' min',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
@@ -110,13 +89,11 @@ class PassengerInfoCard extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 2),
                     Text(
                       '${distanceKm.toStringAsFixed(1)} km',
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFF9AA3AD),
-                        fontWeight: FontWeight.w500,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.subtext(context),
                       ),
                     ),
                   ],
@@ -125,91 +102,59 @@ class PassengerInfoCard extends StatelessWidget {
             ),
           ),
 
-          Divider(height: 1, color: const Color(0xFFF1F3F5)),
+          Divider(height: 1, color: AppColors.border(context)),
 
-          // ── Route ────────────────────────────────────────────────
+          // ── Route ──────────────────────────────────────────────
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
             child: Column(
               children: [
                 _RouteRow(
-                  dotColor: AppColors.success,
+                  icon: Icons.circle,
+                  iconColor: AppColors.success,
+                  iconSize: 10,
                   label: 'PICKUP',
+                  labelColor: AppColors.success,
                   address: pickupAddress,
-                  isDot: true,
                 ),
                 Padding(
-                  padding: const EdgeInsets.only(left: 9),
+                  padding: const EdgeInsets.only(left: 5, top: 2, bottom: 2),
                   child: Container(
-                    width: 1.5,
-                    height: 20,
-                    color: const Color(0xFFE5E7EB),
-                  ),
+                      width: 1.5, height: 16,
+                      color: AppColors.border(context)),
                 ),
                 _RouteRow(
-                  dotColor: AppColors.error,
+                  icon: Icons.location_on_rounded,
+                  iconColor: AppColors.error,
+                  iconSize: 14,
                   label: 'DROP-OFF',
+                  labelColor: AppColors.error,
                   address: dropOffAddress,
-                  isDot: false,
                 ),
               ],
             ),
           ),
 
-          // ── Copy address ─────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 14),
-            child: GestureDetector(
-              onTap: onCopyAddress,
-              child: Row(
-                children: [
-                  Icon(Icons.copy_outlined,
-                      size: 13, color: const Color(0xFF9AA3AD)),
-                  const SizedBox(width: 6),
-                  Text(
-                    'Copy address',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFF9AA3AD),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-
-          // ── Call / Message / Copy buttons ─────────────────────────
+          // ── Call / Message (on the way onward) ─────────────────
           if (showContactButtons) ...[
-            Divider(height: 1, color: const Color(0xFFF1F3F5)),
+            Divider(height: 1, color: AppColors.border(context)),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               child: Row(
                 children: [
                   Expanded(
-                    child: _ActionButton(
+                    child: _ContactBtn(
                       icon: Icons.phone_rounded,
                       label: 'Call',
-                      color: AppColors.primaryPurple,
                       onTap: onCall ?? () {},
                     ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
-                    child: _ActionButton(
+                    child: _ContactBtn(
                       icon: Icons.chat_bubble_rounded,
                       label: 'Message',
-                      color: AppColors.primaryPurple,
                       onTap: onMessage ?? () {},
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: _ActionButton(
-                      icon: Icons.copy_rounded,
-                      label: 'Copy',
-                      color: AppColors.primaryPurple,
-                      onTap: onCopyAddress ?? () {},
                     ),
                   ),
                 ],
@@ -217,51 +162,51 @@ class PassengerInfoCard extends StatelessWidget {
             ),
           ],
 
-          Divider(height: 1, color: const Color(0xFFF1F3F5)),
+          Divider(height: 1, color: AppColors.border(context)),
 
-          // ── Report Issue / Cancel Ride ────────────────────────────
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          // ── Report Issue / Cancel Ride ──────────────────────────
+          IntrinsicHeight(
             child: Row(
               children: [
                 Expanded(
                   child: TextButton.icon(
                     onPressed: onReportIssue,
-                    icon: const Icon(Icons.flag_outlined,
-                        size: 15, color: Color(0xFF9AA3AD)),
-                    label: const Text(
+                    icon: Icon(Icons.flag_outlined,
+                        size: 14, color: AppColors.subtext(context)),
+                    label: Text(
                       'Report Issue',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFF9AA3AD),
+                        color: AppColors.subtext(context),
                       ),
                     ),
                     style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.zero),
                     ),
                   ),
                 ),
-                Container(width: 1, height: 28, color: const Color(0xFFE5E7EB)),
+                VerticalDivider(
+                    width: 1, color: AppColors.border(context)),
                 Expanded(
                   child: TextButton.icon(
                     onPressed: onCancelRide,
                     icon: const Icon(Icons.cancel_outlined,
-                        size: 15, color: Color(0xFFFF3B30)),
+                        size: 14, color: AppColors.error),
                     label: const Text(
                       'Cancel Ride',
                       style: TextStyle(
-                        fontSize: 13,
+                        fontSize: 12,
                         fontWeight: FontWeight.w500,
-                        color: Color(0xFFFF3B30),
+                        color: AppColors.error,
                       ),
                     ),
                     style: TextButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.zero),
                     ),
                   ),
                 ),
@@ -269,22 +214,21 @@ class PassengerInfoCard extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
+      );
   }
 }
 
-// ── Passenger Avatar ──────────────────────────────────────────────────────────
+// ── Avatar ────────────────────────────────────────────────────────────────────
 
-class _PassengerAvatar extends StatelessWidget {
+class _Avatar extends StatelessWidget {
   final PassengerModel passenger;
-  const _PassengerAvatar({required this.passenger});
+  const _Avatar({required this.passenger});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 56,
-      height: 56,
+      width: 48,
+      height: 48,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         gradient: passenger.avatarUrl == null
@@ -302,7 +246,7 @@ class _PassengerAvatar extends StatelessWidget {
               child: Text(
                 passenger.avatarInitial,
                 style: const TextStyle(
-                  fontSize: 22,
+                  fontSize: 18,
                   fontWeight: FontWeight.w700,
                   color: Colors.white,
                 ),
@@ -313,7 +257,7 @@ class _PassengerAvatar extends StatelessWidget {
   }
 }
 
-// ── Star Rating ───────────────────────────────────────────────────────────────
+// ── Star rating ───────────────────────────────────────────────────────────────
 
 class _StarRating extends StatelessWidget {
   final double rating;
@@ -323,27 +267,22 @@ class _StarRating extends StatelessWidget {
   Widget build(BuildContext context) {
     final full = rating.floor();
     final half = (rating - full) >= 0.5;
-
     return Row(
       children: [
         ...List.generate(5, (i) {
-          IconData icon;
-          if (i < full) {
-            icon = Icons.star_rounded;
-          } else if (i == full && half) {
-            icon = Icons.star_half_rounded;
-          } else {
-            icon = Icons.star_outline_rounded;
-          }
-          return Icon(icon, size: 15, color: const Color(0xFFFFC107));
+          IconData ico;
+          if (i < full)                     ico = Icons.star_rounded;
+          else if (i == full && half)       ico = Icons.star_half_rounded;
+          else                              ico = Icons.star_outline_rounded;
+          return Icon(ico, size: 13, color: const Color(0xFFFFC107));
         }),
-        const SizedBox(width: 5),
+        const SizedBox(width: 4),
         Text(
           rating.toStringAsFixed(1),
-          style: const TextStyle(
-            fontSize: 12,
+          style: TextStyle(
+            fontSize: 11,
             fontWeight: FontWeight.w600,
-            color: Color(0xFF9AA3AD),
+            color: AppColors.subtext(context),
           ),
         ),
       ],
@@ -351,19 +290,23 @@ class _StarRating extends StatelessWidget {
   }
 }
 
-// ── Route Row ─────────────────────────────────────────────────────────────────
+// ── Route row ─────────────────────────────────────────────────────────────────
 
 class _RouteRow extends StatelessWidget {
-  final Color dotColor;
+  final IconData icon;
+  final Color iconColor;
+  final double iconSize;
   final String label;
+  final Color labelColor;
   final String address;
-  final bool isDot;
 
   const _RouteRow({
-    required this.dotColor,
+    required this.icon,
+    required this.iconColor,
+    required this.iconSize,
     required this.label,
+    required this.labelColor,
     required this.address,
-    required this.isDot,
   });
 
   @override
@@ -373,21 +316,7 @@ class _RouteRow extends StatelessWidget {
       children: [
         Padding(
           padding: const EdgeInsets.only(top: 3),
-          child: isDot
-              ? Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: dotColor,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: Colors.white, width: 1.5),
-                    boxShadow: [
-                      BoxShadow(
-                          color: dotColor.withOpacity(0.35), blurRadius: 4)
-                    ],
-                  ),
-                )
-              : Icon(Icons.location_on_rounded, size: 14, color: dotColor),
+          child: Icon(icon, size: iconSize, color: iconColor),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -397,19 +326,19 @@ class _RouteRow extends StatelessWidget {
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 10,
+                  fontSize: 9,
                   fontWeight: FontWeight.w700,
-                  color: dotColor,
-                  letterSpacing: 0.5,
+                  color: labelColor,
+                  letterSpacing: 0.4,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 1),
               Text(
                 address,
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
-                  color: Color(0xFF141414),
                   fontWeight: FontWeight.w500,
+                  color: AppColors.text(context),
                 ),
               ),
             ],
@@ -420,41 +349,40 @@ class _RouteRow extends StatelessWidget {
   }
 }
 
-// ── Action Button (Call / Message / Copy) ─────────────────────────────────────
+// ── Contact button ────────────────────────────────────────────────────────────
 
-class _ActionButton extends StatelessWidget {
+class _ContactBtn extends StatelessWidget {
   final IconData icon;
   final String label;
-  final Color color;
   final VoidCallback onTap;
 
-  const _ActionButton({
+  const _ContactBtn({
     required this.icon,
     required this.label,
-    required this.color,
     required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: color.withOpacity(0.08),
-      borderRadius: BorderRadius.circular(12),
+      color: AppColors.iconBg(context),
+      borderRadius: BorderRadius.circular(10),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Column(
+          padding: const EdgeInsets.symmetric(vertical: 11),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 20, color: color),
-              const SizedBox(height: 5),
+              Icon(icon, size: 16, color: AppColors.primaryPurple),
+              const SizedBox(width: 6),
               Text(
                 label,
-                style: TextStyle(
-                  fontSize: 12,
+                style: const TextStyle(
+                  fontSize: 13,
                   fontWeight: FontWeight.w600,
-                  color: color,
+                  color: AppColors.primaryPurple,
                 ),
               ),
             ],

@@ -1,8 +1,4 @@
 // lib/pages/tabs/[driver]/Rides/tracking/widgets/status_step_indicator.dart
-//
-// 4-step progress bar: Assigned → On the Way → Arrived → Start Ride
-// Completed steps show green filled circle with white checkmark.
-// Active step shows purple filled circle with white filled inner dot.
 
 import 'package:flutter/material.dart';
 import '../../../../../../theme/app_colors.dart';
@@ -18,54 +14,52 @@ class StatusStepIndicator extends StatelessWidget {
     RideStatus.inTrip,
   ];
 
+  static const _labels = ['Assigned', 'On Way', 'Arrived', 'Start Ride'];
+
   const StatusStepIndicator({super.key, required this.current});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.07),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Row(
         children: List.generate(_steps.length * 2 - 1, (i) {
+          // Connector line
           if (i.isOdd) {
-            // Connector line
-            final leftStep = _steps[i ~/ 2];
-            final isDone = leftStep.index < current.index;
+            final isDone = _steps[i ~/ 2].index < current.index;
             return Expanded(
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 400),
-                height: 3,
-                decoration: BoxDecoration(
-                  color: isDone ? AppColors.success : const Color(0xFFE5E7EB),
-                  borderRadius: BorderRadius.circular(2),
-                ),
+                duration: const Duration(milliseconds: 350),
+                height: 2,
+                color: isDone ? AppColors.success : const Color(0xFFE5E7EB),
               ),
             );
           }
 
-          final stepIdx = i ~/ 2;
-          final step = _steps[stepIdx];
+          final idx = i ~/ 2;
+          final step = _steps[idx];
           final isDone = step.index < current.index;
           final isCurrent = step == current;
 
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // ── Circle ──────────────────────────────────────────
+              // Circle
               AnimatedContainer(
-                duration: const Duration(milliseconds: 400),
-                width: 32,
-                height: 32,
+                duration: const Duration(milliseconds: 350),
+                width: 22,
+                height: 22,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: isDone
@@ -73,22 +67,14 @@ class StatusStepIndicator extends StatelessWidget {
                       : isCurrent
                           ? AppColors.primaryPurple
                           : const Color(0xFFE5E7EB),
-                  border: Border.all(
-                    color: isDone
-                        ? AppColors.success
-                        : isCurrent
-                            ? AppColors.primaryPurple
-                            : const Color(0xFFD1D5DB),
-                    width: 2,
-                  ),
                 ),
                 child: Center(
                   child: isDone
-                      ? const Icon(Icons.check, size: 16, color: Colors.white)
+                      ? const Icon(Icons.check, size: 12, color: Colors.white)
                       : isCurrent
                           ? Container(
-                              width: 10,
-                              height: 10,
+                              width: 7,
+                              height: 7,
                               decoration: const BoxDecoration(
                                 color: Colors.white,
                                 shape: BoxShape.circle,
@@ -97,25 +83,21 @@ class StatusStepIndicator extends StatelessWidget {
                           : const SizedBox.shrink(),
                 ),
               ),
-              const SizedBox(height: 6),
-              // ── Label ────────────────────────────────────────────
-              SizedBox(
-                width: 62,
-                child: Text(
-                  step.stepLabel,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 9,
-                    fontWeight: (isCurrent || isDone)
-                        ? FontWeight.w700
-                        : FontWeight.w400,
-                    color: isDone
-                        ? AppColors.success
-                        : isCurrent
-                            ? AppColors.primaryPurple
-                            : const Color(0xFF9AA3AD),
-                    letterSpacing: 0.3,
-                  ),
+              const SizedBox(height: 4),
+              // Label
+              Text(
+                _labels[idx],
+                style: TextStyle(
+                  fontSize: 8.5,
+                  fontWeight: (isCurrent || isDone)
+                      ? FontWeight.w700
+                      : FontWeight.w400,
+                  color: isDone
+                      ? AppColors.success
+                      : isCurrent
+                          ? AppColors.primaryPurple
+                          : const Color(0xFFB0B8C1),
+                  letterSpacing: 0.1,
                 ),
               ),
             ],

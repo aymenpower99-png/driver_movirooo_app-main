@@ -54,12 +54,19 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
       maxChildSize: 0.88,
       builder: (_, scrollController) => Container(
         decoration: const BoxDecoration(
-          color: Color(0xFFF8F9FA),
+          color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+          boxShadow: [
+            BoxShadow(
+              color: Color(0x14000000),
+              blurRadius: 20,
+              offset: Offset(0, -4),
+            ),
+          ],
         ),
         child: ListView(
           controller: scrollController,
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 40),
+          padding: const EdgeInsets.fromLTRB(0, 0, 0, 40),
           children: [
             // ── Drag handle ──────────────────────────────────────
             Center(
@@ -84,20 +91,20 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
               showContactButtons: _status.showContactButtons,
               onCall: () {},
               onMessage: () {},
-              onCopyAddress: () {},
               onReportIssue: () => _showReportDialog(context),
               onCancelRide: () => _showCancelDialog(context),
             ),
 
-            const SizedBox(height: 16),
-
             // ── Primary CTA ──────────────────────────────────────
-            _status != null
-                ? _PrimaryButton(
-                    label: _status.primaryButtonLabel,
-                    onTap: _handlePrimaryTap,
-                  )
-                : _CompletedBanner(),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
+              child: _status.next != null || _status == RideStatus.assigned
+                  ? _PrimaryButton(
+                      label: _status.primaryButtonLabel,
+                      onTap: _handlePrimaryTap,
+                    )
+                  : _CompletedBanner(),
+            ),
           ],
         ),
       ),
