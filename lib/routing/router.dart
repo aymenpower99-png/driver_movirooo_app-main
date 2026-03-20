@@ -1,0 +1,99 @@
+import 'package:flutter/material.dart';
+import 'package:moviroo_driver_app/pages/auth/LoginDriver.dart' show DriverLoginPage;
+import 'package:moviroo_driver_app/pages/contact_support/contact_support_page.dart';
+import 'package:moviroo_driver_app/pages/driver_pickup_v2/diver_done_ride/driver_done.dart';
+import 'package:moviroo_driver_app/pages/driver_pickup_v2/diver_done_ride/TripRate.dart';
+import 'package:moviroo_driver_app/pages/driver_pickup_v2/driver_pickup_page.dart';
+import 'package:moviroo_driver_app/pages/tabs%20%5Bdriver%5D/chat/chat_page.dart';
+import 'package:moviroo_driver_app/pages/tabs%20%5Bdriver%5D/profile/password/passwordrest.dart';
+import 'package:moviroo_driver_app/pages/tabs%20%5Bdriver%5D/profile/rate/rate.dart';
+import '../pages/tabs [driver]/ActiveRide/active_ride_page.dart';
+import '../pages/tabs [driver]/ride/map_preview_page.dart';
+
+import '../pages/tabs [driver]/dashboard/dashboard_page.dart';
+import '../pages/tabs [driver]/Earnings/earnings_page.dart';
+import '../pages/tabs [driver]/Rides/rides_page.dart';
+import '../pages/tabs [driver]/profile/driver_profile_page.dart';
+
+class AppRouter {
+  static const String splash = '/splash';
+  static const String onboarding = '/onboarding';
+  static const String login = '/login';
+  static const String signup = '/signup';
+  static const String forgotPass = '/forgot-password';
+static const String driverEarningsPage = '/earnings';
+  // Passenger
+static const String driverLogin = '/driver/login';
+static const String contactSupport = '/contact-support';
+static const String rateApp = '/rate-app';
+  // Driver
+  static const String driverDashboard = '/driver/dashboard';
+  static const String driverRides = '/driver/rides';
+  static const String driverProfile = '/driver/profile';
+static const String activeRide = '/driver/active-ride';
+  static const String chat = '/chat';
+static const String mapPreview = '/map-preview';
+static const String driverPickup = '/driver/pickup';
+static const String driverDone = '/driver/done';
+// Dans routes :
+static const String initialRoute = driverLogin;
+static const String ratePassenger = '/rate-passenger';
+static const String rest = '/driver/password-reset';
+  static Map<String, WidgetBuilder> get routes => {
+    contactSupport: (_) => const ContactSupportPage(),
+
+driverDone: (_) => const DriverDone(),
+  driverLogin: (_) => const DriverLoginPage(),
+ratePassenger: (_) => const RatePassengerPage(),
+rest: (_) => const PasswordResetPage(),
+driverPickup: (_) => const DriverPickupPage(),
+driverEarningsPage: (_) => const EarningsPage(),
+rateApp: (_) => RatePage(),
+    // Driver
+    driverDashboard: (_) => const DashboardPage(),
+    driverRides: (_) => const RidesPage(),   // ← added
+    driverProfile: (_) => const DriverProfilePage(),
+  activeRide: (_) => const ActiveRidePage(),
+    chat: (_) => const ChatPage(),
+    mapPreview: (_) => const MapPreviewPage(),
+
+
+  };
+
+  static Future<T?> push<T>(
+    BuildContext context,
+    String routeName, {
+    Object? args,
+  }) {
+    return Navigator.pushNamed<T>(context, routeName, arguments: args);
+  }
+
+  static Future<T?> replace<T>(
+    BuildContext context,
+    String routeName, {
+    Object? args,
+  }) {
+    return Navigator.pushReplacementNamed<T, dynamic>(
+      context,
+      routeName,
+      arguments: args,
+    );
+  }
+
+  static Future<T?> clearAndGo<T>(
+    BuildContext context,
+    String routeName, {
+    Object? args,
+  }) {
+    return Navigator.pushNamedAndRemoveUntil<T>(
+      context,
+      routeName,
+      (_) => false,
+      arguments: args,
+    );
+  }
+
+  static void pop(BuildContext context, [dynamic result]) {
+    Navigator.pop(context, result);
+  }
+}

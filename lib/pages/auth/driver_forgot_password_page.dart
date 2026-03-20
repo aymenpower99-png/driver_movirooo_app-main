@@ -1,0 +1,441 @@
+import 'package:flutter/material.dart';
+import '../../../../theme/app_colors.dart';
+import '../../../../theme/app_text_styles.dart';
+
+class DriverForgotPasswordPage extends StatefulWidget {
+  const DriverForgotPasswordPage({super.key});
+
+  @override
+  State<DriverForgotPasswordPage> createState() =>
+      _DriverForgotPasswordPageState();
+}
+
+class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
+    with TickerProviderStateMixin {
+  final _emailController = TextEditingController();
+  bool _isLoading = false;
+  bool _sent      = false;
+
+  late AnimationController _animCtrl;
+  late AnimationController _successCtrl;
+  late Animation<double>   _fadeAnim;
+  late Animation<Offset>   _slideAnim;
+  late Animation<double>   _successFade;
+  late Animation<double>   _successScale;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _animCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 550),
+    );
+    _fadeAnim  = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
+    _slideAnim = Tween<Offset>(
+      begin: const Offset(0, 0.07),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _animCtrl, curve: Curves.easeOutCubic));
+
+    _successCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
+    _successFade  = CurvedAnimation(parent: _successCtrl, curve: Curves.easeOut);
+    _successScale = Tween<double>(begin: 0.85, end: 1.0).animate(
+      CurvedAnimation(parent: _successCtrl, curve: Curves.easeOutBack),
+    );
+
+    _animCtrl.forward();
+  }
+
+  @override
+  void dispose() {
+    _animCtrl.dispose();
+    _successCtrl.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  void _submit() async {
+    if (_emailController.text.trim().isEmpty) return;
+    setState(() => _isLoading = true);
+    await Future.delayed(const Duration(milliseconds: 1400));
+    if (!mounted) return;
+    setState(() {
+      _isLoading = false;
+      _sent      = true;
+    });
+    _successCtrl.forward();
+  }
+
+  InputDecoration _fieldDecoration(BuildContext context) {
+    return InputDecoration(
+      hintText: 'you@example.com',
+      hintStyle: AppTextStyles.bodyMedium(context).copyWith(
+        color: AppColors.text(context).withOpacity(0.35),
+        fontSize: 14,
+      ),
+      prefixIcon: const Icon(
+        Icons.mail_outline_rounded,
+        color: Color(0xFFA855F7),
+        size: 19,
+      ),
+      filled: true,
+      fillColor: AppColors.surface(context),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.zero,
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.zero,
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.zero,
+        borderSide: const BorderSide(
+          color: Color(0xFFA855F7),
+          width: 1.8,
+        ),
+      ),
+      contentPadding:
+          const EdgeInsets.symmetric(horizontal: 18, vertical: 17),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.bg(context),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              minHeight: MediaQuery.of(context).size.height -
+                  MediaQuery.of(context).padding.top -
+                  MediaQuery.of(context).padding.bottom,
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 16),
+
+                  // ── Back button ───────────────────────────────────────
+                  GestureDetector(
+                    onTap: () => Navigator.of(context).pop(),
+                    child: Container(
+                      width: 42,
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: AppColors.surface(context),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        Icons.arrow_back_rounded,
+                        color: AppColors.text(context),
+                        size: 20,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 28),
+
+                  // ── Icon tile (always visible) ────────────────────────
+                  FadeTransition(
+                    opacity: _fadeAnim,
+                    child: SlideTransition(
+                      position: _slideAnim,
+                      child: Container(
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFA855F7).withOpacity(0.10),
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                        child: const Icon(
+                          Icons.lock_reset_rounded,
+                          color: Color(0xFFA855F7),
+                          size: 30,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 20),
+
+                  // ── Heading (always visible) ──────────────────────────
+                  FadeTransition(
+                    opacity: _fadeAnim,
+                    child: SlideTransition(
+                      position: _slideAnim,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _sent ? 'Check your inbox' : 'Forgot password?',
+                            style: AppTextStyles.pageTitle(context).copyWith(
+                              fontSize: 26,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _sent
+                                ? 'We sent a reset link to\n${_emailController.text.trim()}'
+                                : 'No worries. Enter your email and we\'ll send you a link to reset your password.',
+                            style: AppTextStyles.bodyMedium(context).copyWith(
+                              color: AppColors.text(context).withOpacity(0.6),
+                              fontSize: 14,
+                              height: 1.55,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 36),
+
+                  // ══════════════════════════════════════════════════════
+                  // SUCCESS STATE
+                  // ══════════════════════════════════════════════════════
+                  if (_sent) ...[
+                    FadeTransition(
+                      opacity: _successFade,
+                      child: ScaleTransition(
+                        scale: _successScale,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+
+                            // Big check circle
+                            Center(
+                              child: Container(
+                                width: 88,
+                                height: 88,
+                                decoration: BoxDecoration(
+                                  color: Colors.green.withOpacity(0.10),
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.green.withOpacity(0.25),
+                                    width: 1.5,
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons.check_rounded,
+                                  color: Colors.green.shade500,
+                                  size: 40,
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 32),
+
+                            // Tip card
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(18),
+                              decoration: BoxDecoration(
+                                color: AppColors.surface(context),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Icon(
+                                    Icons.info_outline_rounded,
+                                    color: AppColors.text(context)
+                                        .withOpacity(0.4),
+                                    size: 18,
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Text(
+                                      'Didn\'t receive it? Check your spam folder or wait a few minutes before trying again.',
+                                      style: AppTextStyles.bodySmall(context)
+                                          .copyWith(
+                                        color: AppColors.text(context).withOpacity(0.6),
+                                        fontSize: 13,
+                                        height: 1.55,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            const SizedBox(height: 32),
+
+                            // Back to sign in button
+                            SizedBox(
+                              width: double.infinity,
+                              height: 54,
+                              child: ElevatedButton(
+                                onPressed: () => Navigator.of(context).pop(),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor:
+                                      const Color(0xFFA855F7),
+                                  elevation: 0,
+                                  shadowColor: Colors.transparent,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                ),
+                                child: Text(
+                                  'Back to Sign In',
+                                  style: AppTextStyles.buttonPrimary.copyWith(
+                                    fontSize: 16,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                              ),
+                            ),
+
+                            const SizedBox(height: 16),
+
+                            // Resend link
+                            Center(
+                              child: GestureDetector(
+                                onTap: () {
+                                  setState(() => _sent = false);
+                                  _successCtrl.reset();
+                                },
+                                child: Text(
+                                  'Resend email',
+                                  style: AppTextStyles.bodySmall(context)
+                                      .copyWith(
+                                    color: const Color(0xFFA855F7),
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+
+                  // ══════════════════════════════════════════════════════
+                  // DEFAULT STATE
+                  // ══════════════════════════════════════════════════════
+                  if (!_sent) ...[
+
+                    // Email field
+                    FadeTransition(
+                      opacity: _fadeAnim,
+                      child: SlideTransition(
+                        position: _slideAnim,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'EMAIL',
+                              style: AppTextStyles.bodySmall(context).copyWith(
+                                color: AppColors.text(context)
+                                    .withOpacity(0.55),
+                                fontWeight: FontWeight.w700,
+                                fontSize: 10.5,
+                                letterSpacing: 1.1,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            TextField(
+                              controller: _emailController,
+                              keyboardType: TextInputType.emailAddress,
+                              cursorColor: const Color(0xFFA855F7),
+                              style: AppTextStyles.bodyMedium(context)
+                                  .copyWith(fontSize: 15),
+                              decoration: _fieldDecoration(context),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 28),
+
+                    // Send button
+                    FadeTransition(
+                      opacity: _fadeAnim,
+                      child: SizedBox(
+                        width: double.infinity,
+                        height: 54,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _submit,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFA855F7),
+                            disabledBackgroundColor:
+                                const Color(0xFFA855F7).withOpacity(0.45),
+                            elevation: 0,
+                            shadowColor: Colors.transparent,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2.4,
+                                  ),
+                                )
+                              : Text(
+                                  'Send Reset Link',
+                                  style: AppTextStyles.buttonPrimary.copyWith(
+                                    fontSize: 16,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // Remembered it? sign in link
+                    FadeTransition(
+                      opacity: _fadeAnim,
+                      child: Center(
+                        child: GestureDetector(
+                          onTap: () => Navigator.of(context).pop(),
+                          child: RichText(
+                            text: TextSpan(
+                              style: AppTextStyles.bodySmall(context).copyWith(
+                                fontSize: 13,
+                                color: AppColors.text(context).withOpacity(0.6),
+                              ),
+                              children: const [
+                                TextSpan(text: 'Remembered it? '),
+                                TextSpan(
+                                  text: 'Sign in',
+                                  style: TextStyle(
+                                    color: Color(0xFFA855F7),
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 32),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

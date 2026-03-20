@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"name": "moviroo_driver_app",
+			"path": ".."
+		},
+		{
+			"name": "lib",
+			"path": "../../../../moviroo_front_flutter_driver/lib"
+		},
+		{
+			"name": "images",
+			"path": "../../../../moviroo_front_flutter_driver/images"
+		}
+	],
+	"settings": {}
+}
