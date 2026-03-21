@@ -1,130 +1,175 @@
 import 'package:flutter/material.dart';
 import '../../../../theme/app_colors.dart';
-import '../../../../theme/app_text_styles.dart';
-import 'dashboard_widgets.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// EARNINGS BANNER
+// POWER SECTION
 // ─────────────────────────────────────────────────────────────────────────────
-class EarningsBanner extends StatelessWidget {
-  const EarningsBanner({super.key});
+class PowerSection extends StatefulWidget {
+  final bool isOnline;
+  final Animation<double> bounceScale;
+  final VoidCallback onToggle;
+
+  const PowerSection({
+    super.key,
+    required this.isOnline,
+    required this.bounceScale,
+    required this.onToggle,
+  });
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-      decoration: BoxDecoration(
-        gradient: AppColors.purpleGradient,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryPurple.withValues(alpha: 0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "Today's Earnings",
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 12,
-                    color: Colors.white.withValues(alpha: 0.75),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                const Text(
-                  'DT 84.50',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    letterSpacing: -0.5,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Icon(Icons.trending_up_rounded,
-                          size: 12, color: Colors.white),
-                      const SizedBox(width: 4),
-                      Text(
-                        '+12% vs yesterday',
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white.withValues(alpha: 0.9),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            width: 1,
-            height: 60,
-            color: Colors.white.withValues(alpha: 0.2),
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-          ),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              _MiniStat(icon: Icons.route_rounded, label: '127 km', sublabel: 'Distance'),
-              const SizedBox(height: 12),
-              _MiniStat(icon: Icons.receipt_long_rounded, label: '7 trips', sublabel: 'Today'),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+  State<PowerSection> createState() => _PowerSectionState();
 }
 
-class _MiniStat extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String sublabel;
-  const _MiniStat({required this.icon, required this.label, required this.sublabel});
+class _PowerSectionState extends State<PowerSection>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pulseCtrl;
+  late Animation<double> _pulseScale;
+  late Animation<double> _pulseOpacity;
+
+  static const Color _offlineColor = Color(0xFFB0B7C3);
+
+  @override
+  void initState() {
+    super.initState();
+    _pulseCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1400),
+    );
+    _pulseScale = Tween<double>(begin: 1.0, end: 1.35)
+        .animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeOut));
+    _pulseOpacity = Tween<double>(begin: 0.45, end: 0.0)
+        .animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeOut));
+
+    if (widget.isOnline) _pulseCtrl.repeat();
+  }
+
+  @override
+  void didUpdateWidget(PowerSection old) {
+    super.didUpdateWidget(old);
+    if (widget.isOnline && !old.isOnline) {
+      _pulseCtrl.repeat();
+    } else if (!widget.isOnline && old.isOnline) {
+      _pulseCtrl.stop();
+      _pulseCtrl.reset();
+    }
+  }
+
+  @override
+  void dispose() {
+    _pulseCtrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Row(
+    final activeColor = widget.isOnline ? AppColors.success : _offlineColor;
+
+    return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 14, color: Colors.white.withValues(alpha: 0.75)),
-        const SizedBox(width: 6),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(label,
-                style: const TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white)),
-            Text(sublabel,
-                style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 10,
-                    color: Colors.white.withValues(alpha: 0.65))),
-          ],
+        GestureDetector(
+          onTap: widget.onToggle,
+          child: ScaleTransition(
+            scale: widget.bounceScale,
+            child: SizedBox(
+              width: 120,
+              height: 120,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  if (widget.isOnline)
+                    AnimatedBuilder(
+                      animation: _pulseCtrl,
+                      builder: (_, __) => Transform.scale(
+                        scale: _pulseScale.value,
+                        child: Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.success
+                                .withValues(alpha: _pulseOpacity.value),
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (widget.isOnline)
+                    Container(
+                      width: 108,
+                      height: 108,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.success.withValues(alpha: 0.13),
+                      ),
+                    ),
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 420),
+                    curve: Curves.easeInOut,
+                    width: 82,
+                    height: 82,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: activeColor,
+                      boxShadow: widget.isOnline
+                          ? [
+                              BoxShadow(
+                                color: AppColors.success.withValues(alpha: 0.38),
+                                blurRadius: 28,
+                                offset: const Offset(0, 8),
+                              ),
+                            ]
+                          : [],
+                    ),
+                    child: const Icon(
+                      Icons.power_settings_new_rounded,
+                      color: Colors.white,
+                      size: 36,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 22),
+
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 320),
+          transitionBuilder: (child, anim) => FadeTransition(
+            opacity: anim,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                      begin: const Offset(0, 0.3), end: Offset.zero)
+                  .animate(CurvedAnimation(
+                      parent: anim, curve: Curves.easeOutCubic)),
+              child: child,
+            ),
+          ),
+          child: Text(
+            widget.isOnline ? 'You are Online' : 'You are Offline',
+            key: ValueKey(widget.isOnline),
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w700,
+              color: AppColors.text(context),
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 6),
+
+        AnimatedSwitcher(
+          duration: const Duration(milliseconds: 260),
+          transitionBuilder: (child, anim) =>
+              FadeTransition(opacity: anim, child: child),
+          child: Text(
+            widget.isOnline
+                ? 'You are available for rides'
+                : 'Tap the button to go online',
+            key: ValueKey('sub_${widget.isOnline}'),
+            style: TextStyle(fontSize: 13, color: AppColors.subtext(context)),
+          ),
         ),
       ],
     );
@@ -132,418 +177,276 @@ class _MiniStat extends StatelessWidget {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ONLINE CARD
+// DRIVER STATUS ROW  —  rating · streak · level
+// (replaces the 3 stat tiles — no overlap with activity card or earnings page)
 // ─────────────────────────────────────────────────────────────────────────────
-class OnlineCard extends StatelessWidget {
-  final bool isOnline;
-  final VoidCallback onToggle;
-  final bool isDark;
+class DriverStatusRow extends StatelessWidget {
+  // Replace with real model values
+  final double rating;
+  final int    streakDays;
+  final String level;
 
-  const OnlineCard({
+  const DriverStatusRow({
     super.key,
-    required this.isOnline,
-    required this.onToggle,
-    required this.isDark,
+    this.rating     = 4.8,
+    this.streakDays = 6,
+    this.level      = 'Gold',
   });
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 400),
-      curve: Curves.easeInOut,
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface(context),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isOnline
-              ? AppColors.success.withValues(alpha: 0.3)
-              : AppColors.border(context),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: (isOnline ? AppColors.success : Colors.black)
-                .withValues(alpha: isDark ? 0.2 : isOnline ? 0.08 : 0.06),
-            blurRadius: 20,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Row(
-            children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 300),
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: isOnline
-                      ? AppColors.success.withValues(alpha: 0.12)
-                      : AppColors.iconBg(context),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 250),
-                  child: Icon(
-                    isOnline ? Icons.wifi_rounded : Icons.wifi_off_rounded,
-                    key: ValueKey(isOnline),
-                    color: isOnline ? AppColors.success : AppColors.primaryPurple,
-                    size: 20,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      child: Text(
-                        isOnline ? 'You are Online' : 'You are Offline',
-                        key: ValueKey('title_$isOnline'),
-                        style: AppTextStyles.bodyLarge(context)
-                            .copyWith(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      child: Row(
-                        key: ValueKey('sub_$isOnline'),
-                        children: [
-                          PulsingDot(isOnline: isOnline),
-                          const SizedBox(width: 6),
-                          Text(
-                            isOnline
-                                ? 'Waiting for requests...'
-                                : 'Go online to receive trips',
-                            style: AppTextStyles.bodySmall(context).copyWith(
-                              color: isOnline
-                                  ? AppColors.success
-                                  : AppColors.subtext(context),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          GestureDetector(
-            onTap: onToggle,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 350),
-              curve: Curves.easeInOut,
-              width: double.infinity,
-              height: 52,
-              decoration: BoxDecoration(
-                gradient: isOnline
-                    ? LinearGradient(
-                        colors: [AppColors.error, AppColors.error.withValues(alpha: 0.8)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      )
-                    : AppColors.purpleGradient,
-                borderRadius: BorderRadius.circular(14),
-                boxShadow: [
-                  BoxShadow(
-                    color: (isOnline ? AppColors.error : AppColors.primaryPurple)
-                        .withValues(alpha: 0.35),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 250),
-                    child: Icon(
-                      isOnline ? Icons.pause_rounded : Icons.power_settings_new_rounded,
-                      key: ValueKey('icon_$isOnline'),
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 250),
-                    child: Text(
-                      isOnline ? 'Go Offline' : 'Go Online',
-                      key: ValueKey('text_$isOnline'),
-                      style: AppTextStyles.buttonPrimary.copyWith(fontSize: 15),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          AnimatedSize(
-            duration: const Duration(milliseconds: 350),
-            curve: Curves.easeInOut,
-            child: isOnline
-                ? const Padding(
-                    padding: EdgeInsets.only(top: 14),
-                    child: DotsLoader(),
-                  )
-                : const SizedBox.shrink(),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─────────────────────────────────────────────────────────────────────────────
-// TRIP OVERVIEW CARD
-// ─────────────────────────────────────────────────────────────────────────────
-class TripOverviewCard extends StatelessWidget {
-  final bool isDark;
-  const TripOverviewCard({super.key, required this.isDark});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: AppColors.surface(context),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.border(context)),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.06),
-            blurRadius: 16,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: AppColors.iconBg(context),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.bar_chart_rounded,
-                    color: AppColors.primaryPurple, size: 20),
-              ),
-              const SizedBox(width: 12),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Trip Overview',
-                      style: AppTextStyles.bodyLarge(context)
-                          .copyWith(fontWeight: FontWeight.bold)),
-                  Text('Your activity at a glance',
-                      style: AppTextStyles.bodySmall(context)),
-                ],
-              ),
-              const Spacer(),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: AppColors.iconBg(context),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: AppColors.border(context)),
-                ),
-                child: Text(
-                  'All Time',
-                  style: AppTextStyles.bodySmall(context).copyWith(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.primaryPurple,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: _StatTile(
-                  icon: Icons.directions_car_rounded,
-                  iconColor: AppColors.primaryPurple,
-                  bgColor: AppColors.iconBg(context),
-                  value: '1,248',
-                  label: 'Total Trips',
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _StatTile(
-                  icon: Icons.check_circle_rounded,
-                  iconColor: AppColors.success,
-                  bgColor: AppColors.success.withValues(alpha: 0.1),
-                  value: '1,180',
-                  label: 'Accepted',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _StatTile(
-                  icon: Icons.cancel_rounded,
-                  iconColor: AppColors.error,
-                  bgColor: AppColors.error.withValues(alpha: 0.1),
-                  value: '68',
-                  label: 'Cancelled',
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: _StatTile(
-                  icon: Icons.timer_outlined,
-                  iconColor: AppColors.warning,
-                  bgColor: AppColors.warning.withValues(alpha: 0.1),
-                  value: '6.5h',
-                  label: 'Online Time',
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          const Divider(height: 1),
-          const SizedBox(height: 20),
-          const _AcceptanceRateBar(accepted: 1180, total: 1248),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Stat Tile ────────────────────────────────────────────────────────────────
-class _StatTile extends StatelessWidget {
-  final IconData icon;
-  final Color iconColor;
-  final Color bgColor;
-  final String value;
-  final String label;
-
-  const _StatTile({
-    required this.icon,
-    required this.iconColor,
-    required this.bgColor,
-    required this.value,
-    required this.label,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.bg(context),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.border(context)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 34,
-            height: 34,
-            decoration: BoxDecoration(
-                color: bgColor, borderRadius: BorderRadius.circular(10)),
-            child: Icon(icon, color: iconColor, size: 17),
-          ),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(value,
-                    style: AppTextStyles.profileStatValue(context)
-                        .copyWith(fontSize: 15),
-                    overflow: TextOverflow.ellipsis),
-                Text(label,
-                    style: AppTextStyles.bodySmall(context),
-                    overflow: TextOverflow.ellipsis),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Acceptance Rate Bar ───────────────────────────────────────────────────────
-class _AcceptanceRateBar extends StatelessWidget {
-  final int accepted;
-  final int total;
-  const _AcceptanceRateBar({required this.accepted, required this.total});
-
-  Color _rateColor(double rate) {
-    if (rate >= 0.9) return AppColors.success;
-    if (rate >= 0.7) return AppColors.warning;
-    return AppColors.error;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final rate = accepted / total;
-    final pct = (rate * 100).toStringAsFixed(0);
-    final color = _rateColor(rate);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
+        // Rating
+        Expanded(
+          child: _StatusTile(
+            topWidget: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.verified_rounded, size: 14, color: color),
-                const SizedBox(width: 6),
+                const Icon(Icons.star_rounded,
+                    size: 15, color: Color(0xFFFFC107)),
+                const SizedBox(width: 4),
                 Text(
-                  'Acceptance Rate',
-                  style: AppTextStyles.bodySmall(context).copyWith(
-                    fontWeight: FontWeight.w600,
+                  rating.toStringAsFixed(1),
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
                     color: AppColors.text(context),
                   ),
                 ),
               ],
             ),
-            Text(
-              '$pct%',
-              style: AppTextStyles.priceMedium(context).copyWith(
-                color: color,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 10),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(8),
-          child: LinearProgressIndicator(
-            value: rate,
-            minHeight: 8,
-            backgroundColor: AppColors.border(context),
-            valueColor: AlwaysStoppedAnimation<Color>(color),
+            label: 'Your Rating',
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(width: 10),
+        // Streak
+        Expanded(
+          child: _StatusTile(
+            topWidget: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('🔥', style: TextStyle(fontSize: 15)),
+                const SizedBox(width: 4),
+                Text(
+                  '${streakDays}d',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.text(context),
+                  ),
+                ),
+              ],
+            ),
+            label: 'Streak',
+          ),
+        ),
+        const SizedBox(width: 10),
+        // Level
+        Expanded(
+          child: _StatusTile(
+            topWidget: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.workspace_premium_rounded,
+                    size: 15,
+                    color: level == 'Gold'
+                        ? const Color(0xFFFFB300)
+                        : level == 'Silver'
+                            ? const Color(0xFF9E9E9E)
+                            : AppColors.primaryPurple),
+                const SizedBox(width: 4),
+                Text(
+                  level,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.text(context),
+                  ),
+                ),
+              ],
+            ),
+            label: 'Driver Level',
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _StatusTile extends StatelessWidget {
+  final Widget topWidget;
+  final String label;
+  const _StatusTile({required this.topWidget, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+      decoration: BoxDecoration(
+        color: AppColors.surface(context),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border(context)),
+      ),
+      child: Column(
+        children: [
+          topWidget,
+          const SizedBox(height: 4),
+          Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+                fontSize: 10, color: AppColors.subtext(context)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ACTIVITY CARD  —  4 performance stats only, no demand/last ride/peak
+// ─────────────────────────────────────────────────────────────────────────────
+class ActivityCard extends StatelessWidget {
+  final bool   isOnline;
+  final int    ridesCompleted;
+  final String onlineTime;
+  final int    acceptanceRate;
+  final int    cancellations;
+
+  const ActivityCard({
+    super.key,
+    required this.isOnline,
+    this.ridesCompleted = 5,
+    this.onlineTime     = '3h 20m',
+    this.acceptanceRate = 92,
+    this.cancellations  = 1,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final rateColor = acceptanceRate >= 90
+        ? AppColors.success
+        : acceptanceRate >= 70
+            ? AppColors.warning
+            : AppColors.error;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.fromLTRB(18, 16, 18, 16),
+      decoration: BoxDecoration(
+        color: AppColors.surface(context),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.border(context)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Text(
+                'TODAY ACTIVITY',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.subtext(context),
+                  letterSpacing: 0.6,
+                ),
+              ),
+              const Spacer(),
+              if (!isOnline) ...[
+                Icon(Icons.wifi_off_rounded,
+                    size: 13, color: AppColors.subtext(context)),
+                const SizedBox(width: 4),
+                Text(
+                  'Offline',
+                  style: TextStyle(
+                      fontSize: 11, color: AppColors.subtext(context)),
+                ),
+              ],
+            ],
+          ),
+
+          const SizedBox(height: 14),
+
+          _ActivityRow(
+            icon: Icons.directions_car_rounded,
+            iconColor: AppColors.primaryPurple,
+            label: 'Rides completed',
+            value: '$ridesCompleted',
+          ),
+          const SizedBox(height: 10),
+          _ActivityRow(
+            icon: Icons.schedule_outlined,
+            iconColor: AppColors.primaryPurple,
+            label: 'Online time',
+            value: onlineTime,
+          ),
+          const SizedBox(height: 10),
+          _ActivityRow(
+            icon: Icons.verified_rounded,
+            iconColor: rateColor,
+            label: 'Acceptance rate',
+            value: '$acceptanceRate%',
+            valueColor: rateColor,
+          ),
+          const SizedBox(height: 10),
+          _ActivityRow(
+            icon: Icons.cancel_outlined,
+            iconColor:
+                cancellations > 0 ? AppColors.error : AppColors.subtext(context),
+            label: 'Cancellations',
+            value: '$cancellations',
+            valueColor: cancellations > 0 ? AppColors.error : null,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Single stat row inside ActivityCard ───────────────────────────────────────
+class _ActivityRow extends StatelessWidget {
+  final IconData icon;
+  final Color    iconColor;
+  final String   label;
+  final String   value;
+  final Color?   valueColor;
+
+  const _ActivityRow({
+    required this.icon,
+    required this.iconColor,
+    required this.label,
+    required this.value,
+    this.valueColor,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: iconColor.withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(icon, size: 14, color: iconColor),
+        ),
+        const SizedBox(width: 10),
+        Text(label,
+            style:
+                TextStyle(fontSize: 13, color: AppColors.text(context))),
+        const Spacer(),
         Text(
-          '$accepted of $total trips accepted',
-          style: AppTextStyles.bodySmall(context).copyWith(fontSize: 11),
+          value,
+          style: TextStyle(
+            fontSize: 13,
+            fontWeight: FontWeight.w700,
+            color: valueColor ?? AppColors.text(context),
+          ),
         ),
       ],
     );

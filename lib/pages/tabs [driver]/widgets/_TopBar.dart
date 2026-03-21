@@ -12,23 +12,22 @@ class TopBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
       child: Row(
         children: [
-         IconButton(
-  icon: const Icon(Icons.arrow_back),
-  onPressed: () {
-    if (Navigator.canPop(context)) {
-      Navigator.pop(context);
-    }
-  },
-),
-  
+          IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () {
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
+              }
+            },
+          ),
 
-   
           Expanded(
             child: Text(
-            title,
+              title,
               textAlign: TextAlign.center,
-              style: AppTextStyles.bodyLarge(context)
-                  .copyWith(fontWeight: FontWeight.w700, fontSize: 17),
+              style: AppTextStyles.bodyLarge(
+                context,
+              ).copyWith(fontWeight: FontWeight.w700, fontSize: 17),
             ),
           ),
           const SizedBox(width: 48),

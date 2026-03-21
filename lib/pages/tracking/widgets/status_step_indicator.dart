@@ -16,7 +16,6 @@ class _StatusStepIndicatorState extends State<StatusStepIndicator>
     with SingleTickerProviderStateMixin {
   late AnimationController _fill;
 
-  // ✅ final not const — enum values from external file can't be const list
   static final List<RideStatus> _steps = [
     RideStatus.assigned,
     RideStatus.onTheWay,
@@ -60,15 +59,15 @@ class _StatusStepIndicatorState extends State<StatusStepIndicator>
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      // ── Compact: less padding, smaller overall ──────────────────
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
-            // ✅ withValues instead of withOpacity
             color: Colors.black.withValues(alpha: 0.07),
-            blurRadius: 8,
+            blurRadius: 6,
             offset: const Offset(0, 2),
           ),
         ],
@@ -76,18 +75,15 @@ class _StatusStepIndicatorState extends State<StatusStepIndicator>
       child: Row(
         children: List.generate(_steps.length * 2 - 1, (i) {
           if (i.isOdd) {
-            final leftIdx = i ~/ 2;
-            final isDone  = _steps[leftIdx].index < widget.current.index;
+            final leftIdx  = i ~/ 2;
+            final isDone   = _steps[leftIdx].index < widget.current.index;
             final isActive = _steps[leftIdx] == widget.current;
 
             if (isDone) {
               return Expanded(
                 child: Container(
                   height: 2,
-                  decoration: BoxDecoration(
-                    color: AppColors.success,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+                  color: AppColors.success,
                 ),
               );
             }
@@ -96,87 +92,66 @@ class _StatusStepIndicatorState extends State<StatusStepIndicator>
               return Expanded(
                 child: AnimatedBuilder(
                   animation: _fill,
-                  // ✅ named params instead of _  __
-                  builder: (context, child) {
-                    return Stack(
-                      children: [
-                        Container(
-                          height: 2,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFE5E7EB),
-                            borderRadius: BorderRadius.circular(2),
-                          ),
-                        ),
-                        FractionallySizedBox(
-                          widthFactor: _fill.value,
-                          child: Container(
-                            height: 2,
-                            decoration: BoxDecoration(
-                              color: AppColors.primaryPurple,
-                              borderRadius: BorderRadius.circular(2),
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-                  },
+                  builder: (context, child) => Stack(
+                    children: [
+                      Container(height: 2, color: const Color(0xFFE5E7EB)),
+                      FractionallySizedBox(
+                        widthFactor: _fill.value,
+                        child: Container(height: 2, color: AppColors.primaryPurple),
+                      ),
+                    ],
+                  ),
                 ),
               );
             }
 
             return Expanded(
-              child: Container(
-                height: 2,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE5E7EB),
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
+              child: Container(height: 2, color: const Color(0xFFE5E7EB)),
             );
           }
 
+          // ── Dot ────────────────────────────────────────────────
           final idx       = i ~/ 2;
           final step      = _steps[idx];
           final isDone    = step.index < widget.current.index;
           final isCurrent = step == widget.current;
 
-          Widget circle;
+          Widget dot;
           if (isDone) {
-            circle = Container(
-              width: 20,
-              height: 20,
+            // ── Green filled + check ─────────────────────────────
+            dot = Container(
+              width: 14,
+              height: 14,
               decoration: const BoxDecoration(
                 color: AppColors.success,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.check, size: 12, color: Colors.white),
+              child: const Icon(Icons.check, size: 9, color: Colors.white),
             );
           } else if (isCurrent) {
-            circle = AnimatedBuilder(
+            // ── Purple pulsing ───────────────────────────────────
+            dot = AnimatedBuilder(
               animation: _fill,
-              // ✅ named params
               builder: (context, child) {
-                final pulse = _fill.value * 2 * 3.14159;
-                final alpha = 0.2 + 0.15 * ((pulse % 3.14159) / 3.14159);
+                final alpha = 0.2 + 0.15 * ((_fill.value * 3.14159) % 3.14159 / 3.14159);
                 return Container(
-                  width: 20,
-                  height: 20,
+                  width: 14,
+                  height: 14,
                   decoration: BoxDecoration(
                     color: AppColors.primaryPurple,
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        // ✅ withValues instead of withOpacity
                         color: AppColors.primaryPurple.withValues(alpha: alpha),
-                        blurRadius: 8,
-                        spreadRadius: 3,
+                        blurRadius: 5,
+                        spreadRadius: 2,
                       ),
                     ],
                   ),
                   child: Center(
                     child: Container(
-                      width: 7,
-                      height: 7,
+                      width: 5,
+                      height: 5,
                       decoration: const BoxDecoration(
                         color: Colors.white,
                         shape: BoxShape.circle,
@@ -187,16 +162,14 @@ class _StatusStepIndicatorState extends State<StatusStepIndicator>
               },
             );
           } else {
-            circle = Container(
-              width: 20,
-              height: 20,
+            // ── Grey empty ───────────────────────────────────────
+            dot = Container(
+              width: 14,
+              height: 14,
               decoration: BoxDecoration(
                 color: Colors.white,
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: const Color(0xFFD1D5DB),
-                  width: 1.5,
-                ),
+                border: Border.all(color: const Color(0xFFD1D5DB), width: 1.5),
               ),
             );
           }
@@ -204,15 +177,13 @@ class _StatusStepIndicatorState extends State<StatusStepIndicator>
           return Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              SizedBox(width: 20, height: 20, child: circle),
-              const SizedBox(height: 4),
+              SizedBox(width: 14, height: 14, child: dot),
+              const SizedBox(height: 3),
               Text(
                 _labels[idx],
                 style: TextStyle(
-                  fontSize: 8,
-                  fontWeight: (isCurrent || isDone)
-                      ? FontWeight.w700
-                      : FontWeight.w400,
+                  fontSize: 7.5,
+                  fontWeight: (isCurrent || isDone) ? FontWeight.w700 : FontWeight.w400,
                   color: isDone
                       ? AppColors.success
                       : isCurrent

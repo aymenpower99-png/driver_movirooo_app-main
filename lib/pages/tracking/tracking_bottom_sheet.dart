@@ -1,10 +1,11 @@
 // lib/pages/tabs/[driver]/Rides/tracking/tracking_bottom_sheet.dart
 
 import 'package:flutter/material.dart';
-import '../../../../../theme/app_colors.dart';
-import 'ride_model.dart';
-import 'widgets/passenger_info_card.dart';
-import 'widgets/confirm_action_modal.dart';
+import 'package:moviroo_driver_app/theme/app_colors.dart';
+import 'package:moviroo_driver_app/pages/tracking/ride_model.dart';
+import 'package:moviroo_driver_app/pages/tracking/widgets/passenger_info_card.dart';
+import 'package:moviroo_driver_app/pages/tracking/widgets/confirm_action_modal.dart';
+import 'package:moviroo_driver_app/pages/tracking/completion/ride_completion_page.dart';
 
 class TrackingBottomSheet extends StatefulWidget {
   final RideModel ride;
@@ -32,6 +33,11 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
         confirmLabel: 'Confirm — Go to Pickup',
         onConfirm: _advance,
       );
+    } else if (_status == RideStatus.startRide) {
+      // Last step → go to completion screen
+      Navigator.of(context).push(
+        RideCompletionPage.route(widget.ride),
+      );
     } else {
       _advance();
     }
@@ -49,9 +55,11 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
     final ride = widget.ride;
 
     return DraggableScrollableSheet(
-      initialChildSize: 0.50,
-      minChildSize: 0.18,
+      initialChildSize: 0.52,
+      minChildSize: 0.13,   // ~100px: shows ONLY passenger name + rating + icons
       maxChildSize: 0.88,
+      snap: true,
+      snapSizes: const [0.13, 0.52, 0.88],
       builder: (_, scrollController) => Container(
         decoration: const BoxDecoration(
           color: Colors.white,
@@ -66,6 +74,7 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
         ),
         child: ListView(
           controller: scrollController,
+          physics: const ClampingScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(0, 0, 0, 40),
           children: [
             // ── Drag handle ──────────────────────────────────────
@@ -88,7 +97,8 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
               dropOffAddress: ride.dropOffAddress,
               distanceKm: ride.distanceKm,
               etaMinutes: ride.etaMinutes,
-              showContactButtons: _status.showContactButtons,
+              showContactButtons: _status != RideStatus.assigned,
+              showMetaTile: _status != RideStatus.assigned,
               onCall: () {},
               onMessage: () {},
               onReportIssue: () => _showReportDialog(context),
@@ -98,12 +108,12 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
             // ── Primary CTA ──────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 14, 16, 0),
-              child: _status.next != null || _status == RideStatus.assigned
-                  ? _PrimaryButton(
+              child: _status.isTerminal
+                  ? _CompletedBanner()
+                  : _PrimaryButton(
                       label: _status.primaryButtonLabel,
                       onTap: _handlePrimaryTap,
-                    )
-                  : _CompletedBanner(),
+                    ),
             ),
           ],
         ),
@@ -175,9 +185,9 @@ class _CompletedBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: AppColors.success.withOpacity(0.1),
+        color: AppColors.success.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.success.withOpacity(0.3)),
+        border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,

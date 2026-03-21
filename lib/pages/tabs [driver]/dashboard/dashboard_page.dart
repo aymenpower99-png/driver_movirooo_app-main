@@ -13,11 +13,16 @@ class DashboardPage extends StatefulWidget {
 }
 
 class _DashboardPageState extends State<DashboardPage>
-    with SingleTickerProviderStateMixin {
+    with TickerProviderStateMixin {
   bool _isOnline = false;
 
-  late AnimationController _fadeController;
-  late Animation<double> _fadeAnimation;
+  late AnimationController _bounceCtrl;
+  late Animation<double> _bounceScale;
+
+  // Slide+fade for the activity card appearing on go-online
+  late AnimationController _cardCtrl;
+  late Animation<double>   _cardFade;
+  late Animation<Offset>   _cardSlide;
 
   void _handleTabTap(int index) {
     final routes = [
@@ -29,55 +34,99 @@ class _DashboardPageState extends State<DashboardPage>
     AppRouter.replace(context, routes[index]);
   }
 
+  Future<void> _handleToggle() async {
+    // Bounce the power button
+    await _bounceCtrl.forward();
+    await _bounceCtrl.reverse();
+
+    final goingOnline = !_isOnline;
+
+    if (!goingOnline) {
+      // Going offline — slide card out first, then flip state
+      await _cardCtrl.reverse();
+      setState(() => _isOnline = false);
+    } else {
+      // Going online — flip state, then slide card in
+      setState(() => _isOnline = true);
+      _cardCtrl.forward();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    _fadeController = AnimationController(
+
+    _bounceCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 500),
-    )..forward();
-    _fadeAnimation = CurvedAnimation(
-      parent: _fadeController,
-      curve: Curves.easeOut,
+      duration: const Duration(milliseconds: 130),
     );
+    _bounceScale = Tween<double>(begin: 1.0, end: 0.84).animate(
+      CurvedAnimation(parent: _bounceCtrl, curve: Curves.easeInOut),
+    );
+
+    _cardCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 420),
+    );
+    _cardFade = CurvedAnimation(parent: _cardCtrl, curve: Curves.easeOut);
+    _cardSlide = Tween<Offset>(
+      begin: const Offset(0, 0.14),
+      end: Offset.zero,
+    ).animate(CurvedAnimation(parent: _cardCtrl, curve: Curves.easeOutCubic));
   }
 
   @override
   void dispose() {
-    _fadeController.dispose();
+    _bounceCtrl.dispose();
+    _cardCtrl.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
       backgroundColor: AppColors.bg(context),
       body: SafeArea(
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 20),
-                DashboardHeader(isOnline: _isOnline),
-                const SizedBox(height: 20),
-                const EarningsBanner(),
-                const SizedBox(height: 16),
-                OnlineCard(
-                  isOnline: _isOnline,
-                  isDark: isDark,
-                  onToggle: () => setState(() => _isOnline = !_isOnline),
-                ),
-                const SizedBox(height: 16),
-                TripOverviewCard(isDark: isDark),
-                const SizedBox(height: 32),
-              ],
+        child: Column(
+          children: [
+            // ── Header ────────────────────────────────────────
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+              child: DashboardHeader(isOnline: _isOnline),
             ),
-          ),
+
+            // ── Body ──────────────────────────────────────────
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                child: Column(
+                  children: [
+                    const SizedBox(height: 32),
+
+                    // Power button + title + subtitle
+                    PowerSection(
+                      isOnline: _isOnline,
+                      bounceScale: _bounceScale,
+                      onToggle: _handleToggle,
+                    ),
+
+                    const SizedBox(height: 32),
+
+                    // Activity card — slides in when online, out when offline
+                    if (_isOnline || _cardCtrl.isAnimating)
+                      FadeTransition(
+                        opacity: _cardFade,
+                        child: SlideTransition(
+                          position: _cardSlide,
+                          child: ActivityCard(isOnline: _isOnline),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
       bottomNavigationBar: DriverTabBar(

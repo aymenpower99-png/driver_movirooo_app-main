@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:moviroo_driver_app/pages/tabs%20%5Bdriver%5D/Earnings/earnings_page.dart';
 import 'package:moviroo_driver_app/routing/router.dart';
 
 class DriverTabBar extends StatelessWidget {
@@ -12,26 +11,14 @@ class DriverTabBar extends StatelessWidget {
     this.onTap,
   });
 
-  static const _icons = [
-    Icons.bar_chart_rounded,
-    Icons.attach_money_rounded,
-    Icons.map_rounded,
-    Icons.person_outline_rounded,
-  ];
-
-  static const _labels = [
-    'Stats',
-    'Earnings',
-    'Activities',
-    'Profile',
-  ];
+  static const _labels = ['Stats', 'Earnings', 'Activities', 'Profile'];
 
   static const _routes = [
-  AppRouter.driverDashboard,
-  AppRouter.driverEarningsPage,
-  AppRouter.driverRides,
-  AppRouter.driverProfile,
-];
+    AppRouter.driverDashboard,
+    AppRouter.driverEarningsPage,
+    AppRouter.driverRides,
+    AppRouter.driverProfile,
+  ];
 
   void _handleTap(BuildContext context, int index) {
     if (index == currentIndex) return;
@@ -39,27 +26,39 @@ class DriverTabBar extends StatelessWidget {
     Navigator.pushReplacementNamed(context, _routes[index]);
   }
 
+  IconData _icon(int index, bool active) {
+    switch (index) {
+      case 0:
+        return active ? Icons.power_settings_new_rounded : Icons.power_settings_new_outlined;
+      case 1:
+        return active ? Icons.account_balance_wallet_rounded : Icons.account_balance_wallet_outlined;
+      case 2:
+        return active ? Icons.description_rounded : Icons.description_outlined;
+      case 3:
+        return active ? Icons.person_rounded : Icons.person_outline_rounded;
+      default:
+        return Icons.circle;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isDark    = Theme.of(context).brightness == Brightness.dark;
-    final bgColor   = isDark ? const Color(0xFF0F0F12) : Colors.white;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final bgColor = isDark ? const Color(0xFF0F0F12) : Colors.white;
     final topBorder = isDark ? const Color(0xFF1E1E24) : const Color(0xFFE0E0E8);
+    const activeColor = Color(0xFF7C3AED);
+    final unselectedColor = isDark ? const Color(0xFF6B6B75) : const Color(0xFF9B9BAA);
 
     return Container(
       height: 72,
       decoration: BoxDecoration(
         color: bgColor,
-        border: Border(
-          top: BorderSide(color: topBorder, width: 1),
-        ),
+        border: Border(top: BorderSide(color: topBorder, width: 1)),
       ),
       child: Row(
-        children: List.generate(_icons.length, (i) {
-          final selected        = i == currentIndex;
-          final unselectedColor = isDark
-              ? const Color(0xFF6B6B75)
-              : const Color(0xFF9B9BAA);
-
+        children: List.generate(_labels.length, (i) {
+          final selected = i == currentIndex;
+          final color = selected ? activeColor : unselectedColor;
           return Expanded(
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
@@ -67,24 +66,10 @@ class DriverTabBar extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 220),
-                    curve: Curves.easeOut,
-                    width:  selected ? 48 : 28,
-                    height: 32,
-                    decoration: selected
-                        ? BoxDecoration(
-                            color: const Color(0xFF7C3AED),
-                            borderRadius: BorderRadius.circular(16),
-                          )
-                        : null,
-                    child: Center(
-                      child: Icon(
-                        _icons[i],
-                        size: 22,
-                        color: selected ? Colors.white : unselectedColor,
-                      ),
-                    ),
+                  Icon(
+                    _icon(i, selected),
+                    size: 24,
+                    color: color,
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -93,9 +78,7 @@ class DriverTabBar extends StatelessWidget {
                       fontFamily: 'Inter',
                       fontSize: 10,
                       fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-                      color: selected
-                          ? (isDark ? Colors.white : const Color(0xFF0B0B0F))
-                          : unselectedColor,
+                      color: color,
                     ),
                   ),
                 ],
