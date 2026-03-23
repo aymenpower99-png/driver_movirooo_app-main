@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:moviroo_driver_app/theme/app_colors.dart';
 import 'package:moviroo_driver_app/pages/tracking/ride_model.dart';
+import 'package:moviroo_driver_app/pages/tracking/widgets/contact_buttons.dart';
+import 'package:moviroo_driver_app/pages/tracking/widgets/ride_meta_row.dart';
 
 class PassengerInfoCard extends StatelessWidget {
   final PassengerModel passenger;
@@ -12,6 +14,7 @@ class PassengerInfoCard extends StatelessWidget {
   final int etaMinutes;
   final bool showContactButtons;
   final bool showMetaTile;
+  final bool showActions;
   final VoidCallback? onCall;
   final VoidCallback? onMessage;
   final VoidCallback? onReportIssue;
@@ -26,6 +29,7 @@ class PassengerInfoCard extends StatelessWidget {
     required this.etaMinutes,
     required this.showContactButtons,
     this.showMetaTile = false,
+    this.showActions = true,
     this.onCall,
     this.onMessage,
     this.onReportIssue,
@@ -38,12 +42,12 @@ class PassengerInfoCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
 
-        // ── 1. PASSENGER HEADER (always at top) ───────────────────
+        // ── 1. PASSENGER HEADER ───────────────────────────────────
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
           child: Row(
             children: [
-              _Avatar(passenger: passenger),
+              _PassengerAvatar(passenger: passenger),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -60,29 +64,21 @@ class PassengerInfoCard extends StatelessWidget {
                   ],
                 ),
               ),
-              // Call + Message always visible in header
-              Row(
-                children: [
-                  _StrokeIconBtn(
-                      child: _PhoneIcon(), onTap: onCall ?? () {}),
-                  const SizedBox(width: 8),
-                  _StrokeIconBtn(
-                      child: _ChatIcon(), onTap: onMessage ?? () {}),
-                ],
-              ),
+              ContactButtons(onCall: onCall, onMessage: onMessage),
             ],
           ),
         ),
 
         Divider(height: 1, color: AppColors.border(context)),
 
-        // ── 2. ROUTE ──────────────────────────────────────────────
+        // ── 2. ROUTE ─────────────────────────────────────────────
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Pickup — empty circle
+
+              // Pickup
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -119,6 +115,12 @@ class PassengerInfoCard extends StatelessWidget {
                       ],
                     ),
                   ),
+                  if (showMetaTile) ...[
+                    const SizedBox(width: 8),
+                    RideMetaBadge(
+                        icon: Icons.route_rounded,
+                        value: '${distanceKm.toStringAsFixed(1)} km'),
+                  ],
                 ],
               ),
 
@@ -126,10 +128,12 @@ class PassengerInfoCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(left: 6),
                 child: Container(
-                    width: 2, height: 22, color: const Color(0xFFE5E7EB)),
+                    width: 2,
+                    height: 22,
+                    color: AppColors.border(context)),
               ),
 
-              // Drop-off — filled circle
+              // Drop-off
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -164,135 +168,75 @@ class PassengerInfoCard extends StatelessWidget {
                       ],
                     ),
                   ),
+                  if (showMetaTile) ...[
+                    const SizedBox(width: 8),
+                    RideMetaBadge(
+                        icon: Icons.schedule_rounded,
+                        value: '$etaMinutes min'),
+                  ],
                 ],
               ),
             ],
           ),
         ),
 
-        Divider(height: 1, color: AppColors.border(context)),
-
-        // ── 3. DISTANCE + ETA tile (hidden on Assigned) ───────────
-        if (showMetaTile) ...[
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            child: Container(
-              decoration: BoxDecoration(
-                color: AppColors.bg(context),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: AppColors.border(context)),
-              ),
-              child: IntrinsicHeight(
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: Column(
-                          children: [
-                            Icon(Icons.route_rounded,
-                                size: 18, color: AppColors.primaryPurple),
-                            const SizedBox(height: 4),
-                            Text('${distanceKm.toStringAsFixed(1)} km',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.text(context),
-                                )),
-                            Text('Distance',
-                                style: TextStyle(
-                                    fontSize: 11,
-                                    color: AppColors.subtext(context))),
-                          ],
-                        ),
-                      ),
+        // ── 3. REPORT / CANCEL ────────────────────────────────────
+        if (showActions) ...[
+          Divider(height: 1, color: AppColors.border(context)),
+          IntrinsicHeight(
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextButton.icon(
+                    onPressed: onReportIssue,
+                    icon: Icon(Icons.flag_outlined,
+                        size: 14, color: AppColors.subtext(context)),
+                    label: Text('Report Issue',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.subtext(context),
+                        )),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.zero),
                     ),
-                    VerticalDivider(
-                        width: 1,
-                        thickness: 1,
-                        color: AppColors.border(context)),
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        child: Column(
-                          children: [
-                            Icon(Icons.schedule_rounded,
-                                size: 18, color: AppColors.primaryPurple),
-                            const SizedBox(height: 4),
-                            Text('$etaMinutes min',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.text(context),
-                                )),
-                            Text('ETA',
-                                style: TextStyle(
-                                    fontSize: 11,
-                                    color: AppColors.subtext(context))),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
-              ),
+                VerticalDivider(
+                    width: 1, color: AppColors.border(context)),
+                Expanded(
+                  child: TextButton.icon(
+                    onPressed: onCancelRide,
+                    icon: const Icon(Icons.cancel_outlined,
+                        size: 14, color: AppColors.error),
+                    label: const Text('Cancel Ride',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.error,
+                        )),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.zero),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],
-
-        // ── 4. REPORT / CANCEL ────────────────────────────────────
-        IntrinsicHeight(
-          child: Row(
-            children: [
-              Expanded(
-                child: TextButton.icon(
-                  onPressed: onReportIssue,
-                  icon: Icon(Icons.flag_outlined,
-                      size: 14, color: AppColors.subtext(context)),
-                  label: Text('Report Issue',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.subtext(context),
-                      )),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.zero),
-                  ),
-                ),
-              ),
-              VerticalDivider(width: 1, color: AppColors.border(context)),
-              Expanded(
-                child: TextButton.icon(
-                  onPressed: onCancelRide,
-                  icon: const Icon(Icons.cancel_outlined,
-                      size: 14, color: AppColors.error),
-                  label: const Text('Cancel Ride',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.error,
-                      )),
-                  style: TextButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                    shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.zero),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
       ],
     );
   }
 }
 
 // ── Avatar ────────────────────────────────────────────────────────────────────
-class _Avatar extends StatelessWidget {
+class _PassengerAvatar extends StatelessWidget {
   final PassengerModel passenger;
-  const _Avatar({required this.passenger});
+  const _PassengerAvatar({required this.passenger});
 
   @override
   Widget build(BuildContext context) {
@@ -321,7 +265,7 @@ class _Avatar extends StatelessWidget {
   }
 }
 
-// ── Star rating ───────────────────────────────────────────────────────────────
+// ── Star Rating ───────────────────────────────────────────────────────────────
 class _StarRating extends StatelessWidget {
   final double rating;
   const _StarRating({required this.rating});
@@ -333,10 +277,13 @@ class _StarRating extends StatelessWidget {
     return Row(
       children: [
         ...List.generate(5, (i) {
-          IconData ico;
-          if (i < full)               ico = Icons.star_rounded;
-          else if (i == full && half) ico = Icons.star_half_rounded;
-          else                        ico = Icons.star_outline_rounded;
+          final IconData ico;
+          if (i < full)
+            ico = Icons.star_rounded;
+          else if (i == full && half)
+            ico = Icons.star_half_rounded;
+          else
+            ico = Icons.star_outline_rounded;
           return Icon(ico, size: 14, color: const Color(0xFFFFC107));
         }),
         const SizedBox(width: 4),
@@ -348,107 +295,4 @@ class _StarRating extends StatelessWidget {
       ],
     );
   }
-}
-
-// ── Stroke icon button ────────────────────────────────────────────────────────
-class _StrokeIconBtn extends StatelessWidget {
-  final Widget child;
-  final VoidCallback onTap;
-  const _StrokeIconBtn({required this.child, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: const Color(0xFFF1F3F5),
-      borderRadius: BorderRadius.circular(10),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(10),
-        child: Container(
-          width: 42,
-          height: 42,
-          alignment: Alignment.center,
-          child: child,
-        ),
-      ),
-    );
-  }
-}
-
-// ── Phone icon ────────────────────────────────────────────────────────────────
-class _PhoneIcon extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) =>
-      CustomPaint(size: const Size(20, 20), painter: _PhonePainter());
-}
-
-class _PhonePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()
-      ..color = AppColors.primaryPurple
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.7
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-    final w = size.width;
-    final h = size.height;
-    canvas.drawPath(
-      Path()
-        ..moveTo(w * 0.72, h * 0.58)
-        ..cubicTo(w * 0.72, h * 0.58, w * 0.88, h * 0.74, w * 0.88, h * 0.80)
-        ..cubicTo(w * 0.88, h * 0.86, w * 0.82, h * 0.92, w * 0.76, h * 0.92)
-        ..cubicTo(w * 0.40, h * 0.92, w * 0.08, h * 0.60, w * 0.08, h * 0.24)
-        ..cubicTo(w * 0.08, h * 0.18, w * 0.14, h * 0.12, w * 0.20, h * 0.12)
-        ..cubicTo(w * 0.26, h * 0.12, w * 0.42, h * 0.28, w * 0.42, h * 0.28)
-        ..cubicTo(w * 0.46, h * 0.32, w * 0.46, h * 0.38, w * 0.42, h * 0.42)
-        ..lineTo(w * 0.36, h * 0.48)
-        ..cubicTo(w * 0.44, h * 0.58, w * 0.52, h * 0.64, w * 0.52, h * 0.64)
-        ..cubicTo(w * 0.62, h * 0.72, w * 0.70, h * 0.78, w * 0.70, h * 0.78)
-        ..lineTo(w * 0.76, h * 0.72)
-        ..cubicTo(w * 0.80, h * 0.68, w * 0.86, h * 0.68, w * 0.90, h * 0.72),
-      p,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter _) => false;
-}
-
-// ── Chat icon ─────────────────────────────────────────────────────────────────
-class _ChatIcon extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) =>
-      CustomPaint(size: const Size(20, 20), painter: _ChatPainter());
-}
-
-class _ChatPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()
-      ..color = AppColors.primaryPurple
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.7
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-    final w = size.width;
-    final h = size.height;
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(w * 0.06, h * 0.06, w * 0.88, h * 0.68),
-        Radius.circular(w * 0.12),
-      ),
-      p,
-    );
-    canvas.drawPath(
-      Path()
-        ..moveTo(w * 0.20, h * 0.74)
-        ..lineTo(w * 0.10, h * 0.94)
-        ..lineTo(w * 0.36, h * 0.74),
-      p,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter _) => false;
 }

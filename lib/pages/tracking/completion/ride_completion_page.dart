@@ -1,17 +1,4 @@
 // lib/pages/tracking/completion/ride_completion_page.dart
-//
-// Flow:
-//   1. Brief loading screen (~1.5s) with purple spinner
-//   2. Animated completion screen (no scroll — fits one screen, no overflow):
-//      • Green success circle + "Ride Completed"
-//      • Ride summary card:
-//          - Passenger row (avatar, name, rating)
-//          - Route: filled purple circle (pickup) → dashed line → empty purple circle (dropoff)
-//          - Duration / Distance cells
-//      • Earnings card (ride price, driver earnings, commission note)
-//      • Rate passenger (5 stars only — no note, no tags)
-//      • Report Issue link
-//      • "Back to Online" purple button
 
 import 'package:flutter/material.dart';
 import 'package:moviroo_driver_app/theme/app_colors.dart';
@@ -33,13 +20,12 @@ class RideCompletionPage extends StatefulWidget {
 class _RideCompletionPageState extends State<RideCompletionPage>
     with TickerProviderStateMixin {
   bool _loading = true;
-
-  late AnimationController _fadeCtrl;
-  late Animation<double> _fade;
-  late AnimationController _scaleCtrl;
-  late Animation<double> _scale;
-
   int _selectedStars = 5;
+
+  late final AnimationController _fadeCtrl;
+  late final AnimationController _scaleCtrl;
+  late final Animation<double> _fade;
+  late final Animation<double> _scale;
 
   @override
   void initState() {
@@ -54,50 +40,61 @@ class _RideCompletionPageState extends State<RideCompletionPage>
     _scale = CurvedAnimation(parent: _scaleCtrl, curve: Curves.elasticOut);
 
     Future.delayed(const Duration(milliseconds: 1600), () {
+      // Guard: do nothing if widget was already disposed
       if (!mounted) return;
       setState(() => _loading = false);
       _fadeCtrl.forward();
       Future.delayed(const Duration(milliseconds: 80), () {
-        if (mounted) _scaleCtrl.forward();
+        if (!mounted) return;
+        _scaleCtrl.forward();
       });
     });
   }
 
   @override
   void dispose() {
+    // Stop controllers before disposing so no callbacks fire afterward
+    _fadeCtrl.stop();
+    _scaleCtrl.stop();
     _fadeCtrl.dispose();
     _scaleCtrl.dispose();
     super.dispose();
   }
 
+  void _backToOnline() {
+    // Stop animations immediately before popping to prevent
+    // the '_dependents.isEmpty' assertion on navigation
+    _fadeCtrl.stop();
+    _scaleCtrl.stop();
+    Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: _loading ? _buildLoading() : _buildCompletion(context),
+      backgroundColor: AppColors.bg(context),
+      body: _loading ? _buildLoading(context) : _buildCompletion(context),
     );
   }
 
-  // ── Loading screen ──────────────────────────────────────────────
-  Widget _buildLoading() {
-    return const Center(
+  // ── Loading ─────────────────────────────────────────────────────
+  Widget _buildLoading(BuildContext context) {
+    return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
+          const SizedBox(
             width: 44,
             height: 44,
             child: CircularProgressIndicator(
-              color: AppColors.primaryPurple,
-              strokeWidth: 3,
-            ),
+                color: AppColors.primaryPurple, strokeWidth: 3),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(
             'Completing ride...',
             style: TextStyle(
               fontSize: 15,
-              color: Color(0xFF9AA3AD),
+              color: AppColors.subtext(context),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -106,7 +103,7 @@ class _RideCompletionPageState extends State<RideCompletionPage>
     );
   }
 
-  // ── Completion screen (no scroll, no overflow) ──────────────────
+  // ── Completion ──────────────────────────────────────────────────
   Widget _buildCompletion(BuildContext context) {
     final ride = widget.ride;
 
@@ -119,7 +116,7 @@ class _RideCompletionPageState extends State<RideCompletionPage>
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
 
-              // ── Top breathing room + success icon + title ─────
+              // Success icon + title
               Padding(
                 padding: const EdgeInsets.only(top: 28, bottom: 16),
                 child: Column(
@@ -133,40 +130,32 @@ class _RideCompletionPageState extends State<RideCompletionPage>
                           color: AppColors.success.withValues(alpha: 0.12),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
-                          Icons.check_rounded,
-                          color: AppColors.success,
-                          size: 34,
-                        ),
+                        child: const Icon(Icons.check_rounded,
+                            color: AppColors.success, size: 34),
                       ),
                     ),
                     const SizedBox(height: 10),
-                    const Text(
+                    Text(
                       'Ride Completed',
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF141414),
+                        color: AppColors.text(context),
                       ),
                     ),
                   ],
                 ),
               ),
 
-              // ── Ride summary card ─────────────────────────────
               _SummaryCard(ride: ride),
-
               const SizedBox(height: 10),
 
-              // ── Earnings card ─────────────────────────────────
               _EarningsCard(
                 ridePrice: ride.earningsAmount / 0.70,
                 driverEarnings: ride.earningsAmount,
               ),
-
               const SizedBox(height: 10),
 
-              // ── Rate passenger (stars only) ───────────────────
               _RatingCard(
                 selectedStars: _selectedStars,
                 onStarTap: (s) => setState(() => _selectedStars = s),
@@ -174,46 +163,35 @@ class _RideCompletionPageState extends State<RideCompletionPage>
 
               const Spacer(),
 
-              // ── Report issue ──────────────────────────────────
               Center(
                 child: TextButton.icon(
                   onPressed: () {},
-                  icon: const Icon(Icons.flag_outlined,
-                      size: 14, color: Color(0xFF9AA3AD)),
-                  label: const Text(
-                    'Report Issue',
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: Color(0xFF9AA3AD),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                  icon: Icon(Icons.flag_outlined,
+                      size: 14, color: AppColors.subtext(context)),
+                  label: Text('Report Issue',
+                      style: TextStyle(
+                          fontSize: 13,
+                          color: AppColors.subtext(context),
+                          fontWeight: FontWeight.w500)),
                 ),
               ),
-
               const SizedBox(height: 6),
 
-              // ── Back to Online ────────────────────────────────
               SizedBox(
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context)
-                        .popUntil((route) => route.isFirst);
-                  },
+                  // ← uses _backToOnline() which stops animations first
+                  onPressed: _backToOnline,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryPurple,
                     foregroundColor: Colors.white,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
+                        borderRadius: BorderRadius.circular(14)),
                   ),
-                  child: const Text(
-                    'Back to Online',
-                    style: TextStyle(
-                        fontSize: 16, fontWeight: FontWeight.w700),
-                  ),
+                  child: const Text('Back to Online',
+                      style: TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.w700)),
                 ),
               ),
             ],
@@ -231,15 +209,19 @@ class _SummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor   = isDark ? AppColors.darkSurface : Colors.white;
+    final borderColor = isDark ? AppColors.darkBorder   : const Color(0xFFE5E7EB);
+
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: borderColor),
       ),
       child: Column(
         children: [
-          // ── Passenger row ─────────────────────────────────────
+          // Passenger row
           Padding(
             padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
             child: Row(
@@ -248,18 +230,14 @@ class _SummaryCard extends StatelessWidget {
                   width: 38,
                   height: 38,
                   decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: AppColors.purpleGradient,
-                  ),
+                      shape: BoxShape.circle,
+                      gradient: AppColors.purpleGradient),
                   child: Center(
-                    child: Text(
-                      ride.passenger.avatarInitial,
-                      style: const TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
+                    child: Text(ride.passenger.avatarInitial,
+                        style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white)),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -267,30 +245,22 @@ class _SummaryCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        ride.passenger.name,
-                        style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF141414),
-                        ),
-                      ),
+                      Text(ride.passenger.name,
+                          style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.text(context))),
                       const SizedBox(height: 2),
-                      Row(
-                        children: [
-                          const Icon(Icons.star_rounded,
-                              size: 12, color: Color(0xFFFFC107)),
-                          const SizedBox(width: 3),
-                          Text(
-                            ride.passenger.rating.toStringAsFixed(1),
-                            style: const TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF9AA3AD),
-                            ),
-                          ),
-                        ],
-                      ),
+                      Row(children: [
+                        const Icon(Icons.star_rounded,
+                            size: 12, color: Color(0xFFFFC107)),
+                        const SizedBox(width: 3),
+                        Text(ride.passenger.rating.toStringAsFixed(1),
+                            style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.subtext(context))),
+                      ]),
                     ],
                   ),
                 ),
@@ -298,92 +268,69 @@ class _SummaryCard extends StatelessWidget {
             ),
           ),
 
-          const Divider(height: 1, color: Color(0xFFE5E7EB)),
+          Divider(height: 1, color: borderColor),
 
-          // ── Route: purple circles + dashed connector ──────────
+          // Route
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Icon column
                 Column(
                   children: [
-                    // Pickup — filled purple circle
                     Container(
-                      width: 11,
-                      height: 11,
+                      width: 11, height: 11,
                       decoration: const BoxDecoration(
-                        color: AppColors.primaryPurple,
-                        shape: BoxShape.circle,
-                      ),
+                          color: AppColors.primaryPurple,
+                          shape: BoxShape.circle),
                     ),
-                    // Dashed connector
                     SizedBox(
-                      width: 11,
-                      height: 26,
-                      child: CustomPaint(
-                        painter: _DashedLinePainter(),
-                      ),
+                      width: 11, height: 26,
+                      child: CustomPaint(painter: _DashedLinePainter()),
                     ),
-                    // Dropoff — empty circle with purple border
                     Container(
-                      width: 11,
-                      height: 11,
+                      width: 11, height: 11,
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: cardColor,
                         shape: BoxShape.circle,
                         border: Border.all(
-                          color: AppColors.primaryPurple,
-                          width: 2,
-                        ),
+                            color: AppColors.primaryPurple, width: 2),
                       ),
                     ),
                   ],
                 ),
-
                 const SizedBox(width: 12),
-
-                // Address column — vertically aligned with icons
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Pickup address — vertically centred on the filled circle
                       SizedBox(
                         height: 11,
                         child: Align(
                           alignment: Alignment.centerLeft,
-                          child: Text(
-                            ride.pickupAddress,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF141414),
-                              height: 1,
-                            ),
-                          ),
+                          child: Text(ride.pickupAddress,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.text(context),
+                                  height: 1)),
                         ),
                       ),
                       const SizedBox(height: 26),
-                      // Dropoff address — vertically centred on the empty circle
                       SizedBox(
                         height: 11,
                         child: Align(
                           alignment: Alignment.centerLeft,
-                          child: Text(
-                            ride.dropOffAddress,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Color(0xFF141414),
-                              height: 1,
-                            ),
-                          ),
+                          child: Text(ride.dropOffAddress,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.text(context),
+                                  height: 1)),
                         ),
                       ),
                     ],
@@ -393,27 +340,24 @@ class _SummaryCard extends StatelessWidget {
             ),
           ),
 
-          const Divider(height: 1, color: Color(0xFFE5E7EB)),
+          Divider(height: 1, color: borderColor),
 
-          // ── Duration + Distance ───────────────────────────────
+          // Duration + Distance
           IntrinsicHeight(
             child: Row(
               children: [
                 Expanded(
                   child: _MetaCell(
-                    icon: Icons.schedule_outlined,
-                    value: '${ride.etaMinutes} min',
-                    label: 'Duration',
-                  ),
+                      icon: Icons.schedule_outlined,
+                      value: '${ride.etaMinutes} min',
+                      label: 'Duration'),
                 ),
-                const VerticalDivider(
-                    width: 1, thickness: 1, color: Color(0xFFE5E7EB)),
+                VerticalDivider(width: 1, thickness: 1, color: borderColor),
                 Expanded(
                   child: _MetaCell(
-                    icon: Icons.route_outlined,
-                    value: '${ride.distanceKm.toStringAsFixed(1)} km',
-                    label: 'Distance',
-                  ),
+                      icon: Icons.route_outlined,
+                      value: '${ride.distanceKm.toStringAsFixed(1)} km',
+                      label: 'Distance'),
                 ),
               ],
             ),
@@ -424,17 +368,16 @@ class _SummaryCard extends StatelessWidget {
   }
 }
 
-// ── Dashed vertical line between route stops ──────────────────────────────────
+// ── Dashed line ───────────────────────────────────────────────────────────────
 class _DashedLinePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     const dashH = 3.0;
-    const gapH = 3.0;
+    const gapH  = 3.0;
     final paint = Paint()
       ..color = const Color(0xFFD1D5DB)
       ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke;
-
     double y = 0;
     final cx = size.width / 2;
     while (y < size.height) {
@@ -444,10 +387,10 @@ class _DashedLinePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_DashedLinePainter old) => false;
+  bool shouldRepaint(_DashedLinePainter _) => false;
 }
 
-// ── Shared meta cell (duration / distance) ───────────────────────────────────
+// ── Meta cell ─────────────────────────────────────────────────────────────────
 class _MetaCell extends StatelessWidget {
   final IconData icon;
   final String value;
@@ -464,13 +407,13 @@ class _MetaCell extends StatelessWidget {
           Icon(icon, size: 15, color: AppColors.primaryPurple),
           const SizedBox(height: 4),
           Text(value,
-              style: const TextStyle(
+              style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF141414))),
+                  color: AppColors.text(context))),
           Text(label,
-              style: const TextStyle(
-                  fontSize: 10, color: Color(0xFF9AA3AD))),
+              style: TextStyle(
+                  fontSize: 10, color: AppColors.subtext(context))),
         ],
       ),
     );
@@ -486,41 +429,40 @@ class _EarningsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark      = Theme.of(context).brightness == Brightness.dark;
+    final cardColor   = isDark ? AppColors.darkSurface : Colors.white;
+    final borderColor = isDark ? AppColors.darkBorder   : const Color(0xFFE5E7EB);
+
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: borderColor),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'EARNINGS',
-            style: TextStyle(
-              fontSize: 10,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF9AA3AD),
-              letterSpacing: 0.5,
-            ),
-          ),
+          Text('EARNINGS',
+              style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.subtext(context),
+                  letterSpacing: 0.5)),
           const SizedBox(height: 10),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('Ride price',
+              Text('Ride price',
                   style: TextStyle(
                       fontSize: 13,
-                      color: Color(0xFF141414),
+                      color: AppColors.text(context),
                       fontWeight: FontWeight.w500)),
-              Text(
-                '${ridePrice.toStringAsFixed(0)} TND',
-                style: const TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: Color(0xFF141414)),
-              ),
+              Text('${ridePrice.toStringAsFixed(0)} TND',
+                  style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.text(context))),
             ],
           ),
           const SizedBox(height: 8),
@@ -529,26 +471,24 @@ class _EarningsCard extends StatelessWidget {
             children: [
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                children: const [
+                children: [
                   Text('You earn',
                       style: TextStyle(
                           fontSize: 13,
-                          color: Color(0xFF141414),
+                          color: AppColors.text(context),
                           fontWeight: FontWeight.w500)),
-                  SizedBox(height: 1),
+                  const SizedBox(height: 1),
                   Text('After commission',
                       style: TextStyle(
-                          fontSize: 10, color: Color(0xFF9AA3AD))),
+                          fontSize: 10,
+                          color: AppColors.subtext(context))),
                 ],
               ),
-              Text(
-                '+${driverEarnings.toStringAsFixed(0)} TND',
-                style: const TextStyle(
-                  fontSize: 19,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.success,
-                ),
-              ),
+              Text('+${driverEarnings.toStringAsFixed(0)} TND',
+                  style: const TextStyle(
+                      fontSize: 19,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.success)),
             ],
           ),
         ],
@@ -557,35 +497,35 @@ class _EarningsCard extends StatelessWidget {
   }
 }
 
-// ── Rating card (stars only) ──────────────────────────────────────────────────
+// ── Rating card ───────────────────────────────────────────────────────────────
 class _RatingCard extends StatelessWidget {
   final int selectedStars;
   final ValueChanged<int> onStarTap;
-
-  const _RatingCard({
-    required this.selectedStars,
-    required this.onStarTap,
-  });
+  const _RatingCard(
+      {required this.selectedStars, required this.onStarTap});
 
   @override
   Widget build(BuildContext context) {
+    final isDark      = Theme.of(context).brightness == Brightness.dark;
+    final cardColor   = isDark ? AppColors.darkSurface : Colors.white;
+    final borderColor = isDark ? AppColors.darkBorder   : const Color(0xFFE5E7EB);
+    final inactiveStar =
+        isDark ? const Color(0xFF2A3345) : const Color(0xFFD1D5DB);
+
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: cardColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        border: Border.all(color: borderColor),
       ),
       child: Column(
         children: [
-          const Text(
-            'Rate your passenger',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFF141414),
-            ),
-          ),
+          Text('Rate your passenger',
+              style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.text(context))),
           const SizedBox(height: 14),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -596,11 +536,13 @@ class _RatingCard extends StatelessWidget {
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 6),
                   child: Icon(
-                    filled ? Icons.star_rounded : Icons.star_outline_rounded,
+                    filled
+                        ? Icons.star_rounded
+                        : Icons.star_outline_rounded,
                     size: 36,
                     color: filled
                         ? const Color(0xFFFFC107)
-                        : const Color(0xFFD1D5DB),
+                        : inactiveStar,
                   ),
                 ),
               );

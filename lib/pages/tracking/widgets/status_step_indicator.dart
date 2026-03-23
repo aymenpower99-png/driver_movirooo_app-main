@@ -58,15 +58,30 @@ class _StatusStepIndicatorState extends State<StatusStepIndicator>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final bgColor           = AppColors.surface(context);
+    final inactiveLineColor = isDark ? AppColors.darkBorder : const Color(0xFFE5E7EB);
+    final inactiveDotBorder = isDark ? AppColors.darkBorder : const Color(0xFFD1D5DB);
+    final inactiveDotFill   = AppColors.surface(context);
+
+    // ← FIX: inactive label must be readable on both themes
+    // Light: light gray. Dark: medium gray (not white, not invisible)
+    final inactiveLabelColor = isDark
+        ? const Color(0xFF4A5568)   // visible dark gray on dark bg
+        : const Color(0xFFB0B8C1);  // light gray on white bg
+
+    // Active label: purple on both modes
+    // Done label: green on both modes
+
     return Container(
-      // ── Compact: less padding, smaller overall ──────────────────
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: bgColor,
         borderRadius: BorderRadius.circular(10),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.07),
+            color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.07),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -81,36 +96,32 @@ class _StatusStepIndicatorState extends State<StatusStepIndicator>
 
             if (isDone) {
               return Expanded(
-                child: Container(
-                  height: 2,
-                  color: AppColors.success,
-                ),
+                child: Container(height: 2, color: AppColors.success),
               );
             }
-
             if (isActive) {
               return Expanded(
                 child: AnimatedBuilder(
                   animation: _fill,
-                  builder: (context, child) => Stack(
+                  builder: (_, __) => Stack(
                     children: [
-                      Container(height: 2, color: const Color(0xFFE5E7EB)),
+                      Container(height: 2, color: inactiveLineColor),
                       FractionallySizedBox(
                         widthFactor: _fill.value,
-                        child: Container(height: 2, color: AppColors.primaryPurple),
+                        child: Container(
+                            height: 2, color: AppColors.primaryPurple),
                       ),
                     ],
                   ),
                 ),
               );
             }
-
             return Expanded(
-              child: Container(height: 2, color: const Color(0xFFE5E7EB)),
+              child: Container(height: 2, color: inactiveLineColor),
             );
           }
 
-          // ── Dot ────────────────────────────────────────────────
+          // ── Dot ──────────────────────────────────────────────
           final idx       = i ~/ 2;
           final step      = _steps[idx];
           final isDone    = step.index < widget.current.index;
@@ -118,31 +129,28 @@ class _StatusStepIndicatorState extends State<StatusStepIndicator>
 
           Widget dot;
           if (isDone) {
-            // ── Green filled + check ─────────────────────────────
             dot = Container(
-              width: 14,
-              height: 14,
+              width: 14, height: 14,
               decoration: const BoxDecoration(
-                color: AppColors.success,
-                shape: BoxShape.circle,
-              ),
+                  color: AppColors.success, shape: BoxShape.circle),
               child: const Icon(Icons.check, size: 9, color: Colors.white),
             );
           } else if (isCurrent) {
-            // ── Purple pulsing ───────────────────────────────────
             dot = AnimatedBuilder(
               animation: _fill,
-              builder: (context, child) {
-                final alpha = 0.2 + 0.15 * ((_fill.value * 3.14159) % 3.14159 / 3.14159);
+              builder: (_, __) {
+                final alpha = 0.2 +
+                    0.15 *
+                        ((_fill.value * 3.14159) % 3.14159 / 3.14159);
                 return Container(
-                  width: 14,
-                  height: 14,
+                  width: 14, height: 14,
                   decoration: BoxDecoration(
                     color: AppColors.primaryPurple,
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primaryPurple.withValues(alpha: alpha),
+                        color: AppColors.primaryPurple
+                            .withValues(alpha: alpha),
                         blurRadius: 5,
                         spreadRadius: 2,
                       ),
@@ -150,28 +158,34 @@ class _StatusStepIndicatorState extends State<StatusStepIndicator>
                   ),
                   child: Center(
                     child: Container(
-                      width: 5,
-                      height: 5,
+                      width: 5, height: 5,
                       decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
+                          color: Colors.white, shape: BoxShape.circle),
                     ),
                   ),
                 );
               },
             );
           } else {
-            // ── Grey empty ───────────────────────────────────────
             dot = Container(
-              width: 14,
-              height: 14,
+              width: 14, height: 14,
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: inactiveDotFill,
                 shape: BoxShape.circle,
-                border: Border.all(color: const Color(0xFFD1D5DB), width: 1.5),
+                border:
+                    Border.all(color: inactiveDotBorder, width: 1.5),
               ),
             );
+          }
+
+          // ── Label color logic ────────────────────────────────
+          final Color labelColor;
+          if (isDone) {
+            labelColor = AppColors.success;
+          } else if (isCurrent) {
+            labelColor = AppColors.primaryPurple;
+          } else {
+            labelColor = inactiveLabelColor;
           }
 
           return Column(
@@ -183,12 +197,10 @@ class _StatusStepIndicatorState extends State<StatusStepIndicator>
                 _labels[idx],
                 style: TextStyle(
                   fontSize: 7.5,
-                  fontWeight: (isCurrent || isDone) ? FontWeight.w700 : FontWeight.w400,
-                  color: isDone
-                      ? AppColors.success
-                      : isCurrent
-                          ? AppColors.primaryPurple
-                          : const Color(0xFFB0B8C1),
+                  fontWeight: (isCurrent || isDone)
+                      ? FontWeight.w700
+                      : FontWeight.w400,
+                  color: labelColor,
                 ),
               ),
             ],
