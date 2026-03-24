@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
+import '../../../../l10n/app_localizations.dart';
 import '_ChatMessage.dart';
 import '_ChatInput.dart';
 import '_TranslationBanner.dart';
@@ -29,10 +30,8 @@ class _ChatPageState extends State<ChatPage> {
     ChatMessage(
       id: '2',
       text: "Great, thanks! I'm waiting near the main entrance.",
-      translatedText: null,
       isMe: true,
       time: '2:43 PM',
-      isArabic: false,
     ),
     ChatMessage(
       id: '3',
@@ -52,25 +51,67 @@ class _ChatPageState extends State<ChatPage> {
     ),
   ];
 
+  // ── Delete ──────────────────────────────────────────────
+  void _deleteMessage(String id) {
+    setState(() => _messages.removeWhere((m) => m.id == id));
+  }
+
+  // ── Edit ────────────────────────────────────────────────
+  void _editMessage(String id, String newText) {
+    setState(() {
+      final index = _messages.indexWhere((m) => m.id == id);
+      if (index != -1) {
+        _messages[index] = _messages[index].copyWith(
+          text: newText,
+          isEdited: true,
+        );
+      }
+    });
+  }
+
+  // ── Send text ───────────────────────────────────────────
   void _sendMessage(String text) {
     if (text.trim().isEmpty) return;
     setState(() {
-      _messages.add(ChatMessage(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
-        text: text,
-        translatedText: null,
-        isMe: true,
-        time: _formatTime(DateTime.now()),
-        isArabic: false,
-      ));
+      _messages.add(
+        ChatMessage(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          text: text,
+          isMe: true,
+          time: _formatTime(DateTime.now()),
+        ),
+      );
     });
     _input.clear();
-    Future.delayed(const Duration(milliseconds: 100), () {
-      _scroll.animateTo(
-        _scroll.position.maxScrollExtent,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
+    _scrollToBottom();
+  }
+
+  // ── Send voice ──────────────────────────────────────────
+  void _sendVoice(String audioPath) {
+    setState(() {
+      _messages.add(
+        ChatMessage(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          text: '🎤 Voice message',
+          isMe: true,
+          time: _formatTime(DateTime.now()),
+          isVoice: true,
+          audioPath: audioPath, // real file path
+        ),
       );
+    });
+    _scrollToBottom();
+  }
+
+  void _scrollToBottom() {
+    Future.delayed(const Duration(milliseconds: 100), () {
+      if (_scroll.hasClients) {
+        _scroll.animateTo(
+          _scroll.position.maxScrollExtent,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
     });
   }
 
@@ -91,50 +132,55 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context).translate;
     return Scaffold(
       backgroundColor: AppColors.bg(context),
       body: SafeArea(
         child: Column(
           children: [
-
-            // ── TopBar ─────────────────────────────────────────
             _ChatTopBar(),
-
-            // ── Translation banner ─────────────────────────────
             TranslationBanner(
               enabled: _autoTranslate,
               onToggle: (v) => setState(() => _autoTranslate = v),
             ),
-
-            // ── Date separator ─────────────────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Text(
                 'Today, 2:41 PM',
-                style: AppTextStyles.bodySmall(context).copyWith(
-                  color: AppColors.subtext(context),
-                  fontSize: 11,
-                ),
+                style: AppTextStyles.bodySmall(
+                  context,
+                ).copyWith(color: AppColors.subtext(context), fontSize: 11),
               ),
             ),
-
-            // ── Messages ───────────────────────────────────────
             Expanded(
-              child: ListView.builder(
-                controller: _scroll,
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                itemCount: _messages.length,
-                itemBuilder: (context, i) => ChatBubble(
-                  message: _messages[i],
-                  showTranslation: _autoTranslate,
-                ),
-              ),
+              child: _messages.isEmpty
+                  ? Center(
+                      child: Text(
+                        t('chat_no_messages'),
+                        style: AppTextStyles.bodySmall(
+                          context,
+                        ).copyWith(color: AppColors.subtext(context)),
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: _scroll,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      itemCount: _messages.length,
+                      itemBuilder: (context, i) {
+                        final msg = _messages[i];
+                        return ChatBubble(
+                          message: msg,
+                          showTranslation: _autoTranslate,
+                          onDelete: () => _deleteMessage(msg.id),
+                          onEdit: (newText) => _editMessage(msg.id, newText),
+                        );
+                      },
+                    ),
             ),
-
-            // ── Input ──────────────────────────────────────────
             ChatInputBar(
               controller: _input,
               onSend: _sendMessage,
+              onVoiceSend: _sendVoice, // <-- wired here
             ),
           ],
         ),
@@ -154,24 +200,32 @@ class _ChatTopBar extends StatelessWidget {
             icon: const Icon(Icons.arrow_back),
             onPressed: () => Navigator.pop(context),
           ),
-          // Avatar
           CircleAvatar(
             radius: 18,
             backgroundColor: AppColors.primaryPurple.withOpacity(0.15),
-            child: Icon(Icons.person_rounded,
-                color: AppColors.primaryPurple, size: 20),
+            child: Icon(
+              Icons.person_rounded,
+              color: AppColors.primaryPurple,
+              size: 20,
+            ),
           ),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Ahmed H.',
-                    style: AppTextStyles.bodyMedium(context)
-                        .copyWith(fontWeight: FontWeight.w700)),
-                Text('Toyota Camry b7 · 4.9 b7 b7',
-                    style: AppTextStyles.bodySmall(context)
-                        .copyWith(color: AppColors.subtext(context))),
+                Text(
+                  'Ahmed H.',
+                  style: AppTextStyles.bodyMedium(
+                    context,
+                  ).copyWith(fontWeight: FontWeight.w700),
+                ),
+                Text(
+                  'Toyota Camry · 4.9 ★',
+                  style: AppTextStyles.bodySmall(
+                    context,
+                  ).copyWith(color: AppColors.subtext(context)),
+                ),
               ],
             ),
           ),

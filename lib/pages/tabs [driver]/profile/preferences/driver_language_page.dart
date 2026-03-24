@@ -79,49 +79,29 @@ class _DriverLanguagePageState extends State<DriverLanguagePage> {
               ),
               const SizedBox(height: 12),
 
-              // ── Language options ─────────────────────────────────
-              Container(
-                decoration: BoxDecoration(
-                  color: AppColors.surface(context),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.border(context)),
-                ),
-                child: Column(
-                  children: [
-                    _LanguageTile(
-                      flagAsset: 'images/flags/usa.png',
-                      label: t.translate('english'),
-                      subtitle: t.translate('englishUS'),
-                      languageCode: 'en',
-                      selected: _selectedLanguage,
-                      onTap: () => _selectLanguage('en'),
-                    ),
-                    Divider(
-                        height: 1,
-                        indent: 54,
-                        color: AppColors.border(context)),
-                    _LanguageTile(
-                      flagAsset: 'images/flags/france.png',
-                      label: t.translate('french'),
-                      subtitle: 'Français',
-                      languageCode: 'fr',
-                      selected: _selectedLanguage,
-                      onTap: () => _selectLanguage('fr'),
-                    ),
-                    Divider(
-                        height: 1,
-                        indent: 54,
-                        color: AppColors.border(context)),
-                    _LanguageTile(
-                      flagAsset: 'images/flags/saudi.png',
-                      label: t.translate('arabic'),
-                      subtitle: 'العربية',
-                      languageCode: 'ar',
-                      selected: _selectedLanguage,
-                      onTap: () => _selectLanguage('ar'),
-                    ),
-                  ],
-                ),
+              // ── Language options (separate cards) ────────────────
+              _LanguageTile(
+                label: t.translate('english'),
+                subtitle: t.translate('englishUS'),
+                languageCode: 'en',
+                selected: _selectedLanguage,
+                onTap: () => _selectLanguage('en'),
+              ),
+              const SizedBox(height: 10),
+              _LanguageTile(
+                label: t.translate('french'),
+                subtitle: 'Français',
+                languageCode: 'fr',
+                selected: _selectedLanguage,
+                onTap: () => _selectLanguage('fr'),
+              ),
+              const SizedBox(height: 10),
+              _LanguageTile(
+                label: t.translate('arabic'),
+                subtitle: 'العربية',
+                languageCode: 'ar',
+                selected: _selectedLanguage,
+                onTap: () => _selectLanguage('ar'),
               ),
             ],
           ),
@@ -132,7 +112,6 @@ class _DriverLanguagePageState extends State<DriverLanguagePage> {
 }
 
 class _LanguageTile extends StatelessWidget {
-  final String flagAsset;
   final String label;
   final String subtitle;
   final String languageCode;
@@ -140,7 +119,6 @@ class _LanguageTile extends StatelessWidget {
   final VoidCallback onTap;
 
   const _LanguageTile({
-    required this.flagAsset,
     required this.label,
     required this.subtitle,
     required this.languageCode,
@@ -152,21 +130,23 @@ class _LanguageTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final radioBorderColor =
-        _isSelected ? AppColors.primaryPurple : AppColors.subtext(context);
-
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: Padding(
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface(context),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: _isSelected
+                ? AppColors.primaryPurple
+                : AppColors.border(context),
+            width: _isSelected ? 1.5 : 1,
+          ),
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
         child: Row(
           children: [
-            ClipOval(
-              child: Image.asset(flagAsset,
-                  width: 34, height: 34, fit: BoxFit.cover),
-            ),
-            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -177,21 +157,12 @@ class _LanguageTile extends StatelessWidget {
                 ],
               ),
             ),
-            Container(
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: radioBorderColor, width: 2),
-                color: _isSelected
-                    ? AppColors.primaryPurple
-                    : Colors.transparent,
+            if (_isSelected)
+              Icon(
+                Icons.check_rounded,
+                color: AppColors.primaryPurple,
+                size: 22,
               ),
-              child: _isSelected
-                  ? const Icon(Icons.check_rounded,
-                      color: Colors.white, size: 13)
-                  : null,
-            ),
           ],
         ),
       ),

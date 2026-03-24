@@ -4,6 +4,7 @@
 // Triggered when driver taps "Go to Pickup" from the Assigned state.
 
 import 'package:flutter/material.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../theme/app_colors.dart';
 
 class ConfirmActionModal extends StatelessWidget {
@@ -139,7 +140,7 @@ class ConfirmActionModal extends StatelessWidget {
             child: TextButton(
               onPressed: onCancel,
               child: Text(
-                'Cancel',
+                AppLocalizations.of(context).translate('cancel'),
                 style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w600,

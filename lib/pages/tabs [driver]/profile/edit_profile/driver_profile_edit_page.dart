@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import '../../../../../l10n/app_localizations.dart';
 import '../../../../../theme/app_colors.dart';
 import '../../../../../theme/app_text_styles.dart';
 
@@ -15,12 +16,12 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
   final _formKey = GlobalKey<FormState>();
 
   final _firstNameController = TextEditingController(text: 'Aymen');
-  final _lastNameController  = TextEditingController(text: 'Naser');
-  final _emailController     = TextEditingController(text: 'aymen.naser@email.com');
-  final _phoneController     = TextEditingController(text: '94338510');
+  final _lastNameController = TextEditingController(text: 'Naser');
+  final _emailController = TextEditingController(text: 'aymen.naser@email.com');
+  final _phoneController = TextEditingController(text: '94338510');
 
   File? _avatarFile;
-  bool  _isSaving = false;
+  bool _isSaving = false;
 
   @override
   void dispose() {
@@ -46,9 +47,10 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
     await Future.delayed(const Duration(milliseconds: 900));
     setState(() => _isSaving = false);
     if (!mounted) return;
+    final msg = AppLocalizations.of(context).translate('profile_updated');
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('Profile updated successfully'),
+        content: Text(msg),
         backgroundColor: AppColors.success,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -60,18 +62,24 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context).translate;
     return Scaffold(
       backgroundColor: AppColors.bg(context),
       appBar: AppBar(
         backgroundColor: AppColors.bg(context),
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded,
-              color: AppColors.text(context), size: 20),
+          icon: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.text(context),
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('Personal information',
-            style: AppTextStyles.pageTitle(context)),
+        title: Text(
+          t('personal_information'),
+          style: AppTextStyles.pageTitle(context),
+        ),
         centerTitle: true,
       ),
       body: Form(
@@ -102,8 +110,11 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
                       ),
                       child: _avatarFile == null
                           ? const Center(
-                              child: Icon(Icons.person_rounded,
-                                  color: Colors.white, size: 46),
+                              child: Icon(
+                                Icons.person_rounded,
+                                color: Colors.white,
+                                size: 46,
+                              ),
                             )
                           : null,
                     ),
@@ -117,10 +128,15 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
                           color: AppColors.primaryPurple,
                           shape: BoxShape.circle,
                           border: Border.all(
-                              color: AppColors.bg(context), width: 2),
+                            color: AppColors.bg(context),
+                            width: 2,
+                          ),
                         ),
-                        child: const Icon(Icons.camera_alt_rounded,
-                            color: Colors.white, size: 14),
+                        child: const Icon(
+                          Icons.camera_alt_rounded,
+                          color: Colors.white,
+                          size: 14,
+                        ),
                       ),
                     ),
                   ],
@@ -132,7 +148,7 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
               child: GestureDetector(
                 onTap: _pickPhoto,
                 child: Text(
-                  'Update photo',
+                  t('update_photo'),
                   style: TextStyle(
                     fontFamily: 'Inter',
                     fontSize: 13,
@@ -148,30 +164,33 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
             // ── Editable Tiles ───────────────────────────────────
             _EditableTile(
               icon: Icons.person_outline_rounded,
-              label: 'Name',
+              label: t('field_first_name'),
               controller: _firstNameController,
               keyboardType: TextInputType.name,
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Required' : null,
+              validator: (v) => v == null || v.trim().isEmpty
+                  ? t('validation_required')
+                  : null,
             ),
             const SizedBox(height: 10),
             _EditableTile(
               icon: Icons.person_outline_rounded,
-              label: 'Last name',
+              label: t('field_last_name'),
               controller: _lastNameController,
               keyboardType: TextInputType.name,
-              validator: (v) =>
-                  v == null || v.trim().isEmpty ? 'Required' : null,
+              validator: (v) => v == null || v.trim().isEmpty
+                  ? t('validation_required')
+                  : null,
             ),
             const SizedBox(height: 10),
             _EditableTile(
               icon: Icons.email_outlined,
-              label: 'Email address',
+              label: t('field_email_address'),
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
               validator: (v) {
-                if (v == null || v.trim().isEmpty) return 'Required';
-                if (!v.contains('@')) return 'Enter a valid email';
+                if (v == null || v.trim().isEmpty)
+                  return t('validation_required');
+                if (!v.contains('@')) return t('validation_invalid_email');
                 return null;
               },
             ),
@@ -188,10 +207,12 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
                 onPressed: _isSaving ? null : _saveChanges,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryPurple,
-                  disabledBackgroundColor:
-                      AppColors.primaryPurple.withOpacity(0.5),
+                  disabledBackgroundColor: AppColors.primaryPurple.withOpacity(
+                    0.5,
+                  ),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16)),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
                   elevation: 0,
                 ),
                 child: _isSaving
@@ -199,10 +220,14 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
                         width: 22,
                         height: 22,
                         child: CircularProgressIndicator(
-                            color: Colors.white, strokeWidth: 2.5),
+                          color: Colors.white,
+                          strokeWidth: 2.5,
+                        ),
                       )
-                    : const Text('Save Changes',
-                        style: AppTextStyles.buttonPrimary),
+                    : Text(
+                        t('save_changes'),
+                        style: AppTextStyles.buttonPrimary,
+                      ),
               ),
             ),
 
@@ -289,8 +314,11 @@ class _PhoneTile extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(Icons.phone_outlined,
-              color: AppColors.subtext(context), size: 22),
+          Icon(
+            Icons.phone_outlined,
+            color: AppColors.subtext(context),
+            size: 22,
+          ),
           const SizedBox(width: 14),
           Expanded(
             child: TextFormField(
@@ -300,7 +328,9 @@ class _PhoneTile extends StatelessWidget {
               validator: (v) =>
                   v == null || v.trim().isEmpty ? 'Required' : null,
               decoration: InputDecoration(
-                labelText: 'Phone number',
+                labelText: AppLocalizations.of(
+                  context,
+                ).translate('field_phone_number'),
                 labelStyle: AppTextStyles.settingsItemValue(context),
                 prefix: Text(
                   '+216 ',

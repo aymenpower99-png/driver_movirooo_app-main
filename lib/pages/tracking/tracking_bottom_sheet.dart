@@ -1,6 +1,7 @@
 // lib/pages/tabs/[driver]/Rides/tracking/tracking_bottom_sheet.dart
 
 import 'package:flutter/material.dart';
+import 'package:moviroo_driver_app/l10n/app_localizations.dart';
 import 'package:moviroo_driver_app/theme/app_colors.dart';
 import 'package:moviroo_driver_app/pages/tracking/ride_model.dart';
 import 'package:moviroo_driver_app/pages/tracking/widgets/passenger_info_card.dart';
@@ -26,13 +27,13 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
   bool _isCollapsed = false;
 
   void _handlePrimaryTap() {
+    final t = AppLocalizations.of(context).translate;
     if (_status == RideStatus.assigned) {
       ConfirmActionModal.show(
         context: context,
-        title: 'Are you sure?',
-        description:
-            'You are about to start navigating to the passenger pickup.',
-        confirmLabel: 'Confirm — Go to Pickup',
+        title: t('tracking_confirm_title'),
+        description: t('tracking_confirm_description'),
+        confirmLabel: t('tracking_confirm_go_pickup'),
         onConfirm: _advance,
       );
     } else if (_status == RideStatus.startRide) {
@@ -51,14 +52,14 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final ride         = widget.ride;
+    final ride = widget.ride;
     final bottomPadding = MediaQuery.of(context).padding.bottom;
-    final isDark       = Theme.of(context).brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final sheetColor  = isDark ? AppColors.darkSurface : Colors.white;
-    final handleColor = isDark ? AppColors.darkBorder   : const Color(0xFFE5E7EB);
+    final sheetColor = isDark ? AppColors.darkSurface : Colors.white;
+    final handleColor = isDark ? AppColors.darkBorder : const Color(0xFFE5E7EB);
 
-    const double expandedFraction  = 0.52;
+    const double expandedFraction = 0.52;
     const double collapsedFraction = 0.13;
 
     return NotificationListener<DraggableScrollableNotification>(
@@ -77,12 +78,12 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
           return DecoratedBox(
             decoration: BoxDecoration(
               color: sheetColor,
-              borderRadius:
-                  const BorderRadius.vertical(top: Radius.circular(28)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(28),
+              ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black
-                      .withValues(alpha: isDark ? 0.4 : 0.08),
+                  color: Colors.black.withValues(alpha: isDark ? 0.4 : 0.08),
                   blurRadius: 20,
                   offset: const Offset(0, -4),
                 ),
@@ -125,7 +126,6 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
                         showActions: _status != RideStatus.startRide,
                         onCall: () {},
                         onMessage: () {},
-                        onReportIssue: () => _showReportDialog(context),
                         onCancelRide: () => _showCancelDialog(context),
                       ),
                     ],
@@ -140,7 +140,11 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
                       alignment: Alignment.bottomCenter,
                       child: Padding(
                         padding: EdgeInsets.fromLTRB(
-                            16, 14, 16, bottomPadding + 16),
+                          16,
+                          14,
+                          16,
+                          bottomPadding + 16,
+                        ),
                         child: _status.isTerminal
                             ? const _CompletedBanner()
                             : _PrimaryButton(
@@ -201,11 +205,13 @@ class _PrimaryButton extends StatelessWidget {
             foregroundColor: Colors.white,
             elevation: 0,
             shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14)),
+              borderRadius: BorderRadius.circular(14),
+            ),
           ),
-          child: Text(label,
-              style: const TextStyle(
-                  fontSize: 16, fontWeight: FontWeight.w700)),
+          child: Text(
+            label,
+            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+          ),
         ),
       ),
     );
@@ -225,17 +231,23 @@ class _CompletedBanner extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         border: Border.all(color: AppColors.success.withValues(alpha: 0.3)),
       ),
-      child: const Row(
+      child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.check_circle_rounded,
-              color: AppColors.success, size: 24),
-          SizedBox(width: 10),
-          Text('Ride Completed!',
-              style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.success)),
+          const Icon(
+            Icons.check_circle_rounded,
+            color: AppColors.success,
+            size: 24,
+          ),
+          const SizedBox(width: 10),
+          Text(
+            AppLocalizations.of(context).translate('ride_completed'),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: AppColors.success,
+            ),
+          ),
         ],
       ),
     );
@@ -246,25 +258,30 @@ class _CompletedBanner extends StatelessWidget {
 class _ReportIssueSheet extends StatelessWidget {
   const _ReportIssueSheet();
 
-  static const _issues = [
-    'Passenger no-show',
-    'Passenger was rude',
-    'Wrong address provided',
-    'Safety concern',
-    'App issue',
-    'Other',
-  ];
+  List<String> _issues(BuildContext context) {
+    final t = AppLocalizations.of(context).translate;
+    return [
+      t('issue_no_show'),
+      t('issue_bad_behavior'),
+      t('issue_wrong_location'),
+      t('issue_safety'),
+      t('issue_app'),
+      t('issue_other'),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {
-    final isDark  = Theme.of(context).brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? AppColors.darkSurface : Colors.white;
 
     return Container(
       margin: const EdgeInsets.all(12),
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
       decoration: BoxDecoration(
-          color: bgColor, borderRadius: BorderRadius.circular(24)),
+        color: bgColor,
+        borderRadius: BorderRadius.circular(24),
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -272,35 +289,48 @@ class _ReportIssueSheet extends StatelessWidget {
           Center(
             child: Container(
               margin: const EdgeInsets.symmetric(vertical: 10),
-              width: 40, height: 4,
+              width: 40,
+              height: 4,
               decoration: BoxDecoration(
                 color: isDark ? AppColors.darkBorder : const Color(0xFFE5E7EB),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
           ),
-          Text('Report an Issue',
-              style: TextStyle(
-                  fontSize: 17,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.text(context))),
+          Text(
+            AppLocalizations.of(context).translate('tracking_report_title'),
+            style: TextStyle(
+              fontSize: 17,
+              fontWeight: FontWeight.w700,
+              color: AppColors.text(context),
+            ),
+          ),
           const SizedBox(height: 4),
-          Text('What went wrong?',
-              style: TextStyle(
-                  fontSize: 13, color: AppColors.subtext(context))),
+          Text(
+            AppLocalizations.of(context).translate('tracking_report_subtitle'),
+            style: TextStyle(fontSize: 13, color: AppColors.subtext(context)),
+          ),
           const SizedBox(height: 16),
-          ..._issues.map((issue) => ListTile(
-                dense: true,
-                contentPadding: EdgeInsets.zero,
-                leading: Icon(Icons.radio_button_unchecked,
-                    size: 18, color: AppColors.subtext(context)),
-                title: Text(issue,
-                    style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: AppColors.text(context))),
-                onTap: () => Navigator.pop(context),
-              )),
+          ..._issues(context).map(
+            (issue) => ListTile(
+              dense: true,
+              contentPadding: EdgeInsets.zero,
+              leading: Icon(
+                Icons.radio_button_unchecked,
+                size: 18,
+                color: AppColors.subtext(context),
+              ),
+              title: Text(
+                issue,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.text(context),
+                ),
+              ),
+              onTap: () => Navigator.pop(context),
+            ),
+          ),
         ],
       ),
     );
@@ -314,21 +344,24 @@ class _CancelRideSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDark  = Theme.of(context).brightness == Brightness.dark;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final bgColor = isDark ? AppColors.darkSurface : Colors.white;
 
     return Container(
       margin: const EdgeInsets.all(12),
       padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
       decoration: BoxDecoration(
-          color: bgColor, borderRadius: BorderRadius.circular(24)),
+        color: bgColor,
+        borderRadius: BorderRadius.circular(24),
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Center(
             child: Container(
               margin: const EdgeInsets.symmetric(vertical: 10),
-              width: 40, height: 4,
+              width: 40,
+              height: 4,
               decoration: BoxDecoration(
                 color: isDark ? AppColors.darkBorder : const Color(0xFFE5E7EB),
                 borderRadius: BorderRadius.circular(2),
@@ -343,27 +376,37 @@ class _CancelRideSheet extends StatelessWidget {
                   : const Color(0xFFFFEBEA),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.cancel_outlined,
-                color: AppColors.error, size: 28),
+            child: const Icon(
+              Icons.cancel_outlined,
+              color: AppColors.error,
+              size: 28,
+            ),
           ),
           const SizedBox(height: 14),
-          Text('Cancel Ride?',
-              style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.text(context))),
+          Text(
+            AppLocalizations.of(context).translate('tracking_cancel_title'),
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: AppColors.text(context),
+            ),
+          ),
           const SizedBox(height: 8),
           Text(
-            'Are you sure you want to cancel this ride? This may affect your rating.',
+            AppLocalizations.of(
+              context,
+            ).translate('tracking_cancel_description'),
             textAlign: TextAlign.center,
             style: TextStyle(
-                fontSize: 13,
-                color: AppColors.subtext(context),
-                height: 1.5),
+              fontSize: 13,
+              color: AppColors.subtext(context),
+              height: 1.5,
+            ),
           ),
           const SizedBox(height: 24),
           SizedBox(
-            width: double.infinity, height: 50,
+            width: double.infinity,
+            height: 50,
             child: ElevatedButton(
               onPressed: onConfirm,
               style: ElevatedButton.styleFrom(
@@ -371,23 +414,34 @@ class _CancelRideSheet extends StatelessWidget {
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12)),
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
-              child: const Text('Yes, Cancel Ride',
-                  style: TextStyle(
-                      fontSize: 15, fontWeight: FontWeight.w700)),
+              child: Text(
+                AppLocalizations.of(
+                  context,
+                ).translate('tracking_cancel_confirm'),
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
             ),
           ),
           const SizedBox(height: 10),
           SizedBox(
-            width: double.infinity, height: 46,
+            width: double.infinity,
+            height: 46,
             child: TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Keep Ride',
-                  style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.subtext(context))),
+              child: Text(
+                AppLocalizations.of(context).translate('tracking_keep_ride'),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.subtext(context),
+                ),
+              ),
             ),
           ),
         ],

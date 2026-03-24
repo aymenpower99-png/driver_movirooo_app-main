@@ -1,6 +1,7 @@
 // lib/pages/tracking/widgets/status_step_indicator.dart
 
 import 'package:flutter/material.dart';
+import 'package:moviroo_driver_app/l10n/app_localizations.dart';
 import 'package:moviroo_driver_app/theme/app_colors.dart';
 import 'package:moviroo_driver_app/pages/tracking/ride_model.dart';
 
@@ -32,6 +33,17 @@ class _StatusStepIndicatorState extends State<StatusStepIndicator>
     'Complete',
   ];
 
+  List<String> _localizedLabels(BuildContext context) {
+    final t = AppLocalizations.of(context).translate;
+    return [
+      t('tracking_step_assigned'),
+      t('tracking_step_on_way'),
+      t('tracking_step_arrived'),
+      t('tracking_step_start_ride'),
+      t('tracking_step_complete'),
+    ];
+  }
+
   @override
   void initState() {
     super.initState();
@@ -60,19 +72,17 @@ class _StatusStepIndicatorState extends State<StatusStepIndicator>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    final bgColor           = AppColors.surface(context);
-    final inactiveLineColor = isDark ? AppColors.darkBorder : const Color(0xFFE5E7EB);
-    final inactiveDotBorder = isDark ? AppColors.darkBorder : const Color(0xFFD1D5DB);
-    final inactiveDotFill   = AppColors.surface(context);
+    final bgColor = AppColors.surface(context);
+    final inactiveLineColor = isDark
+        ? AppColors.darkBorder
+        : const Color(0xFFE5E7EB);
+    final inactiveDotBorder = isDark
+        ? AppColors.darkBorder
+        : const Color(0xFFD1D5DB);
+    final inactiveDotFill = AppColors.surface(context);
 
-    // ← FIX: inactive label must be readable on both themes
-    // Light: light gray. Dark: medium gray (not white, not invisible)
-    final inactiveLabelColor = isDark
-        ? const Color(0xFF4A5568)   // visible dark gray on dark bg
-        : const Color(0xFFB0B8C1);  // light gray on white bg
-
-    // Active label: purple on both modes
-    // Done label: green on both modes
+    // Inactive label: white in dark mode, light gray in light mode
+    final inactiveLabelColor = isDark ? Colors.white : const Color(0xFFB0B8C1);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
@@ -90,8 +100,8 @@ class _StatusStepIndicatorState extends State<StatusStepIndicator>
       child: Row(
         children: List.generate(_steps.length * 2 - 1, (i) {
           if (i.isOdd) {
-            final leftIdx  = i ~/ 2;
-            final isDone   = _steps[leftIdx].index < widget.current.index;
+            final leftIdx = i ~/ 2;
+            final isDone = _steps[leftIdx].index < widget.current.index;
             final isActive = _steps[leftIdx] == widget.current;
 
             if (isDone) {
@@ -109,7 +119,9 @@ class _StatusStepIndicatorState extends State<StatusStepIndicator>
                       FractionallySizedBox(
                         widthFactor: _fill.value,
                         child: Container(
-                            height: 2, color: AppColors.primaryPurple),
+                          height: 2,
+                          color: AppColors.primaryPurple,
+                        ),
                       ),
                     ],
                   ),
@@ -122,35 +134,37 @@ class _StatusStepIndicatorState extends State<StatusStepIndicator>
           }
 
           // ── Dot ──────────────────────────────────────────────
-          final idx       = i ~/ 2;
-          final step      = _steps[idx];
-          final isDone    = step.index < widget.current.index;
+          final idx = i ~/ 2;
+          final step = _steps[idx];
+          final isDone = step.index < widget.current.index;
           final isCurrent = step == widget.current;
 
           Widget dot;
           if (isDone) {
             dot = Container(
-              width: 14, height: 14,
+              width: 14,
+              height: 14,
               decoration: const BoxDecoration(
-                  color: AppColors.success, shape: BoxShape.circle),
+                color: AppColors.success,
+                shape: BoxShape.circle,
+              ),
               child: const Icon(Icons.check, size: 9, color: Colors.white),
             );
           } else if (isCurrent) {
             dot = AnimatedBuilder(
               animation: _fill,
               builder: (_, __) {
-                final alpha = 0.2 +
-                    0.15 *
-                        ((_fill.value * 3.14159) % 3.14159 / 3.14159);
+                final alpha =
+                    0.2 + 0.15 * ((_fill.value * 3.14159) % 3.14159 / 3.14159);
                 return Container(
-                  width: 14, height: 14,
+                  width: 14,
+                  height: 14,
                   decoration: BoxDecoration(
                     color: AppColors.primaryPurple,
                     shape: BoxShape.circle,
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primaryPurple
-                            .withValues(alpha: alpha),
+                        color: AppColors.primaryPurple.withValues(alpha: alpha),
                         blurRadius: 5,
                         spreadRadius: 2,
                       ),
@@ -158,9 +172,12 @@ class _StatusStepIndicatorState extends State<StatusStepIndicator>
                   ),
                   child: Center(
                     child: Container(
-                      width: 5, height: 5,
+                      width: 5,
+                      height: 5,
                       decoration: const BoxDecoration(
-                          color: Colors.white, shape: BoxShape.circle),
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                      ),
                     ),
                   ),
                 );
@@ -168,12 +185,12 @@ class _StatusStepIndicatorState extends State<StatusStepIndicator>
             );
           } else {
             dot = Container(
-              width: 14, height: 14,
+              width: 14,
+              height: 14,
               decoration: BoxDecoration(
                 color: inactiveDotFill,
                 shape: BoxShape.circle,
-                border:
-                    Border.all(color: inactiveDotBorder, width: 1.5),
+                border: Border.all(color: inactiveDotBorder, width: 1.5),
               ),
             );
           }
@@ -194,7 +211,7 @@ class _StatusStepIndicatorState extends State<StatusStepIndicator>
               SizedBox(width: 14, height: 14, child: dot),
               const SizedBox(height: 3),
               Text(
-                _labels[idx],
+                _localizedLabels(context)[idx],
                 style: TextStyle(
                   fontSize: 7.5,
                   fontWeight: (isCurrent || isDone)

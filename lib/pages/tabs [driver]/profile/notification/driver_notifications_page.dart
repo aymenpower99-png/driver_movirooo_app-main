@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../../l10n/app_localizations.dart';
 import '../../../../../theme/app_colors.dart';
 import '../../../../../theme/app_text_styles.dart';
 
@@ -11,86 +12,56 @@ class DriverNotificationsPage extends StatefulWidget {
 }
 
 class _DriverNotificationsPageState extends State<DriverNotificationsPage> {
-  bool _newRideRequests    = true;
-  bool _rideReminders      = true;
-  bool _pushNotifications  = true;
+  bool _pushNotifications = true;
   bool _emailNotifications = false;
-  bool _smsNotifications   = true;
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context).translate;
     return Scaffold(
       backgroundColor: AppColors.bg(context),
       appBar: AppBar(
         backgroundColor: AppColors.bg(context),
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded,
-              color: AppColors.text(context), size: 20),
+          icon: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.text(context),
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('Notifications', style: AppTextStyles.pageTitle(context)),
+        title: Text(
+          t('notifications'),
+          style: AppTextStyles.pageTitle(context),
+        ),
         centerTitle: true,
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          // ── RIDE ALERTS ──────────────────────────────────────────
-          _SectionHeader(label: 'RIDE ALERTS'),
-          const SizedBox(height: 10),
-          _NotificationCard(
-            children: [
-              _ToggleRow(
-                icon: Icons.local_taxi_rounded,
-                label: 'New Ride Requests',
-                subtitle: 'Get notified when a ride is available near you',
-                value: _newRideRequests,
-                onChanged: (v) => setState(() => _newRideRequests = v),
-              ),
-              _Divider(),
-              _ToggleRow(
-                icon: Icons.schedule_rounded,
-                label: 'Ride Reminders',
-                subtitle: 'Reminders for upcoming scheduled rides',
-                value: _rideReminders,
-                onChanged: (v) => setState(() => _rideReminders = v),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 24),
-
           // ── CHANNELS ─────────────────────────────────────────────
-          _SectionHeader(label: 'NOTIFICATION CHANNELS'),
+          _SectionHeader(label: t('notification_channels')),
           const SizedBox(height: 10),
           _NotificationCard(
             children: [
               _ToggleRow(
                 icon: Icons.notifications_active_outlined,
-                label: 'Push Notifications',
-                subtitle: 'On-screen alerts on your device',
+                label: t('push_notifications'),
+                subtitle: t('push_notifications_subtitle'),
                 value: _pushNotifications,
                 onChanged: (v) => setState(() => _pushNotifications = v),
               ),
               _Divider(),
               _ToggleRow(
                 icon: Icons.email_outlined,
-                label: 'Email Notifications',
-                subtitle: 'Receive updates to your email',
+                label: t('email_notifications'),
+                subtitle: t('email_notifications_subtitle'),
                 value: _emailNotifications,
                 onChanged: (v) => setState(() => _emailNotifications = v),
               ),
-              _Divider(),
-              _ToggleRow(
-                icon: Icons.sms_outlined,
-                label: 'SMS Notifications',
-                subtitle: 'Receive text messages on your phone',
-                value: _smsNotifications,
-                onChanged: (v) => setState(() => _smsNotifications = v),
-              ),
             ],
           ),
-
           const SizedBox(height: 32),
         ],
       ),

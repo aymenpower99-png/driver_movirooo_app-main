@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
+import '../../../../l10n/app_localizations.dart';
+import 'package:moviroo_driver_app/pages/contact_support/contact_support_page.dart';
+import 'package:moviroo_driver_app/pages/help_center/help_center_page.dart';
 
 class DriverSettingsPage extends StatefulWidget {
   const DriverSettingsPage({super.key});
@@ -14,6 +17,7 @@ class _DriverSettingsPageState extends State<DriverSettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context).translate;
     return Scaffold(
       backgroundColor: AppColors.bg(context),
       appBar: AppBar(
@@ -35,12 +39,18 @@ class _DriverSettingsPageState extends State<DriverSettingsPage> {
                   ),
                 ],
               ),
-              child: Icon(Icons.arrow_back_ios_new_rounded,
-                  color: AppColors.text(context), size: 18),
+              child: Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: AppColors.text(context),
+                size: 18,
+              ),
             ),
           ),
         ),
-        title: Text('Settings', style: AppTextStyles.pageTitle(context)),
+        title: Text(
+          t('settings_title'),
+          style: AppTextStyles.pageTitle(context),
+        ),
         centerTitle: true,
       ),
       body: Column(
@@ -49,56 +59,65 @@ class _DriverSettingsPageState extends State<DriverSettingsPage> {
           const SizedBox(height: 16),
 
           // ── PRIVACY & SECURITY ───────────────────────────────────
-          _SectionHeader(label: 'PRIVACY & SECURITY'),
+          _SectionHeader(label: t('settings_privacy_section')),
 
           _ToggleRow(
-            label: 'Always Share Location',
+            label: t('settings_location_always'),
             value: _locationAlways,
             onChanged: (v) => setState(() => _locationAlways = v),
           ),
           _RowDivider(),
           _TapRow(
-            label: 'Change Password',
+            label: t('change_password'),
             onTap: () => Navigator.pushNamed(context, '/driver/password-reset'),
           ),
 
           const SizedBox(height: 28),
 
-          // ── SUPPORT ──────────────────────────────────────────────
-          _SectionHeader(label: 'SUPPORT'),
+          // ── SUPPORT ──────────────────────────────────────────────────────
+          _SectionHeader(label: t('settings_support_section')),
 
           _TapRow(
-            label: 'Help Center',
-            onTap: () => Navigator.pushNamed(context, '/help-center'),
+            label: t('settings_help_center'),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const HelpCenterPage()),
+            ),
           ),
           _RowDivider(),
+
+          // ✅ Direct push to ContactSupportPage
           _TapRow(
-            label: 'Contact Support',
-            onTap: () => Navigator.pushNamed(context, '/contact-support'),
+            label: t('settings_contact_support'),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ContactSupportPage()),
+            ),
           ),
+
           _RowDivider(),
           _TapRow(
-            label: 'Rate the App',
+            label: t('settings_rate_app'),
             onTap: () => Navigator.pushNamed(context, '/rate-app'),
           ),
 
           const SizedBox(height: 28),
 
           // ── ABOUT ────────────────────────────────────────────────
-          _SectionHeader(label: 'ABOUT'),
+          _SectionHeader(label: t('settings_about_section')),
 
           _TapRow(
-            label: 'Terms of Service',
+            label: t('settings_terms'),
             onTap: () => Navigator.pushNamed(context, '/terms-of-service'),
           ),
           _RowDivider(),
           _TapRow(
-            label: 'Privacy Policy',
+            label: t('settings_privacy_policy'),
             onTap: () => Navigator.pushNamed(context, '/privacy-policy'),
           ),
           _RowDivider(),
           _TapRow(
-            label: 'App Version',
+            label: t('settings_app_version'),
             onTap: () => Navigator.pushNamed(context, '/app-version'),
           ),
         ],
@@ -115,9 +134,9 @@ class _SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.only(left: 16, bottom: 4),
-        child: Text(label, style: AppTextStyles.sectionLabel(context)),
-      );
+    padding: const EdgeInsets.only(left: 16, bottom: 4),
+    child: Text(label, style: AppTextStyles.sectionLabel(context)),
+  );
 }
 
 // ── Thin divider ──────────────────────────────────────────────────────────────
@@ -125,12 +144,12 @@ class _SectionHeader extends StatelessWidget {
 class _RowDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Divider(
-        height: 1,
-        thickness: 0.8,
-        indent: 16,
-        endIndent: 16,
-        color: AppColors.border(context),
-      );
+    height: 1,
+    thickness: 0.8,
+    indent: 16,
+    endIndent: 16,
+    color: AppColors.border(context),
+  );
 }
 
 // ── Tap Row ───────────────────────────────────────────────────────────────────
@@ -152,8 +171,11 @@ class _TapRow extends StatelessWidget {
             Expanded(
               child: Text(label, style: AppTextStyles.settingsItem(context)),
             ),
-            Icon(Icons.arrow_forward_ios_rounded,
-                size: 15, color: AppColors.subtext(context)),
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              size: 15,
+              color: AppColors.subtext(context),
+            ),
           ],
         ),
       ),

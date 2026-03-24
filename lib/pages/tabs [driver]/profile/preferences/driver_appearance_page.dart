@@ -69,43 +69,26 @@ class _DriverAppearancePageState extends State<DriverAppearancePage> {
               Text(t('theme'), style: AppTextStyles.sectionLabel(context)),
               const SizedBox(height: 12),
 
-              // ── Option tiles ─────────────────────────────────────
-              Container(
-                decoration: BoxDecoration(
-                  color: AppColors.surface(context),
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.border(context)),
-                ),
-                child: Column(
-                  children: [
-                    _ThemeTile(
-                      icon: Icons.dark_mode_rounded,
-                      label: t('dark'),
-                      subtitle: t('dark_subtitle'),
-                      mode: ThemeMode.dark,
-                      selected: _selected,
-                      onTap: () => _select(ThemeMode.dark),
-                    ),
-                    Divider(height: 1, indent: 54, color: AppColors.border(context)),
-                    _ThemeTile(
-                      icon: Icons.light_mode_rounded,
-                      label: t('light'),
-                      subtitle: t('light_subtitle'),
-                      mode: ThemeMode.light,
-                      selected: _selected,
-                      onTap: () => _select(ThemeMode.light),
-                    ),
-                    Divider(height: 1, indent: 54, color: AppColors.border(context)),
-                    _ThemeTile(
-                      icon: Icons.settings_suggest_rounded,
-                      label: t('system'),
-                      subtitle: t('system_subtitle'),
-                      mode: ThemeMode.system,
-                      selected: _selected,
-                      onTap: () => _select(ThemeMode.system),
-                    ),
-                  ],
-                ),
+              // ── Option tiles (separate cards) ────────────────────
+              _ThemeTile(
+                label: t('dark'),
+                mode: ThemeMode.dark,
+                selected: _selected,
+                onTap: () => _select(ThemeMode.dark),
+              ),
+              const SizedBox(height: 10),
+              _ThemeTile(
+                label: t('light'),
+                mode: ThemeMode.light,
+                selected: _selected,
+                onTap: () => _select(ThemeMode.light),
+              ),
+              const SizedBox(height: 10),
+              _ThemeTile(
+                label: t('system'),
+                mode: ThemeMode.system,
+                selected: _selected,
+                onTap: () => _select(ThemeMode.system),
               ),
             ],
           ),
@@ -116,17 +99,13 @@ class _DriverAppearancePageState extends State<DriverAppearancePage> {
 }
 
 class _ThemeTile extends StatelessWidget {
-  final IconData icon;
   final String label;
-  final String subtitle;
   final ThemeMode mode;
   final ThemeMode selected;
   final VoidCallback onTap;
 
   const _ThemeTile({
-    required this.icon,
     required this.label,
-    required this.subtitle,
     required this.mode,
     required this.selected,
     required this.onTap,
@@ -136,59 +115,32 @@ class _ThemeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final iconBg = _isSelected
-        ? AppColors.iconBg(context)
-        : AppColors.iconBg(context).withValues(alpha: 0.4);
-
-    final iconColor = _isSelected
-        ? AppColors.primaryPurple
-        : AppColors.primaryPurple.withValues(alpha: 0.4);
-
-    final radioBorderColor =
-        _isSelected ? AppColors.primaryPurple : AppColors.subtext(context);
-
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: Padding(
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface(context),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: _isSelected
+                ? AppColors.primaryPurple
+                : AppColors.border(context),
+            width: _isSelected ? 1.5 : 1,
+          ),
+        ),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
         child: Row(
           children: [
-            Container(
-              width: 34,
-              height: 34,
-              decoration: BoxDecoration(
-                color: iconBg,
-                borderRadius: BorderRadius.circular(9),
-              ),
-              child: Icon(icon, color: iconColor, size: 18),
-            ),
-            const SizedBox(width: 14),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label, style: AppTextStyles.settingsItem(context)),
-                  const SizedBox(height: 2),
-                  Text(subtitle, style: AppTextStyles.bodySmall(context)),
-                ],
-              ),
+              child: Text(label, style: AppTextStyles.settingsItem(context)),
             ),
-            Container(
-              width: 20,
-              height: 20,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: radioBorderColor, width: 2),
-                color: _isSelected
-                    ? AppColors.primaryPurple
-                    : Colors.transparent,
+            if (_isSelected)
+              Icon(
+                Icons.check_rounded,
+                color: AppColors.primaryPurple,
+                size: 22,
               ),
-              child: _isSelected
-                  ? const Icon(Icons.check_rounded,
-                      color: Colors.white, size: 13)
-                  : null,
-            ),
           ],
         ),
       ),

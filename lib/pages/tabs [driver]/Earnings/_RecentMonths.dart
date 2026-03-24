@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class _MonthData {
   final String month;
@@ -50,14 +51,15 @@ class RecentMonths extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-
         // ── Section title ──────────────────────────────
-        Text('Recent Months',
-            style: TextStyle(
-              color: AppColors.primaryPurple,
-              fontWeight: FontWeight.w800,
-              fontSize: 16,
-            )),
+        Text(
+          AppLocalizations.of(context).translate('earnings_recent_months'),
+          style: TextStyle(
+            color: AppColors.primaryPurple,
+            fontWeight: FontWeight.w800,
+            fontSize: 16,
+          ),
+        ),
 
         const SizedBox(height: 12),
 
@@ -93,35 +95,45 @@ class _MonthCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(data.month,
-                    style: AppTextStyles.bodyLarge(context).copyWith(
-                      fontWeight: FontWeight.w800,
-                    )),
+                Text(
+                  data.month,
+                  style: AppTextStyles.bodyLarge(
+                    context,
+                  ).copyWith(fontWeight: FontWeight.w800),
+                ),
                 const SizedBox(height: 4),
-                Text('${data.trips}  •  ${data.commission}',
-                    style: AppTextStyles.bodySmall(context).copyWith(
-                      color: AppColors.subtext(context),
-                    )),
+                Text(
+                  '${data.trips}  •  ${data.commission}',
+                  style: AppTextStyles.bodySmall(
+                    context,
+                  ).copyWith(color: AppColors.subtext(context)),
+                ),
               ],
             ),
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Text(data.amount,
-                  style: TextStyle(
-                    color: AppColors.primaryPurple,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15,
-                  )),
+              Text(
+                data.amount,
+                style: TextStyle(
+                  color: AppColors.primaryPurple,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 15,
+                ),
+              ),
               const SizedBox(height: 4),
-              Text(data.status,
-                  style: const TextStyle(
-                    color: Colors.green,
-                    fontWeight: FontWeight.w800,
-                    fontSize: 11,
-                    letterSpacing: 0.5,
-                  )),
+              Text(
+                AppLocalizations.of(
+                  context,
+                ).translate('earnings_status_settled'),
+                style: const TextStyle(
+                  color: Colors.green,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 11,
+                  letterSpacing: 0.5,
+                ),
+              ),
             ],
           ),
         ],

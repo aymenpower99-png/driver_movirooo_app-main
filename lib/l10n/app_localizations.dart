@@ -17,7 +17,7 @@ class AppLocalizations {
 
   Future<void> load() async {
     final jsonStr = await rootBundle.loadString(
-      'images/translations/${locale.languageCode}.json',
+      'data/translations/${locale.languageCode}.json',
     );
     final Map<String, dynamic> data = json.decode(jsonStr);
     _strings = data.map((k, v) => MapEntry(k, v.toString()));

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class MonthlyBreakdown extends StatelessWidget {
   const MonthlyBreakdown({super.key});
@@ -17,18 +18,22 @@ class MonthlyBreakdown extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
-          Text('Monthly Breakdown',
-              style: AppTextStyles.bodyLarge(context).copyWith(
-                fontWeight: FontWeight.w900,
-                fontSize: 17,
-              )),
+          Text(
+            AppLocalizations.of(
+              context,
+            ).translate('earnings_monthly_breakdown'),
+            style: AppTextStyles.bodyLarge(
+              context,
+            ).copyWith(fontWeight: FontWeight.w900, fontSize: 17),
+          ),
 
           const SizedBox(height: 16),
 
           // ── Gross ──────────────────────────────────────
           _BreakdownRow(
-            label: 'Total Gross Revenue',
+            label: AppLocalizations.of(
+              context,
+            ).translate('earnings_gross_revenue'),
             value: '4,275.00 DT',
             isNegative: false,
           ),
@@ -37,7 +42,9 @@ class MonthlyBreakdown extends StatelessWidget {
 
           // ── Commission ─────────────────────────────────
           _BreakdownRow(
-            label: 'Total Commission (20%)',
+            label: AppLocalizations.of(
+              context,
+            ).translate('earnings_commission'),
             value: '-855.00 DT',
             isNegative: true,
             showInfo: true,
@@ -49,17 +56,21 @@ class MonthlyBreakdown extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: Text('Total Net Payout',
-                    style: AppTextStyles.bodyLarge(context).copyWith(
-                      fontWeight: FontWeight.w900,
-                    )),
+                child: Text(
+                  AppLocalizations.of(context).translate('earnings_net_payout'),
+                  style: AppTextStyles.bodyLarge(
+                    context,
+                  ).copyWith(fontWeight: FontWeight.w900),
+                ),
               ),
-              Text('3,420.00 DT',
-                  style: TextStyle(
-                    color: AppColors.primaryPurple,
-                    fontWeight: FontWeight.w900,
-                    fontSize: 17,
-                  )),
+              Text(
+                '3,420.00 DT',
+                style: TextStyle(
+                  color: AppColors.primaryPurple,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 17,
+                ),
+              ),
             ],
           ),
 
@@ -69,12 +80,17 @@ class MonthlyBreakdown extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Icon(Icons.info_outline_rounded,
-                  color: AppColors.primaryPurple, size: 14),
+              Icon(
+                Icons.info_outline_rounded,
+                color: AppColors.primaryPurple,
+                size: 14,
+              ),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(
-                  'Monthly performance reports are finalized on the 1st of every month.',
+                  AppLocalizations.of(
+                    context,
+                  ).translate('earnings_report_note'),
                   style: TextStyle(
                     color: AppColors.primaryPurple,
                     fontSize: 11,
@@ -110,26 +126,32 @@ class _BreakdownRow extends StatelessWidget {
         Expanded(
           child: Row(
             children: [
-              Text(label,
-                  style: AppTextStyles.bodyMedium(context).copyWith(
-                    color: AppColors.subtext(context),
-                  )),
+              Text(
+                label,
+                style: AppTextStyles.bodyMedium(
+                  context,
+                ).copyWith(color: AppColors.subtext(context)),
+              ),
               if (showInfo) ...[
                 const SizedBox(width: 4),
-                Icon(Icons.help_outline_rounded,
-                    size: 14,
-                    color: AppColors.subtext(context)),
+                Icon(
+                  Icons.help_outline_rounded,
+                  size: 14,
+                  color: AppColors.subtext(context),
+                ),
               ],
             ],
           ),
         ),
-        Text(value,
-            style: AppTextStyles.bodyLarge(context).copyWith(
-              fontWeight: FontWeight.w800,
-              color: isNegative
-                  ? AppColors.text(context)
-                  : AppColors.text(context),
-            )),
+        Text(
+          value,
+          style: AppTextStyles.bodyLarge(context).copyWith(
+            fontWeight: FontWeight.w800,
+            color: isNegative
+                ? AppColors.text(context)
+                : AppColors.text(context),
+          ),
+        ),
       ],
     );
   }

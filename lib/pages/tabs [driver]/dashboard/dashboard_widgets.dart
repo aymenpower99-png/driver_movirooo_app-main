@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../theme/app_colors.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -13,7 +14,7 @@ class DashboardHeader extends StatelessWidget {
     return Row(
       children: [
         Text(
-          'Moviroo',
+          'Moviroo', // brand name, not translated
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.w800,
@@ -44,16 +45,18 @@ class DashboardHeader extends StatelessWidget {
                 height: 7,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: isOnline
-                      ? AppColors.success
-                      : const Color(0xFF9AA3AD),
+                  color: isOnline ? AppColors.success : const Color(0xFF9AA3AD),
                 ),
               ),
               const SizedBox(width: 6),
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
                 child: Text(
-                  isOnline ? 'Online' : 'Offline',
+                  isOnline
+                      ? AppLocalizations.of(context).translate('status_online')
+                      : AppLocalizations.of(
+                          context,
+                        ).translate('status_offline'),
                   key: ValueKey(isOnline),
                   style: TextStyle(
                     fontSize: 12,

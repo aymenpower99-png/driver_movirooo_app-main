@@ -17,10 +17,12 @@ class ContactButtons extends StatelessWidget {
     return Row(
       children: [
         _ContactIconBtn(
-            icon: Icons.phone_rounded, bgColor: btnBg, onTap: onCall ?? () {}),
+            iconAsset: 'images/icons/telephone.png',
+            bgColor: btnBg,
+            onTap: onCall ?? () {}),
         const SizedBox(width: 8),
         _ContactIconBtn(
-            icon: Icons.chat_bubble_outline_rounded,
+            iconAsset: 'images/icons/messenger.png',
             bgColor: btnBg,
             onTap: onMessage ?? () {}),
       ],
@@ -29,12 +31,12 @@ class ContactButtons extends StatelessWidget {
 }
 
 class _ContactIconBtn extends StatelessWidget {
-  final IconData icon;
+  final String iconAsset;
   final Color bgColor;
   final VoidCallback onTap;
 
   const _ContactIconBtn(
-      {required this.icon, required this.bgColor, required this.onTap});
+      {required this.iconAsset, required this.bgColor, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +49,14 @@ class _ContactIconBtn extends StatelessWidget {
         child: SizedBox(
           width: 42,
           height: 42,
-          child: Icon(icon, size: 20, color: AppColors.primaryPurple),
+          child: Center(
+            child: Image.asset(
+              iconAsset,
+              width: 20,
+              height: 20,
+              color: AppColors.primaryPurple,
+            ),
+          ),
         ),
       ),
     );

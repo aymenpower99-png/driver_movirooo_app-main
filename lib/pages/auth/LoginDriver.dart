@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../routing/router.dart';
+import '../../l10n/app_localizations.dart';
 import 'driver_forgot_password_page.dart';
 
 class DriverLoginPage extends StatefulWidget {
@@ -14,13 +15,13 @@ class DriverLoginPage extends StatefulWidget {
 class _DriverLoginPageState extends State<DriverLoginPage>
     with SingleTickerProviderStateMixin {
   final _emailController = TextEditingController();
-  final _passController  = TextEditingController();
-  bool _obscurePass  = true;
-  bool _isLoading    = false;
+  final _passController = TextEditingController();
+  bool _obscurePass = true;
+  bool _isLoading = false;
 
   late AnimationController _animCtrl;
-  late Animation<double>   _fadeAnim;
-  late Animation<Offset>   _slideAnim;
+  late Animation<double> _fadeAnim;
+  late Animation<Offset> _slideAnim;
 
   @override
   void initState() {
@@ -29,7 +30,7 @@ class _DriverLoginPageState extends State<DriverLoginPage>
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
-    _fadeAnim  = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
+    _fadeAnim = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
     _slideAnim = Tween<Offset>(
       begin: const Offset(0, 0.06),
       end: Offset.zero,
@@ -57,11 +58,7 @@ class _DriverLoginPageState extends State<DriverLoginPage>
         color: AppColors.text(context).withOpacity(0.35),
         fontSize: 14,
       ),
-      prefixIcon: Icon(
-        prefixIcon,
-        color: const Color(0xFFA855F7),
-        size: 19,
-      ),
+      prefixIcon: Icon(prefixIcon, color: const Color(0xFFA855F7), size: 19),
       suffixIcon: suffix,
       filled: true,
       fillColor: AppColors.surface(context),
@@ -75,13 +72,9 @@ class _DriverLoginPageState extends State<DriverLoginPage>
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.zero,
-        borderSide: BorderSide(
-          color: Color(0xFFA855F7),
-          width: 1.8,
-        ),
+        borderSide: BorderSide(color: Color(0xFFA855F7), width: 1.8),
       ),
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 18, vertical: 17),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 17),
     );
   }
 
@@ -95,6 +88,7 @@ class _DriverLoginPageState extends State<DriverLoginPage>
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context).translate;
     return Scaffold(
       backgroundColor: AppColors.bg(context),
       body: SafeArea(
@@ -102,7 +96,8 @@ class _DriverLoginPageState extends State<DriverLoginPage>
           physics: const ClampingScrollPhysics(),
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              minHeight: MediaQuery.of(context).size.height -
+              minHeight:
+                  MediaQuery.of(context).size.height -
                   MediaQuery.of(context).padding.top -
                   MediaQuery.of(context).padding.bottom,
             ),
@@ -157,17 +152,18 @@ class _DriverLoginPageState extends State<DriverLoginPage>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _label(context, 'EMAIL'),
+                          _label(context, t('label_email')),
                           const SizedBox(height: 8),
                           TextField(
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
                             cursorColor: AppColors.primaryPurple,
-                            style: AppTextStyles.bodyMedium(context)
-                                .copyWith(fontSize: 15),
+                            style: AppTextStyles.bodyMedium(
+                              context,
+                            ).copyWith(fontSize: 15),
                             decoration: _fieldDecoration(
                               context,
-                              hint: 'you@example.com',
+                              hint: t('hint_email'),
                               prefixIcon: Icons.mail_outline_rounded,
                             ),
                           ),
@@ -186,29 +182,32 @@ class _DriverLoginPageState extends State<DriverLoginPage>
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _label(context, 'PASSWORD'),
+                          _label(context, t('label_password')),
                           const SizedBox(height: 8),
                           TextField(
                             controller: _passController,
                             obscureText: _obscurePass,
                             cursorColor: AppColors.primaryPurple,
-                            style: AppTextStyles.bodyMedium(context)
-                                .copyWith(fontSize: 15),
+                            style: AppTextStyles.bodyMedium(
+                              context,
+                            ).copyWith(fontSize: 15),
                             decoration: _fieldDecoration(
                               context,
-                              hint: 'Enter your password',
+                              hint: t('hint_password'),
                               prefixIcon: Icons.lock_outline_rounded,
                               suffix: GestureDetector(
                                 onTap: () => setState(
-                                    () => _obscurePass = !_obscurePass),
+                                  () => _obscurePass = !_obscurePass,
+                                ),
                                 child: Padding(
                                   padding: const EdgeInsets.all(12),
                                   child: Icon(
                                     _obscurePass
                                         ? Icons.visibility_outlined
                                         : Icons.visibility_off_outlined,
-                                    color: AppColors.text(context)
-                                        .withOpacity(0.45),
+                                    color: AppColors.text(
+                                      context,
+                                    ).withOpacity(0.45),
                                     size: 19,
                                   ),
                                 ),
@@ -231,12 +230,11 @@ class _DriverLoginPageState extends State<DriverLoginPage>
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) =>
-                                const DriverForgotPasswordPage(),
+                            builder: (_) => const DriverForgotPasswordPage(),
                           ),
                         ),
                         child: Text(
-                          'Forgot password?',
+                          t('forgot_password'),
                           style: AppTextStyles.bodySmall(context).copyWith(
                             color: AppColors.primaryPurple,
                             fontWeight: FontWeight.w700,
@@ -259,8 +257,8 @@ class _DriverLoginPageState extends State<DriverLoginPage>
                         onPressed: _isLoading ? null : _login,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primaryPurple,
-                          disabledBackgroundColor:
-                              AppColors.primaryPurple.withOpacity(0.45),
+                          disabledBackgroundColor: AppColors.primaryPurple
+                              .withOpacity(0.45),
                           elevation: 0,
                           shadowColor: Colors.transparent,
                           shape: RoundedRectangleBorder(
@@ -277,7 +275,7 @@ class _DriverLoginPageState extends State<DriverLoginPage>
                                 ),
                               )
                             : Text(
-                                'Sign In',
+                                t('sign_in'),
                                 style: AppTextStyles.buttonPrimary.copyWith(
                                   fontSize: 16,
                                   letterSpacing: 0.3,

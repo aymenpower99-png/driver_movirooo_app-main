@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../theme/app_colors.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -35,10 +36,14 @@ class _PowerSectionState extends State<PowerSection>
       vsync: this,
       duration: const Duration(milliseconds: 1400),
     );
-    _pulseScale = Tween<double>(begin: 1.0, end: 1.35)
-        .animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeOut));
-    _pulseOpacity = Tween<double>(begin: 0.45, end: 0.0)
-        .animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeOut));
+    _pulseScale = Tween<double>(
+      begin: 1.0,
+      end: 1.35,
+    ).animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeOut));
+    _pulseOpacity = Tween<double>(
+      begin: 0.45,
+      end: 0.0,
+    ).animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeOut));
 
     if (widget.isOnline) _pulseCtrl.repeat();
   }
@@ -87,8 +92,9 @@ class _PowerSectionState extends State<PowerSection>
                           height: 100,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: AppColors.success
-                                .withValues(alpha: _pulseOpacity.value),
+                            color: AppColors.success.withValues(
+                              alpha: _pulseOpacity.value,
+                            ),
                           ),
                         ),
                       ),
@@ -113,7 +119,9 @@ class _PowerSectionState extends State<PowerSection>
                       boxShadow: widget.isOnline
                           ? [
                               BoxShadow(
-                                color: AppColors.success.withValues(alpha: 0.38),
+                                color: AppColors.success.withValues(
+                                  alpha: 0.38,
+                                ),
                                 blurRadius: 28,
                                 offset: const Offset(0, 8),
                               ),
@@ -139,15 +147,24 @@ class _PowerSectionState extends State<PowerSection>
           transitionBuilder: (child, anim) => FadeTransition(
             opacity: anim,
             child: SlideTransition(
-              position: Tween<Offset>(
-                      begin: const Offset(0, 0.3), end: Offset.zero)
-                  .animate(CurvedAnimation(
-                      parent: anim, curve: Curves.easeOutCubic)),
+              position:
+                  Tween<Offset>(
+                    begin: const Offset(0, 0.3),
+                    end: Offset.zero,
+                  ).animate(
+                    CurvedAnimation(parent: anim, curve: Curves.easeOutCubic),
+                  ),
               child: child,
             ),
           ),
           child: Text(
-            widget.isOnline ? 'You are Online' : 'You are Offline',
+            widget.isOnline
+                ? AppLocalizations.of(
+                    context,
+                  ).translate('dashboard_you_are_online')
+                : AppLocalizations.of(
+                    context,
+                  ).translate('dashboard_you_are_offline'),
             key: ValueKey(widget.isOnline),
             style: TextStyle(
               fontSize: 20,
@@ -165,8 +182,12 @@ class _PowerSectionState extends State<PowerSection>
               FadeTransition(opacity: anim, child: child),
           child: Text(
             widget.isOnline
-                ? 'You are available for rides'
-                : 'Tap the button to go online',
+                ? AppLocalizations.of(
+                    context,
+                  ).translate('dashboard_available_for_rides')
+                : AppLocalizations.of(
+                    context,
+                  ).translate('dashboard_tap_to_go_online'),
             key: ValueKey('sub_${widget.isOnline}'),
             style: TextStyle(fontSize: 13, color: AppColors.subtext(context)),
           ),
@@ -183,14 +204,14 @@ class _PowerSectionState extends State<PowerSection>
 class DriverStatusRow extends StatelessWidget {
   // Replace with real model values
   final double rating;
-  final int    streakDays;
+  final int streakDays;
   final String level;
 
   const DriverStatusRow({
     super.key,
-    this.rating     = 4.8,
+    this.rating = 4.8,
     this.streakDays = 6,
-    this.level      = 'Gold',
+    this.level = 'Gold',
   });
 
   @override
@@ -203,8 +224,11 @@ class DriverStatusRow extends StatelessWidget {
             topWidget: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(Icons.star_rounded,
-                    size: 15, color: Color(0xFFFFC107)),
+                const Icon(
+                  Icons.star_rounded,
+                  size: 15,
+                  color: Color(0xFFFFC107),
+                ),
                 const SizedBox(width: 4),
                 Text(
                   rating.toStringAsFixed(1),
@@ -216,7 +240,9 @@ class DriverStatusRow extends StatelessWidget {
                 ),
               ],
             ),
-            label: 'Your Rating',
+            label: AppLocalizations.of(
+              context,
+            ).translate('dashboard_your_rating'),
           ),
         ),
         const SizedBox(width: 10),
@@ -238,7 +264,7 @@ class DriverStatusRow extends StatelessWidget {
                 ),
               ],
             ),
-            label: 'Streak',
+            label: AppLocalizations.of(context).translate('dashboard_streak'),
           ),
         ),
         const SizedBox(width: 10),
@@ -248,13 +274,15 @@ class DriverStatusRow extends StatelessWidget {
             topWidget: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.workspace_premium_rounded,
-                    size: 15,
-                    color: level == 'Gold'
-                        ? const Color(0xFFFFB300)
-                        : level == 'Silver'
-                            ? const Color(0xFF9E9E9E)
-                            : AppColors.primaryPurple),
+                Icon(
+                  Icons.workspace_premium_rounded,
+                  size: 15,
+                  color: level == 'Gold'
+                      ? const Color(0xFFFFB300)
+                      : level == 'Silver'
+                      ? const Color(0xFF9E9E9E)
+                      : AppColors.primaryPurple,
+                ),
                 const SizedBox(width: 4),
                 Text(
                   level,
@@ -266,7 +294,9 @@ class DriverStatusRow extends StatelessWidget {
                 ),
               ],
             ),
-            label: 'Driver Level',
+            label: AppLocalizations.of(
+              context,
+            ).translate('dashboard_driver_level'),
           ),
         ),
       ],
@@ -295,8 +325,7 @@ class _StatusTile extends StatelessWidget {
           Text(
             label,
             textAlign: TextAlign.center,
-            style: TextStyle(
-                fontSize: 10, color: AppColors.subtext(context)),
+            style: TextStyle(fontSize: 10, color: AppColors.subtext(context)),
           ),
         ],
       ),
@@ -308,19 +337,19 @@ class _StatusTile extends StatelessWidget {
 // ACTIVITY CARD  —  4 performance stats only, no demand/last ride/peak
 // ─────────────────────────────────────────────────────────────────────────────
 class ActivityCard extends StatelessWidget {
-  final bool   isOnline;
-  final int    ridesCompleted;
+  final bool isOnline;
+  final int ridesCompleted;
   final String onlineTime;
-  final int    acceptanceRate;
-  final int    cancellations;
+  final int acceptanceRate;
+  final int cancellations;
 
   const ActivityCard({
     super.key,
     required this.isOnline,
     this.ridesCompleted = 5,
-    this.onlineTime     = '3h 20m',
+    this.onlineTime = '3h 20m',
     this.acceptanceRate = 92,
-    this.cancellations  = 1,
+    this.cancellations = 1,
   });
 
   @override
@@ -328,8 +357,8 @@ class ActivityCard extends StatelessWidget {
     final rateColor = acceptanceRate >= 90
         ? AppColors.success
         : acceptanceRate >= 70
-            ? AppColors.warning
-            : AppColors.error;
+        ? AppColors.warning
+        : AppColors.error;
 
     return Container(
       width: double.infinity,
@@ -346,7 +375,9 @@ class ActivityCard extends StatelessWidget {
           Row(
             children: [
               Text(
-                'TODAY ACTIVITY',
+                AppLocalizations.of(
+                  context,
+                ).translate('dashboard_today_activity'),
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w700,
@@ -356,13 +387,18 @@ class ActivityCard extends StatelessWidget {
               ),
               const Spacer(),
               if (!isOnline) ...[
-                Icon(Icons.wifi_off_rounded,
-                    size: 13, color: AppColors.subtext(context)),
+                Icon(
+                  Icons.wifi_off_rounded,
+                  size: 13,
+                  color: AppColors.subtext(context),
+                ),
                 const SizedBox(width: 4),
                 Text(
-                  'Offline',
+                  AppLocalizations.of(context).translate('status_offline'),
                   style: TextStyle(
-                      fontSize: 11, color: AppColors.subtext(context)),
+                    fontSize: 11,
+                    color: AppColors.subtext(context),
+                  ),
                 ),
               ],
             ],
@@ -373,30 +409,39 @@ class ActivityCard extends StatelessWidget {
           _ActivityRow(
             icon: Icons.directions_car_rounded,
             iconColor: AppColors.primaryPurple,
-            label: 'Rides completed',
+            label: AppLocalizations.of(
+              context,
+            ).translate('dashboard_rides_completed'),
             value: '$ridesCompleted',
           ),
           const SizedBox(height: 10),
           _ActivityRow(
             icon: Icons.schedule_outlined,
             iconColor: AppColors.primaryPurple,
-            label: 'Online time',
+            label: AppLocalizations.of(
+              context,
+            ).translate('dashboard_online_time'),
             value: onlineTime,
           ),
           const SizedBox(height: 10),
           _ActivityRow(
             icon: Icons.verified_rounded,
             iconColor: rateColor,
-            label: 'Acceptance rate',
+            label: AppLocalizations.of(
+              context,
+            ).translate('dashboard_acceptance_rate'),
             value: '$acceptanceRate%',
             valueColor: rateColor,
           ),
           const SizedBox(height: 10),
           _ActivityRow(
             icon: Icons.cancel_outlined,
-            iconColor:
-                cancellations > 0 ? AppColors.error : AppColors.subtext(context),
-            label: 'Cancellations',
+            iconColor: cancellations > 0
+                ? AppColors.error
+                : AppColors.subtext(context),
+            label: AppLocalizations.of(
+              context,
+            ).translate('dashboard_cancellations'),
             value: '$cancellations',
             valueColor: cancellations > 0 ? AppColors.error : null,
           ),
@@ -409,10 +454,10 @@ class ActivityCard extends StatelessWidget {
 // ── Single stat row inside ActivityCard ───────────────────────────────────────
 class _ActivityRow extends StatelessWidget {
   final IconData icon;
-  final Color    iconColor;
-  final String   label;
-  final String   value;
-  final Color?   valueColor;
+  final Color iconColor;
+  final String label;
+  final String value;
+  final Color? valueColor;
 
   const _ActivityRow({
     required this.icon,
@@ -436,9 +481,10 @@ class _ActivityRow extends StatelessWidget {
           child: Icon(icon, size: 14, color: iconColor),
         ),
         const SizedBox(width: 10),
-        Text(label,
-            style:
-                TextStyle(fontSize: 13, color: AppColors.text(context))),
+        Text(
+          label,
+          style: TextStyle(fontSize: 13, color: AppColors.text(context)),
+        ),
         const Spacer(),
         Text(
           value,

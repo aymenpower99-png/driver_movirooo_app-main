@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
+import '../../l10n/app_localizations.dart';
 
 class DriverForgotPasswordPage extends StatefulWidget {
   const DriverForgotPasswordPage({super.key});
@@ -14,14 +15,14 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
     with TickerProviderStateMixin {
   final _emailController = TextEditingController();
   bool _isLoading = false;
-  bool _sent      = false;
+  bool _sent = false;
 
   late AnimationController _animCtrl;
   late AnimationController _successCtrl;
-  late Animation<double>   _fadeAnim;
-  late Animation<Offset>   _slideAnim;
-  late Animation<double>   _successFade;
-  late Animation<double>   _successScale;
+  late Animation<double> _fadeAnim;
+  late Animation<Offset> _slideAnim;
+  late Animation<double> _successFade;
+  late Animation<double> _successScale;
 
   @override
   void initState() {
@@ -31,7 +32,7 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
       vsync: this,
       duration: const Duration(milliseconds: 550),
     );
-    _fadeAnim  = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
+    _fadeAnim = CurvedAnimation(parent: _animCtrl, curve: Curves.easeOut);
     _slideAnim = Tween<Offset>(
       begin: const Offset(0, 0.07),
       end: Offset.zero,
@@ -41,10 +42,11 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
       vsync: this,
       duration: const Duration(milliseconds: 600),
     );
-    _successFade  = CurvedAnimation(parent: _successCtrl, curve: Curves.easeOut);
-    _successScale = Tween<double>(begin: 0.85, end: 1.0).animate(
-      CurvedAnimation(parent: _successCtrl, curve: Curves.easeOutBack),
-    );
+    _successFade = CurvedAnimation(parent: _successCtrl, curve: Curves.easeOut);
+    _successScale = Tween<double>(
+      begin: 0.85,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _successCtrl, curve: Curves.easeOutBack));
 
     _animCtrl.forward();
   }
@@ -64,14 +66,15 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
     if (!mounted) return;
     setState(() {
       _isLoading = false;
-      _sent      = true;
+      _sent = true;
     });
     _successCtrl.forward();
   }
 
   InputDecoration _fieldDecoration(BuildContext context) {
+    final hint = AppLocalizations.of(context).translate('hint_email');
     return InputDecoration(
-      hintText: 'you@example.com',
+      hintText: hint,
       hintStyle: AppTextStyles.bodyMedium(context).copyWith(
         color: AppColors.text(context).withOpacity(0.35),
         fontSize: 14,
@@ -93,18 +96,15 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.zero,
-        borderSide: const BorderSide(
-          color: Color(0xFFA855F7),
-          width: 1.8,
-        ),
+        borderSide: const BorderSide(color: Color(0xFFA855F7), width: 1.8),
       ),
-      contentPadding:
-          const EdgeInsets.symmetric(horizontal: 18, vertical: 17),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 17),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context).translate;
     return Scaffold(
       backgroundColor: AppColors.bg(context),
       body: SafeArea(
@@ -112,7 +112,8 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
           physics: const ClampingScrollPhysics(),
           child: ConstrainedBox(
             constraints: BoxConstraints(
-              minHeight: MediaQuery.of(context).size.height -
+              minHeight:
+                  MediaQuery.of(context).size.height -
                   MediaQuery.of(context).padding.top -
                   MediaQuery.of(context).padding.bottom,
             ),
@@ -175,7 +176,9 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            _sent ? 'Check your inbox' : 'Forgot password?',
+                            _sent
+                                ? t('forgot_check_inbox')
+                                : t('forgot_password'),
                             style: AppTextStyles.pageTitle(context).copyWith(
                               fontSize: 26,
                               fontWeight: FontWeight.w900,
@@ -185,8 +188,11 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
                           const SizedBox(height: 8),
                           Text(
                             _sent
-                                ? 'We sent a reset link to\n${_emailController.text.trim()}'
-                                : 'No worries. Enter your email and we\'ll send you a link to reset your password.',
+                                ? t('forgot_sent_link').replaceAll(
+                                    '{email}',
+                                    _emailController.text.trim(),
+                                  )
+                                : t('forgot_password_subtitle'),
                             style: AppTextStyles.bodyMedium(context).copyWith(
                               color: AppColors.text(context).withOpacity(0.6),
                               fontSize: 14,
@@ -211,7 +217,6 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-
                             // Big check circle
                             Center(
                               child: Container(
@@ -248,20 +253,23 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
                                 children: [
                                   Icon(
                                     Icons.info_outline_rounded,
-                                    color: AppColors.text(context)
-                                        .withOpacity(0.4),
+                                    color: AppColors.text(
+                                      context,
+                                    ).withOpacity(0.4),
                                     size: 18,
                                   ),
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Text(
-                                      'Didn\'t receive it? Check your spam folder or wait a few minutes before trying again.',
+                                      t('forgot_spam_tip'),
                                       style: AppTextStyles.bodySmall(context)
                                           .copyWith(
-                                        color: AppColors.text(context).withOpacity(0.6),
-                                        fontSize: 13,
-                                        height: 1.55,
-                                      ),
+                                            color: AppColors.text(
+                                              context,
+                                            ).withOpacity(0.6),
+                                            fontSize: 13,
+                                            height: 1.55,
+                                          ),
                                     ),
                                   ),
                                 ],
@@ -277,8 +285,7 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
                               child: ElevatedButton(
                                 onPressed: () => Navigator.of(context).pop(),
                                 style: ElevatedButton.styleFrom(
-                                  backgroundColor:
-                                      const Color(0xFFA855F7),
+                                  backgroundColor: const Color(0xFFA855F7),
                                   elevation: 0,
                                   shadowColor: Colors.transparent,
                                   shape: RoundedRectangleBorder(
@@ -286,7 +293,7 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
                                   ),
                                 ),
                                 child: Text(
-                                  'Back to Sign In',
+                                  t('back_to_sign_in'),
                                   style: AppTextStyles.buttonPrimary.copyWith(
                                     fontSize: 16,
                                     letterSpacing: 0.3,
@@ -305,13 +312,13 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
                                   _successCtrl.reset();
                                 },
                                 child: Text(
-                                  'Resend email',
+                                  t('resend_email'),
                                   style: AppTextStyles.bodySmall(context)
                                       .copyWith(
-                                    color: const Color(0xFFA855F7),
-                                    fontWeight: FontWeight.w700,
-                                    fontSize: 13,
-                                  ),
+                                        color: const Color(0xFFA855F7),
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 13,
+                                      ),
                                 ),
                               ),
                             ),
@@ -325,7 +332,6 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
                   // DEFAULT STATE
                   // ══════════════════════════════════════════════════════
                   if (!_sent) ...[
-
                     // Email field
                     FadeTransition(
                       opacity: _fadeAnim,
@@ -335,10 +341,11 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'EMAIL',
+                              t('label_email'),
                               style: AppTextStyles.bodySmall(context).copyWith(
-                                color: AppColors.text(context)
-                                    .withOpacity(0.55),
+                                color: AppColors.text(
+                                  context,
+                                ).withOpacity(0.55),
                                 fontWeight: FontWeight.w700,
                                 fontSize: 10.5,
                                 letterSpacing: 1.1,
@@ -349,8 +356,9 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
                               controller: _emailController,
                               keyboardType: TextInputType.emailAddress,
                               cursorColor: const Color(0xFFA855F7),
-                              style: AppTextStyles.bodyMedium(context)
-                                  .copyWith(fontSize: 15),
+                              style: AppTextStyles.bodyMedium(
+                                context,
+                              ).copyWith(fontSize: 15),
                               decoration: _fieldDecoration(context),
                             ),
                           ],
@@ -370,8 +378,9 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
                           onPressed: _isLoading ? null : _submit,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFA855F7),
-                            disabledBackgroundColor:
-                                const Color(0xFFA855F7).withOpacity(0.45),
+                            disabledBackgroundColor: const Color(
+                              0xFFA855F7,
+                            ).withOpacity(0.45),
                             elevation: 0,
                             shadowColor: Colors.transparent,
                             shape: RoundedRectangleBorder(
@@ -388,7 +397,7 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
                                   ),
                                 )
                               : Text(
-                                  'Send Reset Link',
+                                  t('send_recovery_link'),
                                   style: AppTextStyles.buttonPrimary.copyWith(
                                     fontSize: 16,
                                     letterSpacing: 0.3,
@@ -412,11 +421,11 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
                                 fontSize: 13,
                                 color: AppColors.text(context).withOpacity(0.6),
                               ),
-                              children: const [
-                                TextSpan(text: 'Remembered it? '),
+                              children: [
+                                TextSpan(text: t('remembered_password')),
                                 TextSpan(
-                                  text: 'Sign in',
-                                  style: TextStyle(
+                                  text: t('sign_in'),
+                                  style: const TextStyle(
                                     color: Color(0xFFA855F7),
                                     fontWeight: FontWeight.w700,
                                   ),

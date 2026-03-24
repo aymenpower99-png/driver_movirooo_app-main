@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:moviroo_driver_app/routing/router.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../widgets/tab_bar.dart';
 import 'edit_profile/driver_profile_edit_page.dart';
 import 'notification/driver_notifications_page.dart';
@@ -14,6 +15,7 @@ class DriverProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context).translate;
     return Scaffold(
       backgroundColor: AppColors.bg(context),
       bottomNavigationBar: const DriverTabBar(currentIndex: 3),
@@ -24,7 +26,10 @@ class DriverProfilePage extends StatelessWidget {
             // ── Page Title ───────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 16),
-              child: Text('Profile', style: AppTextStyles.pageTitle(context)),
+              child: Text(
+                t('profile'),
+                style: AppTextStyles.pageTitle(context),
+              ),
             ),
 
             // ── Profile Hero Card ────────────────────────────────
@@ -56,9 +61,13 @@ class DriverProfilePage extends StatelessWidget {
                                 height: 64,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: AppColors.primaryPurple.withOpacity(0.1),
+                                  color: AppColors.primaryPurple.withOpacity(
+                                    0.1,
+                                  ),
                                   border: Border.all(
-                                    color: AppColors.primaryPurple.withOpacity(0.3),
+                                    color: AppColors.primaryPurple.withOpacity(
+                                      0.3,
+                                    ),
                                     width: 2,
                                   ),
                                 ),
@@ -95,21 +104,25 @@ class DriverProfilePage extends StatelessWidget {
                               children: [
                                 Text(
                                   'Amadou Diallo',
-                                  style: AppTextStyles.pageTitle(context)
-                                      .copyWith(fontSize: 17),
+                                  style: AppTextStyles.pageTitle(
+                                    context,
+                                  ).copyWith(fontSize: 17),
                                 ),
                                 const SizedBox(height: 5),
                                 Row(
                                   children: [
                                     _Badge(
-                                      label: 'Premium Driver',
-                                      bgColor: AppColors.primaryPurple.withOpacity(0.1),
+                                      label: t('badge_premium_driver'),
+                                      bgColor: AppColors.primaryPurple
+                                          .withOpacity(0.1),
                                       textColor: AppColors.primaryPurple,
                                     ),
                                     const SizedBox(width: 6),
                                     _Badge(
-                                      label: 'Online',
-                                      bgColor: AppColors.success.withOpacity(0.12),
+                                      label: t('status_online'),
+                                      bgColor: AppColors.success.withOpacity(
+                                        0.12,
+                                      ),
                                       textColor: AppColors.success,
                                     ),
                                   ],
@@ -121,13 +134,16 @@ class DriverProfilePage extends StatelessWidget {
                             onTap: () => Navigator.push(
                               context,
                               MaterialPageRoute(
-                                  builder: (_) => const DriverProfileEditPage()),
+                                builder: (_) => const DriverProfileEditPage(),
+                              ),
                             ),
                             child: Container(
                               width: 36,
                               height: 36,
                               decoration: BoxDecoration(
-                                color: AppColors.primaryPurple.withOpacity(0.08),
+                                color: AppColors.primaryPurple.withOpacity(
+                                  0.08,
+                                ),
                                 borderRadius: BorderRadius.circular(10),
                               ),
                               child: Icon(
@@ -140,7 +156,6 @@ class DriverProfilePage extends StatelessWidget {
                         ],
                       ),
                     ),
-
                   ],
                 ),
               ),
@@ -149,30 +164,38 @@ class DriverProfilePage extends StatelessWidget {
             const SizedBox(height: 24),
 
             // ── PERSONAL DETAILS ─────────────────────────────────
-            const _SectionHeader(label: 'PERSONAL DETAILS'),
+            _SectionHeader(label: t('profile_section_personal')),
             const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: _SoloCard(
                 icon: Icons.manage_accounts_outlined,
-                label: 'Account',
-                onTap: () => Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const DriverProfileEditPage())),
+                label: t('account_tile'),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const DriverProfileEditPage(),
+                  ),
+                ),
               ),
             ),
 
             const SizedBox(height: 10),
 
             // ── PREFERENCES ──────────────────────────────────────
-            const _SectionHeader(label: 'PREFERENCES'),
+            _SectionHeader(label: t('profile_section_preferences')),
             const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: _SoloCard(
                 icon: Icons.palette_outlined,
-                label: 'Appearance',
-                onTap: () => Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const DriverAppearancePage())),
+                label: t('profile_appearance'),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const DriverAppearancePage(),
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 8),
@@ -180,24 +203,30 @@ class DriverProfilePage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: _SoloCard(
                 icon: Icons.language_rounded,
-                label: 'Language',
-                onTap: () => Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const DriverLanguagePage())),
+                label: t('profile_language'),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const DriverLanguagePage()),
+                ),
               ),
             ),
 
             const SizedBox(height: 10),
 
             // ── SETTINGS ─────────────────────────────────────────
-            const _SectionHeader(label: 'SETTINGS'),
+            _SectionHeader(label: t('profile_section_settings')),
             const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: _SoloCard(
                 icon: Icons.notifications_outlined,
-                label: 'Push Notification',
-                onTap: () => Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const DriverNotificationsPage())),
+                label: t('push_notification_tile'),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const DriverNotificationsPage(),
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 8),
@@ -205,23 +234,26 @@ class DriverProfilePage extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: _SoloCard(
                 icon: Icons.settings_outlined,
-                label: 'Settings',
-                onTap: () => Navigator.push(context,
-                    MaterialPageRoute(builder: (_) => const DriverSettingsPage())),
+                label: t('settings_title'),
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const DriverSettingsPage()),
+                ),
               ),
             ),
 
             const SizedBox(height: 10),
 
-            // ── Logout ───────────────────────────────────────────
+            // ── Logout ──────────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
               child: _SoloCard(
                 icon: Icons.logout_rounded,
-                label: 'Log Out',
+                label: t('profile_logout'),
                 iconColor: Colors.red,
                 labelColor: Colors.red,
-                onTap: () => AppRouter.clearAndGo(context, AppRouter.driverLogin),
+                onTap: () =>
+                    AppRouter.clearAndGo(context, AppRouter.driverLogin),
               ),
             ),
 
@@ -270,8 +302,9 @@ class _SoloCard extends StatelessWidget {
             Expanded(
               child: Text(
                 label,
-                style: AppTextStyles.settingsItem(context)
-                    .copyWith(color: labelColor),
+                style: AppTextStyles.settingsItem(
+                  context,
+                ).copyWith(color: labelColor),
               ),
             ),
             Icon(
@@ -381,10 +414,6 @@ class _StatCell extends StatelessWidget {
 class _VerticalDivider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 1,
-      height: 44,
-      color: AppColors.border(context),
-    );
+    return Container(width: 1, height: 44, color: AppColors.border(context));
   }
 }

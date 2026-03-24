@@ -3,6 +3,7 @@
 // ════════════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
+import '../../../../../l10n/app_localizations.dart';
 import '../../../../../theme/app_colors.dart';
 import '../../../../../theme/app_text_styles.dart';
 import '../widgets/tab_bar.dart';
@@ -27,12 +28,20 @@ class _RidesPageState extends State<RidesPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  static const _tabs = ['Available', 'Upcoming', 'Completed', 'Cancelled'];
+  List<String> _tabLabels(BuildContext context) {
+    final t = AppLocalizations.of(context).translate;
+    return [
+      t('rides_tab_available'),
+      t('rides_tab_upcoming'),
+      t('rides_tab_completed'),
+      t('rides_tab_cancelled'),
+    ];
+  }
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: _tabs.length, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
   }
 
   @override
@@ -52,7 +61,10 @@ class _RidesPageState extends State<RidesPage>
         backgroundColor: AppColors.bg(context),
         elevation: 0,
         centerTitle: false,
-        title: Text('Rides', style: AppTextStyles.pageTitle(context)),
+        title: Text(
+          AppLocalizations.of(context).translate('rides_page_title'),
+          style: AppTextStyles.pageTitle(context),
+        ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(46),
           child: Container(
@@ -65,8 +77,10 @@ class _RidesPageState extends State<RidesPage>
               controller: _tabController,
               isScrollable: true,
               tabAlignment: TabAlignment.start,
-              labelPadding:
-                  const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+              labelPadding: const EdgeInsets.symmetric(
+                horizontal: 20,
+                vertical: 0,
+              ),
               indicatorColor: AppColors.primaryPurple,
               indicatorWeight: 2.5,
               dividerColor: Colors.transparent,
@@ -82,7 +96,9 @@ class _RidesPageState extends State<RidesPage>
               ),
               labelColor: AppColors.primaryPurple,
               unselectedLabelColor: AppColors.gray7B,
-              tabs: _tabs.map((t) => Tab(text: t)).toList(),
+              tabs: _tabLabels(
+                context,
+              ).map((label) => Tab(text: label)).toList(),
             ),
           ),
         ),
@@ -94,14 +110,22 @@ class _RidesPageState extends State<RidesPage>
           _UpcomingTab(rides: _ridesFor(RideStatus.upcoming)),
           _RideListTab(
             rides: _ridesFor(RideStatus.completed),
-            emptyMessage: 'No completed rides.',
-            statusLabel: 'Completed',
+            emptyMessage: AppLocalizations.of(
+              context,
+            ).translate('ride_empty_completed'),
+            statusLabel: AppLocalizations.of(
+              context,
+            ).translate('ride_status_completed'),
             statusColor: AppColors.success,
           ),
           _RideListTab(
             rides: _ridesFor(RideStatus.cancelled),
-            emptyMessage: 'No cancelled rides.',
-            statusLabel: 'Cancelled',
+            emptyMessage: AppLocalizations.of(
+              context,
+            ).translate('ride_empty_cancelled'),
+            statusLabel: AppLocalizations.of(
+              context,
+            ).translate('ride_status_cancelled'),
             statusColor: AppColors.error,
           ),
         ],
@@ -133,39 +157,47 @@ class _AvailableTabState extends State<_AvailableTab> {
   }
 
   void _accept(RideModel ride) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      backgroundColor: AppColors.success,
-      content: Text('Ride ${ride.id} accepted!',
-          style: const TextStyle(fontFamily: 'Inter', color: Colors.white)),
-      duration: const Duration(seconds: 2),
-    ));
+    final t = AppLocalizations.of(context).translate;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: AppColors.success,
+        content: Text(
+          t('ride_accepted_snack').replaceAll('{id}', ride.id),
+          style: const TextStyle(fontFamily: 'Inter', color: Colors.white),
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
     setState(() => _rides.remove(ride));
   }
 
   void _reject(RideModel ride) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      backgroundColor: AppColors.error,
-      content: Text('Ride ${ride.id} rejected.',
-          style: const TextStyle(fontFamily: 'Inter', color: Colors.white)),
-      duration: const Duration(seconds: 2),
-    ));
+    final t = AppLocalizations.of(context).translate;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        backgroundColor: AppColors.error,
+        content: Text(
+          t('ride_rejected_snack').replaceAll('{id}', ride.id),
+          style: const TextStyle(fontFamily: 'Inter', color: Colors.white),
+        ),
+        duration: const Duration(seconds: 2),
+      ),
+    );
     setState(() => _rides.remove(ride));
   }
 
   @override
   Widget build(BuildContext context) {
     if (_rides.isEmpty) {
-      return const RideEmptyState(
-          message: 'There are no available rides at this time.');
+      return RideEmptyState(
+        message: AppLocalizations.of(context).translate('ride_empty_available'),
+      );
     }
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       itemCount: _rides.length,
-      itemBuilder: (_, i) => RideCard(
-        ride: _rides[i],
-        onAccept: _accept,
-        onReject: _reject,
-      ),
+      itemBuilder: (_, i) =>
+          RideCard(ride: _rides[i], onAccept: _accept, onReject: _reject),
     );
   }
 }
@@ -187,13 +219,13 @@ class _UpcomingTab extends StatelessWidget {
       id: r.id,
       passenger: tracking.PassengerModel(
         name: r.passengerName,
-        rating: 4.8,      // swap for r.rating if your RideModel has it
+        rating: 4.8, // swap for r.rating if your RideModel has it
         avatarInitial: initial,
       ),
       pickupAddress: r.from,
       dropOffAddress: r.to,
-      distanceKm: 0,      // swap for r.distanceKm if available
-      etaMinutes: 0,      // swap for r.etaMinutes if available
+      distanceKm: 0, // swap for r.distanceKm if available
+      etaMinutes: 0, // swap for r.etaMinutes if available
       earningsAmount: r.price,
       currency: 'TND',
     );
@@ -202,18 +234,22 @@ class _UpcomingTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (rides.isEmpty) {
-      return const RideEmptyState(message: 'No upcoming rides.');
+      return RideEmptyState(
+        message: AppLocalizations.of(context).translate('ride_empty_upcoming'),
+      );
     }
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       itemCount: rides.length,
       itemBuilder: (_, i) => RideCard(
         ride: rides[i],
-        statusLabel: 'Scheduled',
+        statusLabel: AppLocalizations.of(
+          context,
+        ).translate('ride_status_scheduled'),
         statusColor: AppColors.primaryPurple,
-        onTrack: (ride) => Navigator.of(context).push(
-          TrackPassengerPage.route(_toTrackingRide(ride)),
-        ),
+        onTrack: (ride) => Navigator.of(
+          context,
+        ).push(TrackPassengerPage.route(_toTrackingRide(ride))),
         onChat: (ride) {
           Navigator.pushNamed(context, '/chat', arguments: {'rideId': ride.id});
         },

@@ -1,10 +1,12 @@
 // lib/pages/tracking/widgets/passenger_info_card.dart
 
 import 'package:flutter/material.dart';
+import 'package:moviroo_driver_app/l10n/app_localizations.dart';
 import 'package:moviroo_driver_app/theme/app_colors.dart';
 import 'package:moviroo_driver_app/pages/tracking/ride_model.dart';
 import 'package:moviroo_driver_app/pages/tracking/widgets/contact_buttons.dart';
 import 'package:moviroo_driver_app/pages/tracking/widgets/ride_meta_row.dart';
+import 'package:moviroo_driver_app/pages/tracking/widgets/report_issue_sheet.dart';
 
 class PassengerInfoCard extends StatelessWidget {
   final PassengerModel passenger;
@@ -17,7 +19,6 @@ class PassengerInfoCard extends StatelessWidget {
   final bool showActions;
   final VoidCallback? onCall;
   final VoidCallback? onMessage;
-  final VoidCallback? onReportIssue;
   final VoidCallback? onCancelRide;
 
   const PassengerInfoCard({
@@ -32,16 +33,16 @@ class PassengerInfoCard extends StatelessWidget {
     this.showActions = true,
     this.onCall,
     this.onMessage,
-    this.onReportIssue,
     this.onCancelRide,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-
         // ── 1. PASSENGER HEADER ───────────────────────────────────
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
@@ -53,12 +54,14 @@ class PassengerInfoCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(passenger.name,
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.text(context),
-                        )),
+                    Text(
+                      passenger.name,
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? Colors.white : AppColors.text(context),
+                      ),
+                    ),
                     const SizedBox(height: 3),
                     _StarRating(rating: passenger.rating),
                   ],
@@ -77,7 +80,6 @@ class PassengerInfoCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-
               // Pickup
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -90,7 +92,9 @@ class PassengerInfoCard extends StatelessWidget {
                       color: Colors.transparent,
                       shape: BoxShape.circle,
                       border: Border.all(
-                          color: AppColors.primaryPurple, width: 2),
+                        color: AppColors.primaryPurple,
+                        width: 2,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -98,28 +102,35 @@ class PassengerInfoCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('PICKUP',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primaryPurple,
-                              letterSpacing: 0.4,
-                            )),
+                        Text(
+                          AppLocalizations.of(
+                            context,
+                          ).translate('tracking_pickup_label'),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primaryPurple,
+                            letterSpacing: 0.4,
+                          ),
+                        ),
                         const SizedBox(height: 3),
-                        Text(pickupAddress,
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.text(context),
-                            )),
+                        Text(
+                          pickupAddress,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.text(context),
+                          ),
+                        ),
                       ],
                     ),
                   ),
                   if (showMetaTile) ...[
                     const SizedBox(width: 8),
                     RideMetaBadge(
-                        icon: Icons.route_rounded,
-                        value: '${distanceKm.toStringAsFixed(1)} km'),
+                      icon: Icons.route_rounded,
+                      value: '${distanceKm.toStringAsFixed(1)} km',
+                    ),
                   ],
                 ],
               ),
@@ -128,9 +139,10 @@ class PassengerInfoCard extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(left: 6),
                 child: Container(
-                    width: 2,
-                    height: 22,
-                    color: AppColors.border(context)),
+                  width: 2,
+                  height: 22,
+                  color: AppColors.border(context),
+                ),
               ),
 
               // Drop-off
@@ -151,28 +163,35 @@ class PassengerInfoCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('DROP-OFF',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.primaryPurple,
-                              letterSpacing: 0.4,
-                            )),
+                        Text(
+                          AppLocalizations.of(
+                            context,
+                          ).translate('tracking_dropoff_label'),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primaryPurple,
+                            letterSpacing: 0.4,
+                          ),
+                        ),
                         const SizedBox(height: 3),
-                        Text(dropOffAddress,
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.text(context),
-                            )),
+                        Text(
+                          dropOffAddress,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.text(context),
+                          ),
+                        ),
                       ],
                     ),
                   ),
                   if (showMetaTile) ...[
                     const SizedBox(width: 8),
                     RideMetaBadge(
-                        icon: Icons.schedule_rounded,
-                        value: '$etaMinutes min'),
+                      icon: Icons.schedule_rounded,
+                      value: '$etaMinutes min',
+                    ),
                   ],
                 ],
               ),
@@ -186,41 +205,77 @@ class PassengerInfoCard extends StatelessWidget {
           IntrinsicHeight(
             child: Row(
               children: [
+                // Report Issue — navigates to full-screen page
                 Expanded(
                   child: TextButton.icon(
-                    onPressed: onReportIssue,
-                    icon: Icon(Icons.flag_outlined,
-                        size: 14, color: AppColors.subtext(context)),
-                    label: Text('Report Issue',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.subtext(context),
-                        )),
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => ReportIssuePage(
+                            passengerName: passenger.name,
+                            onSubmit: (issue, note, photos) {
+                              // TODO: forward to your bloc / repository
+                              debugPrint(
+                                'Report: ${issue.label} | $note | ${photos.length} photo(s)',
+                              );
+                            },
+                          ),
+                        ),
+                      );
+                    },
+                    icon: Image.asset(
+                      'images/icons/warning.png',
+                      width: 14,
+                      height: 14,
+                      color: isDark ? Colors.white : AppColors.subtext(context),
+                    ),
+                    label: Text(
+                      AppLocalizations.of(
+                        context,
+                      ).translate('tracking_report_action'),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: isDark
+                            ? Colors.white
+                            : AppColors.subtext(context),
+                      ),
+                    ),
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.zero),
+                        borderRadius: BorderRadius.zero,
+                      ),
                     ),
                   ),
                 ),
-                VerticalDivider(
-                    width: 1, color: AppColors.border(context)),
+
+                VerticalDivider(width: 1, color: AppColors.border(context)),
+
+                // Cancel Ride
                 Expanded(
                   child: TextButton.icon(
                     onPressed: onCancelRide,
-                    icon: const Icon(Icons.cancel_outlined,
-                        size: 14, color: AppColors.error),
-                    label: const Text('Cancel Ride',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.error,
-                        )),
+                    icon: const Icon(
+                      Icons.cancel_outlined,
+                      size: 14,
+                      color: AppColors.error,
+                    ),
+                    label: Text(
+                      AppLocalizations.of(
+                        context,
+                      ).translate('tracking_cancel_action'),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.error,
+                      ),
+                    ),
                     style: TextButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.zero),
+                        borderRadius: BorderRadius.zero,
+                      ),
                     ),
                   ),
                 ),
@@ -234,6 +289,7 @@ class PassengerInfoCard extends StatelessWidget {
 }
 
 // ── Avatar ────────────────────────────────────────────────────────────────────
+
 class _PassengerAvatar extends StatelessWidget {
   final PassengerModel passenger;
   const _PassengerAvatar({required this.passenger});
@@ -245,27 +301,32 @@ class _PassengerAvatar extends StatelessWidget {
       height: 50,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        gradient:
-            passenger.avatarUrl == null ? AppColors.purpleGradient : null,
+        gradient: passenger.avatarUrl == null ? AppColors.purpleGradient : null,
         image: passenger.avatarUrl != null
             ? DecorationImage(
                 image: NetworkImage(passenger.avatarUrl!),
-                fit: BoxFit.cover)
+                fit: BoxFit.cover,
+              )
             : null,
       ),
       child: passenger.avatarUrl == null
           ? Center(
-              child: Text(passenger.avatarInitial,
-                  style: const TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.white)))
+              child: Text(
+                passenger.avatarInitial,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            )
           : null,
     );
   }
 }
 
 // ── Star Rating ───────────────────────────────────────────────────────────────
+
 class _StarRating extends StatelessWidget {
   final double rating;
   const _StarRating({required this.rating});
@@ -278,20 +339,24 @@ class _StarRating extends StatelessWidget {
       children: [
         ...List.generate(5, (i) {
           final IconData ico;
-          if (i < full)
+          if (i < full) {
             ico = Icons.star_rounded;
-          else if (i == full && half)
+          } else if (i == full && half) {
             ico = Icons.star_half_rounded;
-          else
+          } else {
             ico = Icons.star_outline_rounded;
+          }
           return Icon(ico, size: 14, color: const Color(0xFFFFC107));
         }),
         const SizedBox(width: 4),
-        Text(rating.toStringAsFixed(1),
-            style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: AppColors.subtext(context))),
+        Text(
+          rating.toStringAsFixed(1),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppColors.subtext(context),
+          ),
+        ),
       ],
     );
   }

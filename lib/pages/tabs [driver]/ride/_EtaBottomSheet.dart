@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class EtaBottomSheet extends StatelessWidget {
   final int selectedRoute;
@@ -6,8 +7,18 @@ class EtaBottomSheet extends StatelessWidget {
   const EtaBottomSheet({super.key, required this.selectedRoute});
 
   static const List<Map<String, String>> _routes = [
-    {'eta': '7 mins away', 'badge': 'PREMIUM', 'duration': '54 min', 'distance': '72 km'},
-    {'eta': '5 mins away', 'badge': 'STANDARD', 'duration': '53 min', 'distance': '71.4 km'},
+    {
+      'eta': '7 mins away',
+      'badge': 'PREMIUM',
+      'duration': '54 min',
+      'distance': '72 km',
+    },
+    {
+      'eta': '5 mins away',
+      'badge': 'STANDARD',
+      'duration': '53 min',
+      'distance': '71.4 km',
+    },
   ];
 
   @override
@@ -24,11 +35,11 @@ class EtaBottomSheet extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
           // ── Handle ─────────────────────────────────────────
           Center(
             child: Container(
-              width: 36, height: 4,
+              width: 36,
+              height: 4,
               margin: const EdgeInsets.only(bottom: 20),
               decoration: BoxDecoration(
                 color: Colors.white24,
@@ -131,12 +142,12 @@ class EtaBottomSheet extends StatelessWidget {
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: const [
-                  Icon(Icons.navigation_rounded, size: 20),
-                  SizedBox(width: 8),
+                children: [
+                  const Icon(Icons.navigation_rounded, size: 20),
+                  const SizedBox(width: 8),
                   Text(
-                    'Start Navigation',
-                    style: TextStyle(
+                    AppLocalizations.of(context).translate('start_navigation'),
+                    style: const TextStyle(
                       fontWeight: FontWeight.w700,
                       fontSize: 16,
                     ),

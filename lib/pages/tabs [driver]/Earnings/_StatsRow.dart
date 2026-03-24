@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class StatsRow extends StatelessWidget {
   const StatsRow({super.key});
@@ -11,17 +12,23 @@ class StatsRow extends StatelessWidget {
       children: [
         Expanded(
           child: _StatCard(
-            label: 'Total Trips',
+            label: AppLocalizations.of(
+              context,
+            ).translate('earnings_total_trips'),
             value: '164',
-            sub: 'This Month',
+            sub: AppLocalizations.of(context).translate('earnings_this_month'),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: _StatCard(
-            label: 'Online Time',
+            label: AppLocalizations.of(
+              context,
+            ).translate('earnings_online_time'),
             value: '112h 45m',
-            sub: 'Active Hours',
+            sub: AppLocalizations.of(
+              context,
+            ).translate('earnings_active_hours'),
           ),
         ),
       ],
@@ -52,22 +59,26 @@ class _StatCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label,
-              style: AppTextStyles.bodySmall(context).copyWith(
-                color: AppColors.subtext(context),
-              )),
+          Text(
+            label,
+            style: AppTextStyles.bodySmall(
+              context,
+            ).copyWith(color: AppColors.subtext(context)),
+          ),
           const SizedBox(height: 8),
-          Text(value,
-              style: AppTextStyles.bodyLarge(context).copyWith(
-                fontWeight: FontWeight.w900,
-                fontSize: 20,
-              )),
+          Text(
+            value,
+            style: AppTextStyles.bodyLarge(
+              context,
+            ).copyWith(fontWeight: FontWeight.w900, fontSize: 20),
+          ),
           const SizedBox(height: 4),
-          Text(sub,
-              style: AppTextStyles.bodySmall(context).copyWith(
-                color: AppColors.subtext(context),
-                fontSize: 11,
-              )),
+          Text(
+            sub,
+            style: AppTextStyles.bodySmall(
+              context,
+            ).copyWith(color: AppColors.subtext(context), fontSize: 11),
+          ),
         ],
       ),
     );

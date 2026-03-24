@@ -1,5 +1,6 @@
 // _EarningsTabs.dart
 import 'package:flutter/material.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../../theme/app_colors.dart';
 
 class EarningsTabs extends StatelessWidget {
@@ -14,6 +15,15 @@ class EarningsTabs extends StatelessWidget {
 
   static const List<String> _tabs = ['Weekly', 'Monthly', 'All-Time'];
 
+  List<String> _tabLabels(BuildContext context) {
+    final t = AppLocalizations.of(context).translate;
+    return [
+      t('earnings_tab_weekly'),
+      t('earnings_tab_monthly'),
+      t('earnings_tab_all_time'),
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -23,7 +33,7 @@ class EarningsTabs extends StatelessWidget {
         ),
       ),
       child: Row(
-        children: List.generate(_tabs.length, (i) {
+        children: List.generate(_tabLabels(context).length, (i) {
           final isSelected = i == selectedIndex;
           return Expanded(
             child: GestureDetector(
@@ -35,7 +45,7 @@ class EarningsTabs extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                     child: Text(
-                      _tabs[i],
+                      _tabLabels(context)[i],
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         color: isSelected

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class DriverPreferencesPage extends StatefulWidget {
   const DriverPreferencesPage({super.key});
@@ -20,6 +21,7 @@ class _DriverPreferencesPageState extends State<DriverPreferencesPage> {
   @override
   Widget build(BuildContext context) {
     _darkMode = Theme.of(context).brightness == Brightness.dark;
+    final t = AppLocalizations.of(context).translate;
 
     return Scaffold(
       backgroundColor: AppColors.bg(context),
@@ -27,25 +29,28 @@ class _DriverPreferencesPageState extends State<DriverPreferencesPage> {
         backgroundColor: AppColors.bg(context),
         elevation: 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded,
-              color: AppColors.text(context), size: 20),
+          icon: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.text(context),
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: Text('Preferences', style: AppTextStyles.pageTitle(context)),
+        title: Text(t('prefs_title'), style: AppTextStyles.pageTitle(context)),
         centerTitle: true,
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           // ── APPEARANCE ───────────────────────────────────────────
-          _SectionHeader(label: 'APPEARANCE'),
+          _SectionHeader(label: t('prefs_appearance_section')),
           const SizedBox(height: 10),
           _SettingsCard(
             children: [
               _ToggleRow(
                 icon: Icons.dark_mode_outlined,
-                label: 'Dark Mode',
-                subtitle: 'Switch between light and dark theme',
+                label: t('prefs_dark_mode'),
+                subtitle: t('prefs_dark_mode_subtitle'),
                 value: _darkMode,
                 onChanged: (v) {
                   setState(() => _darkMode = v);
@@ -58,13 +63,13 @@ class _DriverPreferencesPageState extends State<DriverPreferencesPage> {
           const SizedBox(height: 24),
 
           // ── LANGUAGE & REGION ────────────────────────────────────
-          _SectionHeader(label: 'LANGUAGE & REGION'),
+          _SectionHeader(label: t('prefs_lang_region_section')),
           const SizedBox(height: 10),
           _SettingsCard(
             children: [
               _DropdownRow(
                 icon: Icons.language_rounded,
-                label: 'Language',
+                label: t('prefs_language'),
                 value: _selectedLanguage,
                 items: _languages,
                 onChanged: (v) => setState(() => _selectedLanguage = v!),
@@ -72,7 +77,7 @@ class _DriverPreferencesPageState extends State<DriverPreferencesPage> {
               _Divider(),
               _DropdownRow(
                 icon: Icons.monetization_on_outlined,
-                label: 'Currency',
+                label: t('prefs_currency'),
                 value: _selectedCurrency,
                 items: _currencies,
                 onChanged: (v) => setState(() => _selectedCurrency = v!),
@@ -191,8 +196,11 @@ class _DropdownRow extends StatelessWidget {
               isDense: true,
               style: AppTextStyles.settingsItemValue(context),
               dropdownColor: AppColors.surface(context),
-              icon: Icon(Icons.chevron_right_rounded,
-                  color: AppColors.subtext(context), size: 20),
+              icon: Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.subtext(context),
+                size: 20,
+              ),
               items: items
                   .map((e) => DropdownMenuItem(value: e, child: Text(e)))
                   .toList(),

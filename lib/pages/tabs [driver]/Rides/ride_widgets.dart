@@ -3,6 +3,7 @@
 // ════════════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
+import '../../../../../l10n/app_localizations.dart';
 import '../../../../../theme/app_colors.dart';
 import '../../../../../theme/app_text_styles.dart';
 
@@ -14,10 +15,10 @@ class RideDot extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-        width: 9,
-        height: 9,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-      );
+    width: 9,
+    height: 9,
+    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+  );
 }
 
 // ─── Icon + label chip ───────────────────────────────────────────────
@@ -60,15 +61,16 @@ class RideEmptyState extends StatelessWidget {
           const SizedBox(height: 16),
           Text(
             message,
-            style: AppTextStyles.bodyMedium(context)
-                .copyWith(color: AppColors.subtext(context)),
+            style: AppTextStyles.bodyMedium(
+              context,
+            ).copyWith(color: AppColors.subtext(context)),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 12),
           GestureDetector(
             onTap: () {},
             child: Text(
-              'Tap to refresh',
+              AppLocalizations.of(context).translate('tap_to_refresh'),
               style: TextStyle(
                 fontFamily: 'Inter',
                 fontSize: 14,
@@ -108,11 +110,7 @@ class RideRouteTimeline extends StatelessWidget {
           children: [
             const SizedBox(height: 3),
             RideDot(color: AppColors.primaryPurple),
-            Container(
-              width: 1.5,
-              height: 26,
-              color: AppColors.border(context),
-            ),
+            Container(width: 1.5, height: 26, color: AppColors.border(context)),
             RideDot(color: AppColors.secondaryPurple),
           ],
         ),

@@ -19,6 +19,10 @@ dependencies:
   easy_localization: ^3.0.0
   firebase_core: ^4.5.0
   image_picker: ^1.0.7
+  flutter_sound: ^9.2.13     # replaces record — proper namespace, works with modern AGP
+  just_audio: ^0.9.40
+  path_provider: ^2.1.3
+  permission_handler: ^11.3.1 # needed for mic permission with flutter_sound
 
 dev_dependencies:
   flutter_test:
@@ -61,9 +65,9 @@ flutter:
     - images/logo.gif
     - images/complete.gif
     - images/logob.png
-    - images/translations/en.json
-    - images/translations/fr.json
-    - images/translations/ar.json
+    - data/translations/en.json
+    - data/translations/fr.json
+    - data/translations/ar.json
     - images/image.png
     - images/flags/usa.png
     - images/flags/france.png
@@ -74,4 +78,23 @@ flutter:
     - images/icon_luncher/Driver/DriverUp.png
     - images/icon_luncher/Driver/DriverWhite.png
     - images/icon_luncher/Driver/Driver1.png
+    - images/icons/messenger.png
+    - images/icons/telephone.png
+    - images/icons/warning.png
+    - data/privacy/privacy_patch_en.json
+    - data/privacy/privacy_patch_fr.json
+    - data/privacy/privacy_patch_ar.json
+    - data/privacy/privacy_patch_de.json
+    - data/privacy/privacy_patch_es.json
+    - data/privacy/privacy_patch_it.json
+    - data/privacy/privacy_patch_pt.json
+    - data/privacy/privacy_patch_tr.json
+    - data/terms/terms_patch_en.json
+    - data/terms/terms_patch_fr.json
+    - data/terms/terms_patch_ar.json
+    - data/terms/terms_patch_de.json
+    - data/terms/terms_patch_es.json
+    - data/terms/terms_patch_it.json
+    - data/terms/terms_patch_pt.json
+    - data/terms/terms_patch_tr.json
 

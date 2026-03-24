@@ -3,6 +3,7 @@
 // ════════════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
+import '../../../../../l10n/app_localizations.dart';
 import '../../../../../theme/app_colors.dart';
 import '../../../../../theme/app_text_styles.dart';
 import 'ride_model.dart';
@@ -35,7 +36,7 @@ class RideCard extends StatelessWidget {
   });
 
   bool get _isAvailable => onAccept != null && onReject != null;
-  bool get _isUpcoming  => onTrack != null && onChat != null;
+  bool get _isUpcoming => onTrack != null && onChat != null;
 
   @override
   Widget build(BuildContext context) {
@@ -79,16 +80,23 @@ class RideCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(ride.passengerName,
-                          style: AppTextStyles.bodyLarge(context)),
+                      Text(
+                        ride.passengerName,
+                        style: AppTextStyles.bodyLarge(context),
+                      ),
                       const SizedBox(height: 3),
                       Row(
                         children: [
-                          Icon(Icons.people_outline,
-                              size: 13, color: AppColors.subtext(context)),
+                          Icon(
+                            Icons.people_outline,
+                            size: 13,
+                            color: AppColors.subtext(context),
+                          ),
                           const SizedBox(width: 4),
                           Text(
-                            '${ride.passengerCount} passenger${ride.passengerCount > 1 ? 's' : ''}',
+                            ride.passengerCount == 1
+                                ? '${ride.passengerCount} ${AppLocalizations.of(context).translate('ride_passenger_one')}'
+                                : '${ride.passengerCount} ${AppLocalizations.of(context).translate('ride_passengers_many')}',
                             style: AppTextStyles.bodySmall(context),
                           ),
                         ],
@@ -99,10 +107,7 @@ class RideCard extends StatelessWidget {
                 // Right badge: price (available) or status pill (others)
                 _isAvailable
                     ? _PriceBadge(price: ride.price)
-                    : _StatusPill(
-                        label: statusLabel!,
-                        color: statusColor!,
-                      ),
+                    : _StatusPill(label: statusLabel!, color: statusColor!),
               ],
             ),
           ),
@@ -127,7 +132,8 @@ class RideCard extends StatelessWidget {
                   const SizedBox(width: 18),
                   RideInfoChip(
                     icon: Icons.people_outline,
-                    label: '${ride.passengerCount} pax',
+                    label:
+                        '${ride.passengerCount} ${AppLocalizations.of(context).translate('ride_pax')}',
                   ),
                 ],
               ],
@@ -154,9 +160,9 @@ class RideCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     '\$${ride.price.toStringAsFixed(2)}',
-                    style: AppTextStyles.priceMedium(context).copyWith(
-                      color: statusColor ?? AppColors.primaryPurple,
-                    ),
+                    style: AppTextStyles.priceMedium(
+                      context,
+                    ).copyWith(color: statusColor ?? AppColors.primaryPurple),
                   ),
                 ],
               ],
@@ -175,13 +181,18 @@ class RideCard extends StatelessWidget {
                     child: OutlinedButton.icon(
                       onPressed: () => onTrack!(ride),
                       icon: const Icon(Icons.map_outlined, size: 16),
-                      label: const Text('Track'),
+                      label: Text(
+                        AppLocalizations.of(
+                          context,
+                        ).translate('ride_action_track'),
+                      ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: AppColors.primaryPurple,
                         side: BorderSide(color: AppColors.primaryPurple),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     ),
                   ),
@@ -191,14 +202,19 @@ class RideCard extends StatelessWidget {
                     child: ElevatedButton.icon(
                       onPressed: () => onChat!(ride),
                       icon: const Icon(Icons.chat_bubble_outline, size: 16),
-                      label: const Text('Chat'),
+                      label: Text(
+                        AppLocalizations.of(
+                          context,
+                        ).translate('ride_action_chat'),
+                      ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.primaryPurple,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     ),
                   ),
@@ -222,12 +238,16 @@ class RideCard extends StatelessWidget {
                         side: BorderSide(color: AppColors.error),
                         padding: const EdgeInsets.symmetric(vertical: 13),
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                       child: Text(
-                        'Reject',
-                        style: AppTextStyles.buttonSecondary
-                            .copyWith(fontSize: 14),
+                        AppLocalizations.of(
+                          context,
+                        ).translate('ride_action_reject'),
+                        style: AppTextStyles.buttonSecondary.copyWith(
+                          fontSize: 14,
+                        ),
                       ),
                     ),
                   ),
@@ -242,12 +262,16 @@ class RideCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(vertical: 13),
                         elevation: 0,
                         shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10)),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                       child: Text(
-                        'Accept Ride',
-                        style: AppTextStyles.buttonPrimary
-                            .copyWith(fontSize: 14),
+                        AppLocalizations.of(
+                          context,
+                        ).translate('ride_action_accept'),
+                        style: AppTextStyles.buttonPrimary.copyWith(
+                          fontSize: 14,
+                        ),
                       ),
                     ),
                   ),
@@ -262,8 +286,18 @@ class RideCard extends StatelessWidget {
 
   String _formatDate(DateTime dt) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
   }
@@ -292,9 +326,9 @@ class _PriceBadge extends StatelessWidget {
       ),
       child: Text(
         '\$${price.toStringAsFixed(2)}',
-        style: AppTextStyles.priceMedium(context).copyWith(
-          color: AppColors.primaryPurple,
-        ),
+        style: AppTextStyles.priceMedium(
+          context,
+        ).copyWith(color: AppColors.primaryPurple),
       ),
     );
   }

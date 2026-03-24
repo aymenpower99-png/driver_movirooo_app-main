@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class TranslationBanner extends StatelessWidget {
   final bool enabled;
@@ -14,6 +15,7 @@ class TranslationBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context).translate;
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -26,13 +28,17 @@ class TranslationBanner extends StatelessWidget {
         children: [
           // Icône traduction
           Container(
-            width: 30, height: 30,
+            width: 30,
+            height: 30,
             decoration: BoxDecoration(
               color: AppColors.primaryPurple.withOpacity(0.12),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(Icons.translate_rounded,
-                color: AppColors.primaryPurple, size: 16),
+            child: Icon(
+              Icons.translate_rounded,
+              color: AppColors.primaryPurple,
+              size: 16,
+            ),
           ),
           const SizedBox(width: 10),
 
@@ -42,20 +48,21 @@ class TranslationBanner extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Auto-translating Arabic',
-                  style: AppTextStyles.bodySmall(context).copyWith(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 12,
-                  ),
+                  t('chat_auto_translating'),
+                  style: AppTextStyles.bodySmall(
+                    context,
+                  ).copyWith(fontWeight: FontWeight.w600, fontSize: 12),
                 ),
                 Row(
                   children: [
-                    Icon(Icons.arrow_forward_rounded,
-                        size: 11,
-                        color: AppColors.subtext(context)),
+                    Icon(
+                      Icons.arrow_forward_rounded,
+                      size: 11,
+                      color: AppColors.subtext(context),
+                    ),
                     const SizedBox(width: 3),
                     Text(
-                      'to English',
+                      t('chat_translate_to'),
                       style: AppTextStyles.bodySmall(context).copyWith(
                         color: AppColors.subtext(context),
                         fontSize: 11,
@@ -80,7 +87,7 @@ class TranslationBanner extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
-                enabled ? 'On' : 'Off',
+                enabled ? t('chat_translate_on') : t('chat_translate_off'),
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 11,
