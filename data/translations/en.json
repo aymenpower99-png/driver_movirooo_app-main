@@ -1,4 +1,4 @@
-{
+﻿{
   "label_email": "EMAIL",
   "label_password": "PASSWORD",
   "hint_email": "Enter your email",
@@ -10,6 +10,10 @@
   "forgot_spam_tip": "Didn't receive it? Check your spam folder or wait a few minutes before trying again.",
   "back_to_sign_in": "Back to Sign In",
   "resend_email": "Resend email",
+  "forgot_password_subtitle": "Enter your email and we\u2019ll send you a link to reset your password.",
+  "send_recovery_link": "Send Recovery Link",
+  "remembered_password": "Remembered your password? ",
+  "profile_rides": "rides",
 
   "driver_tab_stats": "Stats",
   "driver_tab_earnings": "Earnings",
@@ -102,6 +106,13 @@
   "stats_this_month": "This Month",
   "stats_online_time": "Online Time",
   "stats_active_hours": "Active Hours",
+  "earnings_chart_gross": "GROSS",
+  "earnings_chart_comm": "COMM.",
+  "earnings_total_trips": "Total Trips",
+  "earnings_this_month": "This Month",
+  "earnings_online_time": "Online Time",
+  "earnings_active_hours": "Active Hours",
+  "earnings_report_note": "Monthly performance reports are finalized on the 1st of every month.",
 
   "start_navigation": "Start Navigation",
 
@@ -241,6 +252,17 @@
   "completion_back_online": "Back to Online",
   "completion_rate_passenger": "Rate your passenger",
 
+  "cancellation_loading": "Processing cancellation...",
+  "cancellation_title": "Ride Cancelled",
+  "cancellation_by_driver": "Cancelled by you",
+  "cancellation_by_passenger": "Cancelled by passenger",
+  "cancellation_no_earnings": "No earnings",
+  "cancellation_you_cancelled": "You cancelled this ride",
+  "cancellation_early": "Passenger cancelled early",
+  "cancellation_fee_label": "Cancellation fee",
+  "cancellation_driver_warning": "Repeated cancellations may affect your account standing and acceptance rate.",
+  "cancellation_view_details": "View Trip Details",
+
   "appearance": "Appearance",
   "theme": "Theme",
   "dark": "Dark",
@@ -253,25 +275,12 @@
   "englishUS": "English (US)",
   "french": "French",
   "arabic": "Arabic",
-
-  "earnings_chart_title": "Earnings vs\nCommission",
-  "earnings_chart_gross": "GROSS",
-  "earnings_chart_comm": "COMM.",
-
-  "earnings_total_trips": "Total Trips",
-  "earnings_this_month": "This Month",
-  "earnings_online_time": "Online Time",
-  "earnings_active_hours": "Active Hours",
-
-  "earnings_recent_months": "Recent Months",
-  "earnings_status_settled": "SETTLED",
-
-  "earnings_monthly_breakdown": "Monthly Breakdown",
-  "earnings_gross_revenue": "Total Gross Revenue",
-  "earnings_commission": "Total Commission (20%)",
-  "earnings_net_payout": "Total Net Payout",
-  "earnings_report_note": "Monthly performance reports are finalized on the 1st of every month.",
-
-  "earnings_total_net": "Total Net Earnings",
-  "earnings_change": "Change"
+  "german": "German",
+  "spanish": "Spanish",
+  "italian": "Italian",
+  "japanese": "Japanese",
+  "portuguese": "Portuguese",
+  "russian": "Russian",
+  "turkish": "Turkish",
+  "chinese": "Chinese"
 }

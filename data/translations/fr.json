@@ -10,6 +10,10 @@
   "forgot_spam_tip": "Vous ne l'avez pas reçu ? Vérifiez vos spams ou patientez quelques minutes avant de réessayer.",
   "back_to_sign_in": "Retour à la connexion",
   "resend_email": "Renvoyer l'e-mail",
+  "forgot_password_subtitle": "Entrez votre e-mail et nous vous enverrons un lien pour réinitialiser votre mot de passe.",
+  "send_recovery_link": "Envoyer le lien de récupération",
+  "remembered_password": "Vous vous en souvenez\u00a0? ",
+  "profile_rides": "courses",
 
   "driver_tab_stats": "Statistiques",
   "driver_tab_earnings": "Gains",
@@ -102,6 +106,13 @@
   "stats_this_month": "Ce mois-ci",
   "stats_online_time": "Temps en ligne",
   "stats_active_hours": "Heures actives",
+  "earnings_chart_gross": "BRUT",
+  "earnings_chart_comm": "COMM.",
+  "earnings_total_trips": "Trajets totaux",
+  "earnings_this_month": "Ce mois-ci",
+  "earnings_online_time": "Temps en ligne",
+  "earnings_active_hours": "Heures actives",
+  "earnings_report_note": "Les rapports de performance mensuels sont finalisés le 1er de chaque mois.",
 
   "start_navigation": "Démarrer la navigation",
 
@@ -240,6 +251,18 @@
   "completion_report_issue": "Signaler un probl\u00e8me",
   "completion_back_online": "Retour en ligne",
   "completion_rate_passenger": "\u00c9valuer le passager",
+
+  "cancellation_loading": "Traitement de l'annulation...",
+  "cancellation_title": "Course annul\u00e9e",
+  "cancellation_by_driver": "Annul\u00e9e par vous",
+  "cancellation_by_passenger": "Annul\u00e9e par le passager",
+  "cancellation_no_earnings": "Aucun gain",
+  "cancellation_you_cancelled": "Vous avez annul\u00e9 cette course",
+  "cancellation_early": "Le passager a annul\u00e9 t\u00f4t",
+  "cancellation_fee_label": "Frais d'annulation",
+  "cancellation_driver_warning": "Les annulations r\u00e9p\u00e9t\u00e9es peuvent affecter votre compte et votre taux d'acceptation.",
+  "cancellation_view_details": "Voir les d\u00e9tails du trajet",
+
   "appearance": "Apparence",
   "theme": "Th\u00e8me",
   "dark": "Sombre",
@@ -252,25 +275,12 @@
   "englishUS": "Anglais (\u00c9tats-Unis)",
   "french": "Fran\u00e7ais",
   "arabic": "Arabe",
-
-  "earnings_chart_title": "Gains vs\nCommission",
-  "earnings_chart_gross": "BRUT",
-  "earnings_chart_comm": "COMM.",
-
-  "earnings_total_trips": "Trajets totaux",
-  "earnings_this_month": "Ce mois-ci",
-  "earnings_online_time": "Temps en ligne",
-  "earnings_active_hours": "Heures actives",
-
-  "earnings_recent_months": "Mois r\u00e9cents",
-  "earnings_status_settled": "R\u00c9GL\u00c9",
-
-  "earnings_monthly_breakdown": "D\u00e9tail mensuel",
-  "earnings_gross_revenue": "Revenu brut total",
-  "earnings_commission": "Commission totale (20 %)",
-  "earnings_net_payout": "Paiement net total",
-  "earnings_report_note": "Les rapports de performance mensuels sont finalis\u00e9s le 1er de chaque mois.",
-
-  "earnings_total_net": "Gains nets totaux",
-  "earnings_change": "Modifier"
+  "german": "Allemand",
+  "spanish": "Espagnol",
+  "italian": "Italien",
+  "japanese": "Japonais",
+  "portuguese": "Portugais",
+  "russian": "Russe",
+  "turkish": "Turc",
+  "chinese": "Chinois"
 }

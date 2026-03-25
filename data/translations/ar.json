@@ -1,4 +1,4 @@
-{
+﻿{
   "continue": "متابعة",
 
   "label_email": "البريد الإلكتروني",
@@ -12,6 +12,10 @@
   "forgot_spam_tip": "لم تتلقه؟ تحقق من مجلد البريد غير المرغوب فيه أو انتظر بضع دقائق قبل المحاولة مجددًا.",
   "back_to_sign_in": "العودة لتسجيل الدخول",
   "resend_email": "إعادة إرسال البريد الإلكتروني",
+  "forgot_password_subtitle": "أدخل بريدك الإلكتروني وسنرسل لك رابطًا لإعادة تعيين كلمة المرور.",
+  "send_recovery_link": "إرسال رابط الاستعادة",
+  "remembered_password": "تذكرت كلمة المرور؟ ",
+  "profile_rides": "رحلة",
 
   "driver_tab_stats": "الإحصائيات",
   "driver_tab_earnings": "الأرباح",
@@ -104,6 +108,13 @@
   "stats_this_month": "هذا الشهر",
   "stats_online_time": "وقت الاتصال",
   "stats_active_hours": "ساعات نشطة",
+  "earnings_chart_gross": "إجمالي",
+  "earnings_chart_comm": "عمولة",
+  "earnings_total_trips": "إجمالي الرحلات",
+  "earnings_this_month": "هذا الشهر",
+  "earnings_online_time": "وقت الاتصال",
+  "earnings_active_hours": "ساعات النشاط",
+  "earnings_report_note": "يتم إصدار تقارير الأداء الشهرية في الأول من كل شهر.",
 
   "start_navigation": "بدء الملاحة",
 
@@ -256,24 +267,22 @@
   "completion_back_online": "العودة للاتصال",
   "completion_rate_passenger": "قيّم الراكب",
 
-  "earnings_chart_title": "الأرباح مقابل\nالعمولة",
-  "earnings_chart_gross": "إجمالي",
-  "earnings_chart_comm": "عمولة",
-
-  "earnings_total_trips": "إجمالي الرحلات",
-  "earnings_this_month": "هذا الشهر",
-  "earnings_online_time": "وقت الاتصال",
-  "earnings_active_hours": "ساعات النشاط",
-
-  "earnings_recent_months": "الأشهر الأخيرة",
-  "earnings_status_settled": "مُسوَّى",
-
-  "earnings_monthly_breakdown": "التفاصيل الشهرية",
-  "earnings_gross_revenue": "إجمالي الإيرادات الخام",
-  "earnings_commission": "إجمالي العمولة (20%)",
-  "earnings_net_payout": "صافي الدفعة الإجمالية",
-  "earnings_report_note": "يتم إصدار تقارير الأداء الشهرية في الأول من كل شهر.",
-
-  "earnings_total_net": "صافي الأرباح الإجمالية",
-  "earnings_change": "تغيير"
+  "cancellation_loading": "جاري معالجة الإلغاء...",
+  "cancellation_title": "تم إلغاء الرحلة",
+  "cancellation_by_driver": "ألغيت بواسطتك",
+  "cancellation_by_passenger": "ألغى الراكب الرحلة",
+  "cancellation_no_earnings": "لا توجد أرباح",
+  "cancellation_you_cancelled": "لقد ألغيت هذه الرحلة",
+  "cancellation_early": "ألغى الراكب مبكرًا",
+  "cancellation_fee_label": "رسوم الإلغاء",
+  "cancellation_driver_warning": "الإلغاءات المتكررة قد تؤثر على حسابك ومعدل القبول لديك.",
+  "cancellation_view_details": "عرض تفاصيل الرحلة",
+  "german": "الألمانية",
+  "spanish": "الإسبانية",
+  "italian": "الإيطالية",
+  "japanese": "اليابانية",
+  "portuguese": "البرتغالية",
+  "russian": "الروسية",
+  "turkish": "التركية",
+  "chinese": "الصينية"
 }

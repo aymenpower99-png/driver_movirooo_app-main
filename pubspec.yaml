@@ -19,7 +19,7 @@ dependencies:
   easy_localization: ^3.0.0
   firebase_core: ^4.5.0
   image_picker: ^1.0.7
-  flutter_sound: ^9.2.13     # replaces record — proper namespace, works with modern AGP
+  flutter_sound: ^9.2.13 # replaces record — proper namespace, works with modern AGP
   just_audio: ^0.9.40
   path_provider: ^2.1.3
   permission_handler: ^11.3.1 # needed for mic permission with flutter_sound
@@ -34,9 +34,9 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "images/icon_luncher/Driver/Driver1.png"   # ← change this
+  image_path: "images/icon_luncher/Driver/Driver1.png" # ← change this
   adaptive_icon_background: "#ffffff"
-  adaptive_icon_foreground: "images/icon_luncher/Driver/Driver1.png"   # ← change this
+  adaptive_icon_foreground: "images/icon_luncher/Driver/Driver1.png" # ← change this
 
 flutter_native_splash:
   color: "#ffffff"
@@ -68,6 +68,14 @@ flutter:
     - data/translations/en.json
     - data/translations/fr.json
     - data/translations/ar.json
+    - data/translations/de.json
+    - data/translations/es.json
+    - data/translations/it.json
+    - data/translations/ja.json
+    - data/translations/pt.json
+    - data/translations/ru.json
+    - data/translations/tr.json
+    - data/translations/zh.json
     - images/image.png
     - images/flags/usa.png
     - images/flags/france.png
@@ -97,4 +105,3 @@ flutter:
     - data/terms/terms_patch_it.json
     - data/terms/terms_patch_pt.json
     - data/terms/terms_patch_tr.json
-

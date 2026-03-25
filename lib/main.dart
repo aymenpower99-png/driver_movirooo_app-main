@@ -7,7 +7,7 @@ import 'theme/theme_provider.dart';
 import 'theme/locale_provider.dart';
 import 'l10n/app_localizations.dart';
 
-final themeProvider  = ThemeProvider();
+final themeProvider = ThemeProvider();
 final localeProvider = LocaleProvider();
 
 void main() {
@@ -35,19 +35,24 @@ class _SmartWayAppState extends State<SmartWayApp> {
   void restartApp() => setState(() => _restartCount++);
 
   void _applySystemUI(ThemeMode mode) {
-    final isDark = mode == ThemeMode.dark ||
+    final isDark =
+        mode == ThemeMode.dark ||
         (mode == ThemeMode.system &&
             WidgetsBinding.instance.platformDispatcher.platformBrightness ==
                 Brightness.dark);
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
-      statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
-      systemNavigationBarColor:
-          isDark ? const Color(0xFF0B0B0F) : const Color(0xFFF4F4F8),
-      systemNavigationBarIconBrightness:
-          isDark ? Brightness.light : Brightness.dark,
-    ));
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: isDark ? Brightness.light : Brightness.dark,
+        statusBarBrightness: isDark ? Brightness.dark : Brightness.light,
+        systemNavigationBarColor: isDark
+            ? const Color(0xFF0B0B0F)
+            : const Color(0xFFF4F4F8),
+        systemNavigationBarIconBrightness: isDark
+            ? Brightness.light
+            : Brightness.dark,
+      ),
+    );
   }
 
   @override
@@ -58,7 +63,8 @@ class _SmartWayAppState extends State<SmartWayApp> {
         listenable: Listenable.merge([themeProvider, localeProvider]),
         builder: (context, _) {
           WidgetsBinding.instance.addPostFrameCallback(
-              (_) => _applySystemUI(themeProvider.mode));
+            (_) => _applySystemUI(themeProvider.mode),
+          );
 
           return MaterialApp(
             title: 'Moviroo_Driver',
@@ -70,7 +76,15 @@ class _SmartWayAppState extends State<SmartWayApp> {
             supportedLocales: const [
               Locale('en'),
               Locale('fr'),
-              Locale('ar'), // Arabic (RTL)
+              Locale('ar'),
+              Locale('de'),
+              Locale('es'),
+              Locale('it'),
+              Locale('ja'),
+              Locale('pt'),
+              Locale('ru'),
+              Locale('tr'),
+              Locale('zh'),
             ],
             localizationsDelegates: const [
               AppLocalizations.delegate,

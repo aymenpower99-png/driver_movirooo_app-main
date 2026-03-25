@@ -3,6 +3,7 @@ import 'package:moviroo_driver_app/routing/router.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../main.dart' show localeProvider, themeProvider;
 import '../widgets/tab_bar.dart';
 import 'edit_profile/driver_profile_edit_page.dart';
 import 'notification/driver_notifications_page.dart';
@@ -111,19 +112,30 @@ class DriverProfilePage extends StatelessWidget {
                                 const SizedBox(height: 5),
                                 Row(
                                   children: [
-                                    _Badge(
-                                      label: t('badge_premium_driver'),
-                                      bgColor: AppColors.primaryPurple
-                                          .withOpacity(0.1),
-                                      textColor: AppColors.primaryPurple,
+                                    Icon(
+                                      Icons.star_rounded,
+                                      color: Colors.amber,
+                                      size: 16,
                                     ),
-                                    const SizedBox(width: 6),
-                                    _Badge(
-                                      label: t('status_online'),
-                                      bgColor: AppColors.success.withOpacity(
-                                        0.12,
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '4.8',
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.text(context),
                                       ),
-                                      textColor: AppColors.success,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '(245 ${t('profile_rides')})',
+                                      style: TextStyle(
+                                        fontFamily: 'Inter',
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w400,
+                                        color: AppColors.subtext(context),
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -185,30 +197,57 @@ class DriverProfilePage extends StatelessWidget {
             // ── PREFERENCES ──────────────────────────────────────
             _SectionHeader(label: t('profile_section_preferences')),
             const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _SoloCard(
-                icon: Icons.palette_outlined,
-                label: t('profile_appearance'),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => const DriverAppearancePage(),
+            ListenableBuilder(
+              listenable: themeProvider,
+              builder: (context, _) {
+                final themeLabel = switch (themeProvider.mode) {
+                  ThemeMode.dark => t('dark'),
+                  ThemeMode.light => t('light'),
+                  ThemeMode.system => t('system'),
+                };
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _SoloCard(
+                    icon: Icons.palette_outlined,
+                    label: t('profile_appearance'),
+                    subtitle: themeLabel,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const DriverAppearancePage(),
+                      ),
+                    ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
             const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _SoloCard(
-                icon: Icons.language_rounded,
-                label: t('profile_language'),
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const DriverLanguagePage()),
-                ),
-              ),
+            ListenableBuilder(
+              listenable: localeProvider,
+              builder: (context, _) {
+                final code = localeProvider.locale.languageCode;
+                final langName = t(
+                  code == 'fr'
+                      ? 'french'
+                      : code == 'ar'
+                      ? 'arabic'
+                      : 'english',
+                );
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: _SoloCard(
+                    icon: Icons.language_rounded,
+                    label: t('profile_language'),
+                    subtitle: langName,
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const DriverLanguagePage(),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
 
             const SizedBox(height: 10),
@@ -270,6 +309,7 @@ class DriverProfilePage extends StatelessWidget {
 class _SoloCard extends StatelessWidget {
   final IconData icon;
   final String label;
+  final String? subtitle;
   final Color? iconColor;
   final Color? labelColor;
   final VoidCallback onTap;
@@ -277,6 +317,7 @@ class _SoloCard extends StatelessWidget {
   const _SoloCard({
     required this.icon,
     required this.label,
+    this.subtitle,
     this.iconColor,
     this.labelColor,
     required this.onTap,
@@ -300,11 +341,29 @@ class _SoloCard extends StatelessWidget {
             Icon(icon, color: iconColor ?? AppColors.primaryPurple, size: 20),
             const SizedBox(width: 14),
             Expanded(
-              child: Text(
-                label,
-                style: AppTextStyles.settingsItem(
-                  context,
-                ).copyWith(color: labelColor),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    label,
+                    style: AppTextStyles.settingsItem(
+                      context,
+                    ).copyWith(color: labelColor),
+                  ),
+                  if (subtitle != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      subtitle!,
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 12,
+                        fontWeight: FontWeight.w400,
+                        color: AppColors.subtext(context),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ),
             Icon(
@@ -313,40 +372,6 @@ class _SoloCard extends StatelessWidget {
               size: 18,
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Badge ─────────────────────────────────────────────────────────────────────
-
-class _Badge extends StatelessWidget {
-  final String label;
-  final Color bgColor;
-  final Color textColor;
-
-  const _Badge({
-    required this.label,
-    required this.bgColor,
-    required this.textColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        label,
-        style: TextStyle(
-          fontFamily: 'Inter',
-          fontSize: 11,
-          fontWeight: FontWeight.w600,
-          color: textColor,
         ),
       ),
     );

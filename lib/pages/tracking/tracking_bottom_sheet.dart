@@ -7,6 +7,7 @@ import 'package:moviroo_driver_app/pages/tracking/ride_model.dart';
 import 'package:moviroo_driver_app/pages/tracking/widgets/passenger_info_card.dart';
 import 'package:moviroo_driver_app/pages/tracking/widgets/confirm_action_modal.dart';
 import 'package:moviroo_driver_app/pages/tracking/completion/ride_completion_page.dart';
+import 'package:moviroo_driver_app/pages/tracking/completion/ride_cancellation_page.dart';
 
 class TrackingBottomSheet extends StatefulWidget {
   final RideModel ride;
@@ -176,8 +177,13 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
       backgroundColor: Colors.transparent,
       builder: (_) => _CancelRideSheet(
         onConfirm: () {
-          Navigator.of(context).pop();
-          Navigator.of(context).pop();
+          Navigator.of(context).pop(); // close modal
+          Navigator.of(context).push(
+            RideCancellationPage.route(
+              ride: widget.ride,
+              cancelledBy: CancelledBy.driver,
+            ),
+          );
         },
       ),
     );

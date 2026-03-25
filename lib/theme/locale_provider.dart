@@ -20,7 +20,19 @@ class LocaleProvider extends ChangeNotifier {
     }
   }
 
-  bool _isSupported(String code) => ['en', 'fr', 'ar'].contains(code);
+  bool _isSupported(String code) => [
+    'en',
+    'fr',
+    'ar',
+    'de',
+    'es',
+    'it',
+    'ja',
+    'pt',
+    'ru',
+    'tr',
+    'zh',
+  ].contains(code);
 
   Future<void> setLocale(Locale locale) async {
     if (!_isSupported(locale.languageCode)) return;
