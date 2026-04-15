@@ -8,12 +8,18 @@ class DispatchService {
   final Dio _dio = ApiClient.instance.dio;
 
   // ── Location + status ─────────────────────────────────────────────────────
-  Future<void> heartbeat() async {
-    await _dio.patch(Endpoints.heartbeat);
+  Future<void> heartbeat({double? lat, double? lng}) async {
+    await _dio.patch(
+      Endpoints.heartbeat,
+      data: (lat != null && lng != null) ? {'lat': lat, 'lng': lng} : null,
+    );
   }
 
-  Future<void> goOnline() async {
-    await _dio.patch(Endpoints.goOnline);
+  Future<void> goOnline({double? lat, double? lng}) async {
+    await _dio.patch(
+      Endpoints.goOnline,
+      data: (lat != null && lng != null) ? {'lat': lat, 'lng': lng} : null,
+    );
   }
 
   Future<void> goOffline() async {

@@ -160,21 +160,13 @@ class _DashboardPageState extends State<DashboardPage>
                         child: SlideTransition(
                           position: _cardSlide,
                           child: ActivityCard(
-                            isOnline: isOnline,
-                            onlineTime: online.onlineTimeFormatted,
-                            ridesCompleted: driver?.totalTrips ?? 0,
+                            isOnline:     isOnline,
+                            onlineTime:   online.todayOnlineFormatted,
+                            vehicleName:  driver?.vehicle?.displayName ?? '—',
+                            vehicleClass: driver?.vehicle?.className   ?? '—',
                           ),
                         ),
                       ),
-
-                    if (driver != null) ...[
-                      const SizedBox(height: 16),
-                      DriverStatusRow(
-                        rating: driver.ratingAverage,
-                        streakDays: 0,
-                        level: 'Standard',
-                      ),
-                    ],
                   ],
                 ),
               ),

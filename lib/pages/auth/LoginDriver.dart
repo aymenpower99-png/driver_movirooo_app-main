@@ -113,13 +113,6 @@ class _DriverLoginPageState extends State<DriverLoginPage>
     final auth    = context.watch<AuthProvider>();
     final loading = auth.loading;
 
-    // Session restore: if already authenticated, skip to dashboard
-    if (auth.status == AuthStatus.authenticated) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        AppRouter.clearAndGo(context, AppRouter.driverDashboard);
-      });
-    }
-
     // Show error snackbar when auth error changes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (auth.error != null) {

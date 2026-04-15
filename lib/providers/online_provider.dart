@@ -1,60 +1,138 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/dispatch_service.dart';
 import '../services/driver_service.dart';
 import '../core/models/driver_model.dart';
 
-/// Manages the driver's online/offline status, heartbeat loop, and online timer.
+/// Manages driver online/offline status, GPS heartbeat, and persistent time tracking.
 ///
-/// When driver goes ONLINE:
-///   • Calls PATCH /dispatch/locations/online
-///   • Starts a 30-second heartbeat timer → PATCH /dispatch/locations/heartbeat
-///   • Starts a Stopwatch to count online time
+/// Time model:
+///   • todayOnlineMs  — accumulated this calendar day, resets at midnight
+///   • allTimeOnlineMs — never resets, accumulates across all days
 ///
-/// When driver goes OFFLINE:
-///   • Calls PATCH /dispatch/locations/offline
-///   • Cancels heartbeat timer
-///   • Stops Stopwatch
+/// Both are persisted in SharedPreferences and survive app restarts.
 class OnlineProvider extends ChangeNotifier {
   final DispatchService _dispatch = DispatchService();
   final DriverService   _driver   = DriverService();
 
-  bool        _isOnline    = false;
-  bool        _loading     = false;
-  String?     _error;
+  bool         _isOnline    = false;
+  bool         _loading     = false;
+  String?      _error;
   DriverModel? _driverProfile;
+  bool         _initialized = false; // guard: loadDriverProfile runs only once
 
-  // ── Online-time stopwatch ─────────────────────────────────────────────────
-  final Stopwatch _stopwatch = Stopwatch();
-  Timer?          _heartbeatTimer;
-  Timer?          _uiTimer; // ticks every second to refresh displayed time
+  // ── Session tracking ──────────────────────────────────────────────────────
+  DateTime? _lastOnlineAt; // when current online session started
+
+  // ── Persisted time counters (milliseconds) ────────────────────────────────
+  int    _todayOnlineMs   = 0;
+  int    _allTimeOnlineMs = 0;
+  String _storedDate      = ''; // 'YYYY-MM-DD'
+
+  static const _kTodayMs   = 'online_today_ms';
+  static const _kAllTimeMs = 'online_alltime_ms';
+  static const _kDate      = 'online_date';
+
+  // ── Timers ────────────────────────────────────────────────────────────────
+  Timer? _heartbeatTimer;
+  Timer? _uiTimer;
 
   // ── Getters ───────────────────────────────────────────────────────────────
-  bool        get isOnline      => _isOnline;
-  bool        get loading       => _loading;
-  String?     get error         => _error;
+  bool         get isOnline      => _isOnline;
+  bool         get loading       => _loading;
+  String?      get error         => _error;
   DriverModel? get driverProfile => _driverProfile;
 
-  /// Formatted online time — e.g. "1h 23m" or "45m"
-  String get onlineTimeFormatted {
-    final d = _stopwatch.elapsed;
+  /// Milliseconds elapsed in the current online session (0 if offline).
+  int get _sessionMs {
+    if (!_isOnline || _lastOnlineAt == null) return 0;
+    return DateTime.now().difference(_lastOnlineAt!).inMilliseconds;
+  }
+
+  /// Today's total online time including current live session.
+  String get todayOnlineFormatted  => _fmtMs(_todayOnlineMs  + _sessionMs);
+
+  /// All-time total online time including current live session.
+  String get allTimeOnlineFormatted => _fmtMs(_allTimeOnlineMs + _sessionMs);
+
+  /// Alias kept for backward-compat with dashboard_page.
+  String get onlineTimeFormatted => todayOnlineFormatted;
+
+  String _fmtMs(int ms) {
+    final d = Duration(milliseconds: ms);
     final h = d.inHours;
     final m = d.inMinutes.remainder(60);
     if (h > 0) return '${h}h ${m}m';
     return '${m}m';
   }
 
-  Duration get onlineDuration => _stopwatch.elapsed;
+  // ── Persistence ───────────────────────────────────────────────────────────
+  Future<void> _loadPersistedTime() async {
+    final prefs = await SharedPreferences.getInstance();
+    _allTimeOnlineMs = prefs.getInt(_kAllTimeMs) ?? 0;
+    _storedDate      = prefs.getString(_kDate)   ?? '';
 
-  // ── Load initial driver state ─────────────────────────────────────────────
+    final today = _todayStr();
+    if (_storedDate != today) {
+      _todayOnlineMs = 0;
+      await prefs.setInt(_kTodayMs, 0);
+      await prefs.setString(_kDate, today);
+      _storedDate = today;
+    } else {
+      _todayOnlineMs = prefs.getInt(_kTodayMs) ?? 0;
+    }
+  }
+
+  Future<void> _persistTime() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(_kTodayMs,   _todayOnlineMs);
+    await prefs.setInt(_kAllTimeMs, _allTimeOnlineMs);
+    await prefs.setString(_kDate,   _todayStr());
+  }
+
+  String _todayStr() {
+    final n = DateTime.now();
+    return '${n.year}-${n.month.toString().padLeft(2,'0')}-${n.day.toString().padLeft(2,'0')}';
+  }
+
+  // ── Load initial driver state (runs once) ─────────────────────────────────
   Future<void> loadDriverProfile() async {
+    if (_initialized) return;
+    _initialized = true;
+    await _loadPersistedTime();
     try {
       _driverProfile = await _driver.getMe();
-      _isOnline      = _driverProfile!.isOnline;
-      if (_isOnline) _startTimers();
+      _isOnline = _driverProfile!.isOnline;
+      if (_isOnline) {
+        _lastOnlineAt = DateTime.now(); // approximate
+        _startTimers();
+      }
       notifyListeners();
     } catch (_) {
-      // Non-fatal — UI can still show toggle
+      // Non-fatal — keep UI working
+    }
+  }
+
+  // ── GPS ───────────────────────────────────────────────────────────────────
+  Future<Position?> _getLocation() async {
+    try {
+      var perm = await Geolocator.checkPermission();
+      if (perm == LocationPermission.denied) {
+        perm = await Geolocator.requestPermission();
+      }
+      if (perm == LocationPermission.denied ||
+          perm == LocationPermission.deniedForever) {
+        _error = 'Location permission is required to go online.';
+        notifyListeners();
+        return null;
+      }
+      return await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+      );
+    } catch (_) {
+      return null; // GPS unavailable — still allow going online
     }
   }
 
@@ -67,17 +145,33 @@ class OnlineProvider extends ChangeNotifier {
 
     try {
       if (_isOnline) {
+        // ── Going OFFLINE ──────────────────────────────────────────────────
         await _dispatch.goOffline();
+        if (_lastOnlineAt != null) {
+          final ms = DateTime.now().difference(_lastOnlineAt!).inMilliseconds;
+          _todayOnlineMs   += ms;
+          _allTimeOnlineMs += ms;
+          _lastOnlineAt = null;
+          await _persistTime();
+        }
         _stopTimers();
         _isOnline = false;
       } else {
-        await _dispatch.goOnline();
-        _startTimers();
+        // ── Going ONLINE ───────────────────────────────────────────────────
+        final pos = await _getLocation();
+        if (_error != null) { // permission denied
+          _loading = false;
+          notifyListeners();
+          return;
+        }
+        await _dispatch.goOnline(lat: pos?.latitude, lng: pos?.longitude);
+        _lastOnlineAt = DateTime.now();
+        _startTimers(initialPosition: pos);
         _isOnline = true;
       }
     } on Exception catch (e) {
       _error = 'Failed to update status. Try again.';
-      debugPrint('OnlineProvider error: $e');
+      debugPrint('OnlineProvider.toggleOnline: $e');
     } finally {
       _loading = false;
       notifyListeners();
@@ -85,20 +179,19 @@ class OnlineProvider extends ChangeNotifier {
   }
 
   // ── Timers ────────────────────────────────────────────────────────────────
-  void _startTimers() {
-    _stopwatch.start();
-
-    // Heartbeat: every 30 seconds
+  void _startTimers({Position? initialPosition}) {
     _heartbeatTimer?.cancel();
     _heartbeatTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
       try {
-        await _dispatch.heartbeat();
+        final pos = await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium),
+        );
+        await _dispatch.heartbeat(lat: pos.latitude, lng: pos.longitude);
       } catch (_) {
-        // Silent — heartbeat failure should not affect UX
+        try { await _dispatch.heartbeat(); } catch (_) {}
       }
     });
 
-    // UI refresh: every second so online-time counter updates smoothly
     _uiTimer?.cancel();
     _uiTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       notifyListeners();
@@ -106,8 +199,6 @@ class OnlineProvider extends ChangeNotifier {
   }
 
   void _stopTimers() {
-    _stopwatch.stop();
-    _stopwatch.reset();
     _heartbeatTimer?.cancel();
     _heartbeatTimer = null;
     _uiTimer?.cancel();

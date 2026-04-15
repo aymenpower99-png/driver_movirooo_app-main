@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../../providers/online_provider.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -8,27 +10,23 @@ class StatsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final online = context.watch<OnlineProvider>();
+
     return Row(
       children: [
         Expanded(
           child: _StatCard(
-            label: AppLocalizations.of(
-              context,
-            ).translate('earnings_total_trips'),
-            value: '164',
+            label: AppLocalizations.of(context).translate('earnings_total_trips'),
+            value: '${online.driverProfile?.totalTrips ?? 0}',
             sub: AppLocalizations.of(context).translate('earnings_this_month'),
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: _StatCard(
-            label: AppLocalizations.of(
-              context,
-            ).translate('earnings_online_time'),
-            value: '112h 45m',
-            sub: AppLocalizations.of(
-              context,
-            ).translate('earnings_active_hours'),
+            label: AppLocalizations.of(context).translate('earnings_online_time'),
+            value: online.allTimeOnlineFormatted,
+            sub: AppLocalizations.of(context).translate('earnings_active_hours'),
           ),
         ),
       ],

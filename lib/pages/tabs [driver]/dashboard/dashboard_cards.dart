@@ -337,19 +337,21 @@ class _StatusTile extends StatelessWidget {
 // ACTIVITY CARD  —  4 performance stats only, no demand/last ride/peak
 // ─────────────────────────────────────────────────────────────────────────────
 class ActivityCard extends StatelessWidget {
-  final bool isOnline;
-  final int ridesCompleted;
+  final bool   isOnline;
   final String onlineTime;
-  final int acceptanceRate;
-  final int cancellations;
+  final String vehicleName;    // e.g. "Toyota Camry" or "—"
+  final String vehicleClass;   // e.g. "Business" or "—"
+  final int    acceptanceRate;
+  final int    cancellations;
 
   const ActivityCard({
     super.key,
     required this.isOnline,
-    this.ridesCompleted = 5,
-    this.onlineTime = '3h 20m',
-    this.acceptanceRate = 92,
-    this.cancellations = 1,
+    this.vehicleName    = '—',
+    this.vehicleClass   = '—',
+    this.onlineTime     = '0m',
+    this.acceptanceRate = 0,
+    this.cancellations  = 0,
   });
 
   @override
@@ -409,10 +411,15 @@ class ActivityCard extends StatelessWidget {
           _ActivityRow(
             icon: Icons.directions_car_rounded,
             iconColor: AppColors.primaryPurple,
-            label: AppLocalizations.of(
-              context,
-            ).translate('dashboard_rides_completed'),
-            value: '$ridesCompleted',
+            label: AppLocalizations.of(context).translate('dashboard_vehicle'),
+            value: vehicleName,
+          ),
+          const SizedBox(height: 10),
+          _ActivityRow(
+            icon: Icons.workspace_premium_rounded,
+            iconColor: AppColors.primaryPurple,
+            label: AppLocalizations.of(context).translate('dashboard_vehicle_class'),
+            value: vehicleClass,
           ),
           const SizedBox(height: 10),
           _ActivityRow(

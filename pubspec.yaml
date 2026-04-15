@@ -34,6 +34,9 @@ dependencies:
   # ── JSON Serialization ───────────────────────────────────
   json_annotation: ^4.9.0
 
+  # ── GPS / Location ────────────────────────────────────────
+  geolocator: ^13.0.4
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

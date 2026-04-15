@@ -113,7 +113,7 @@ class _SmartWayAppState extends State<SmartWayApp> {
               }
               return supportedLocales.first;
             },
-            initialRoute: '/driver/login',
+            initialRoute: AppRouter.splash,
             onGenerateRoute: (settings) {
               final builder = AppRouter.routes[settings.name];
               if (builder == null) return null;

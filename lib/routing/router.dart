@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:moviroo_driver_app/pages/auth/LoginDriver.dart' show DriverLoginPage;
+import 'package:moviroo_driver_app/pages/auth/splash_page.dart';
 import 'package:moviroo_driver_app/pages/contact_support/contact_support_page.dart';
 
 import 'package:moviroo_driver_app/pages/tabs%20%5Bdriver%5D/chat/chat_page.dart';
@@ -38,6 +39,7 @@ static const String initialRoute = driverLogin;
 static const String ratePassenger = '/rate-passenger';
 static const String rest = '/driver/password-reset';
   static Map<String, WidgetBuilder> get routes => {
+    splash:        (_) => const SplashPage(),
     contactSupport: (_) => const ContactSupportPage(),
 
   driverLogin: (_) => const DriverLoginPage(),
