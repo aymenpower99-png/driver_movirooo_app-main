@@ -1,9 +1,9 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 import '../../../../../l10n/app_localizations.dart';
 import '../../../../../theme/app_colors.dart';
 import '../../../../../theme/app_text_styles.dart';
+import '../../../../../providers/auth_provider.dart';
 
 class DriverProfileEditPage extends StatefulWidget {
   const DriverProfileEditPage({super.key});
@@ -15,13 +15,25 @@ class DriverProfileEditPage extends StatefulWidget {
 class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
   final _formKey = GlobalKey<FormState>();
 
-  final _firstNameController = TextEditingController(text: 'Aymen');
-  final _lastNameController = TextEditingController(text: 'Naser');
-  final _emailController = TextEditingController(text: 'aymen.naser@email.com');
-  final _phoneController = TextEditingController(text: '94338510');
+  final _firstNameController = TextEditingController();
+  final _lastNameController  = TextEditingController();
+  final _emailController     = TextEditingController();
+  final _phoneController     = TextEditingController();
 
-  File? _avatarFile;
-  bool _isSaving = false;
+  @override
+  void initState() {
+    super.initState();
+    // Pre-fill from cached user
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final user = context.read<AuthProvider>().user;
+      if (user != null) {
+        _firstNameController.text = user.firstName;
+        _lastNameController.text  = user.lastName;
+        _emailController.text     = user.email;
+        _phoneController.text     = user.phone ?? '';
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -32,37 +44,45 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
     super.dispose();
   }
 
-  Future<void> _pickPhoto() async {
-    final picker = ImagePicker();
-    final picked = await picker.pickImage(
-      source: ImageSource.gallery,
-      imageQuality: 85,
-    );
-    if (picked != null) setState(() => _avatarFile = File(picked.path));
-  }
-
   Future<void> _saveChanges() async {
     if (!_formKey.currentState!.validate()) return;
-    setState(() => _isSaving = true);
-    await Future.delayed(const Duration(milliseconds: 900));
-    setState(() => _isSaving = false);
-    if (!mounted) return;
-    final msg = AppLocalizations.of(context).translate('profile_updated');
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(msg),
-        backgroundColor: AppColors.success,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        margin: const EdgeInsets.all(16),
-      ),
+    final auth = context.read<AuthProvider>();
+    final ok   = await auth.updateProfile(
+      firstName: _firstNameController.text.trim(),
+      lastName:  _lastNameController.text.trim(),
+      email:     _emailController.text.trim(),
+      phone:     _phoneController.text.trim(),
     );
-    Navigator.pop(context);
+    if (!mounted) return;
+    if (ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context).translate('profile_updated')),
+          backgroundColor: AppColors.success,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.all(16),
+        ),
+      );
+      Navigator.pop(context);
+    } else if (auth.error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(auth.error!),
+          backgroundColor: Colors.red.shade700,
+        ),
+      );
+      auth.clearError();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    final t = AppLocalizations.of(context).translate;
+    final t       = AppLocalizations.of(context).translate;
+    final auth    = context.watch<AuthProvider>();
+    final loading = auth.loading;
+    final initials = auth.user?.initials ?? '?';
+
     return Scaffold(
       backgroundColor: AppColors.bg(context),
       appBar: AppBar(
@@ -89,76 +109,30 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
           children: [
             // ── Avatar ──────────────────────────────────────────
             Center(
-              child: GestureDetector(
-                onTap: _pickPhoto,
-                child: Stack(
-                  children: [
-                    Container(
-                      width: 90,
-                      height: 90,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: _avatarFile == null
-                            ? AppColors.purpleGradient
-                            : null,
-                        image: _avatarFile != null
-                            ? DecorationImage(
-                                image: FileImage(_avatarFile!),
-                                fit: BoxFit.cover,
-                              )
-                            : null,
-                      ),
-                      child: _avatarFile == null
-                          ? const Center(
-                              child: Icon(
-                                Icons.person_rounded,
-                                color: Colors.white,
-                                size: 46,
-                              ),
-                            )
-                          : null,
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Container(
-                        width: 28,
-                        height: 28,
-                        decoration: BoxDecoration(
-                          color: AppColors.primaryPurple,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: AppColors.bg(context),
-                            width: 2,
-                          ),
-                        ),
-                        child: const Icon(
-                          Icons.camera_alt_rounded,
-                          color: Colors.white,
-                          size: 14,
-                        ),
-                      ),
-                    ),
-                  ],
+              child: Container(
+                width: 90,
+                height: 90,
+                decoration: const BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [Color(0xFFA855F7), Color(0xFF7C3AED)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Center(
-              child: GestureDetector(
-                onTap: _pickPhoto,
-                child: Text(
-                  t('update_photo'),
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.primaryPurple,
+                child: Center(
+                  child: Text(
+                    initials,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 30,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: 0.5,
+                    ),
                   ),
                 ),
               ),
             ),
-
             const SizedBox(height: 28),
 
             // ── Editable Tiles ───────────────────────────────────
@@ -204,7 +178,7 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
               width: double.infinity,
               height: 52,
               child: ElevatedButton(
-                onPressed: _isSaving ? null : _saveChanges,
+                onPressed: loading ? null : _saveChanges,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryPurple,
                   disabledBackgroundColor: AppColors.primaryPurple.withOpacity(
@@ -215,7 +189,7 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
                   ),
                   elevation: 0,
                 ),
-                child: _isSaving
+                child: loading
                     ? const SizedBox(
                         width: 22,
                         height: 22,

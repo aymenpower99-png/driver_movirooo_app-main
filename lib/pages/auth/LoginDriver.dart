@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../routing/router.dart';
 import '../../l10n/app_localizations.dart';
+import '../../providers/auth_provider.dart';
 import 'driver_forgot_password_page.dart';
+import 'otp_verify_page.dart';
 
 class DriverLoginPage extends StatefulWidget {
   const DriverLoginPage({super.key});
@@ -17,7 +20,6 @@ class _DriverLoginPageState extends State<DriverLoginPage>
   final _emailController = TextEditingController();
   final _passController = TextEditingController();
   bool _obscurePass = true;
-  bool _isLoading = false;
 
   late AnimationController _animCtrl;
   late Animation<double> _fadeAnim;
@@ -79,16 +81,58 @@ class _DriverLoginPageState extends State<DriverLoginPage>
   }
 
   void _login() async {
-    setState(() => _isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 1400));
+    final email = _emailController.text.trim();
+    final pass  = _passController.text.trim();
+
+    if (email.isEmpty || pass.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter your email and password.')),
+      );
+      return;
+    }
+
+    final auth    = context.read<AuthProvider>();
+    final direct  = await auth.login(email, pass);
+
     if (!mounted) return;
-    setState(() => _isLoading = false);
-    AppRouter.clearAndGo(context, AppRouter.driverDashboard);
+
+    if (direct) {
+      AppRouter.clearAndGo(context, AppRouter.driverDashboard);
+    } else if (auth.preAuthToken != null) {
+      // OTP required — navigate to verification screen
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const OtpVerifyPage()),
+      );
+    }
+    // Error is displayed via Consumer below
   }
 
   @override
   Widget build(BuildContext context) {
-    final t = AppLocalizations.of(context).translate;
+    final t       = AppLocalizations.of(context).translate;
+    final auth    = context.watch<AuthProvider>();
+    final loading = auth.loading;
+
+    // Session restore: if already authenticated, skip to dashboard
+    if (auth.status == AuthStatus.authenticated) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        AppRouter.clearAndGo(context, AppRouter.driverDashboard);
+      });
+    }
+
+    // Show error snackbar when auth error changes
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (auth.error != null) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(
+            content: Text(auth.error!),
+            backgroundColor: Colors.red.shade700,
+          ));
+        auth.clearError();
+      }
+    });
+
     return Scaffold(
       backgroundColor: AppColors.bg(context),
       body: SafeArea(
@@ -254,7 +298,7 @@ class _DriverLoginPageState extends State<DriverLoginPage>
                       width: double.infinity,
                       height: 54,
                       child: ElevatedButton(
-                        onPressed: _isLoading ? null : _login,
+                        onPressed: loading ? null : _login,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primaryPurple,
                           disabledBackgroundColor: AppColors.primaryPurple
@@ -265,7 +309,7 @@ class _DriverLoginPageState extends State<DriverLoginPage>
                             borderRadius: BorderRadius.circular(14),
                           ),
                         ),
-                        child: _isLoading
+                        child: loading
                             ? const SizedBox(
                                 width: 22,
                                 height: 22,

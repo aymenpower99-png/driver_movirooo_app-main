@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../l10n/app_localizations.dart';
+import '../../providers/auth_provider.dart';
 
 class DriverForgotPasswordPage extends StatefulWidget {
   const DriverForgotPasswordPage({super.key});
@@ -14,7 +16,6 @@ class DriverForgotPasswordPage extends StatefulWidget {
 class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
     with TickerProviderStateMixin {
   final _emailController = TextEditingController();
-  bool _isLoading = false;
   bool _sent = false;
 
   late AnimationController _animCtrl;
@@ -60,15 +61,16 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
   }
 
   void _submit() async {
-    if (_emailController.text.trim().isEmpty) return;
-    setState(() => _isLoading = true);
-    await Future.delayed(const Duration(milliseconds: 1400));
+    final email = _emailController.text.trim();
+    if (email.isEmpty) return;
+    final auth = context.read<AuthProvider>();
+    final ok   = await auth.forgotPassword(email);
     if (!mounted) return;
-    setState(() {
-      _isLoading = false;
-      _sent = true;
-    });
-    _successCtrl.forward();
+    if (ok) {
+      setState(() => _sent = true);
+      _successCtrl.forward();
+    }
+    // error handled by auth.error snackbar in parent
   }
 
   InputDecoration _fieldDecoration(BuildContext context) {
@@ -104,7 +106,21 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
 
   @override
   Widget build(BuildContext context) {
-    final t = AppLocalizations.of(context).translate;
+    final t       = AppLocalizations.of(context).translate;
+    final auth    = context.watch<AuthProvider>();
+    final loading = auth.loading;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (auth.error != null) {
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(SnackBar(
+            content: Text(auth.error!),
+            backgroundColor: Colors.red.shade700,
+          ));
+        auth.clearError();
+      }
+    });
     return Scaffold(
       backgroundColor: AppColors.bg(context),
       body: SafeArea(
@@ -375,7 +391,7 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
                         width: double.infinity,
                         height: 54,
                         child: ElevatedButton(
-                          onPressed: _isLoading ? null : _submit,
+                          onPressed: loading ? null : _submit,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFA855F7),
                             disabledBackgroundColor: const Color(
@@ -387,7 +403,7 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
                               borderRadius: BorderRadius.circular(14),
                             ),
                           ),
-                          child: _isLoading
+                          child: loading
                               ? const SizedBox(
                                   width: 22,
                                   height: 22,

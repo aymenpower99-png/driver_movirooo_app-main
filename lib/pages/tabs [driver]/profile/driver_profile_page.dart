@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:moviroo_driver_app/routing/router.dart';
+import 'package:provider/provider.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../main.dart' show localeProvider, themeProvider;
+import '../../../../providers/auth_provider.dart';
+import '../../../../providers/online_provider.dart';
 import '../widgets/tab_bar.dart';
 import 'edit_profile/driver_profile_edit_page.dart';
 import 'notification/driver_notifications_page.dart';
@@ -16,7 +19,18 @@ class DriverProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t = AppLocalizations.of(context).translate;
+    final t      = AppLocalizations.of(context).translate;
+    final auth   = context.watch<AuthProvider>();
+    final online = context.watch<OnlineProvider>();
+    final user   = auth.user;
+    final driver = online.driverProfile;
+
+    final displayName = user != null
+        ? '${user.firstName} ${user.lastName}'.trim()
+        : 'Driver';
+    final initials    = user?.initials ?? '?';
+    final rating      = driver?.ratingAverage ?? 0.0;
+    final totalTrips  = driver?.totalTrips ?? 0;
     return Scaffold(
       backgroundColor: AppColors.bg(context),
       bottomNavigationBar: const DriverTabBar(currentIndex: 3),
@@ -62,21 +76,25 @@ class DriverProfilePage extends StatelessWidget {
                                 height: 64,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  color: AppColors.primaryPurple.withOpacity(
-                                    0.1,
+                                  gradient: const LinearGradient(
+                                    colors: [Color(0xFFA855F7), Color(0xFF7C3AED)],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
                                   ),
                                   border: Border.all(
-                                    color: AppColors.primaryPurple.withOpacity(
-                                      0.3,
-                                    ),
+                                    color: AppColors.primaryPurple.withOpacity(0.3),
                                     width: 2,
                                   ),
                                 ),
                                 child: Center(
-                                  child: Icon(
-                                    Icons.person_rounded,
-                                    color: AppColors.primaryPurple,
-                                    size: 32,
+                                  child: Text(
+                                    initials,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w800,
+                                      letterSpacing: 0.5,
+                                    ),
                                   ),
                                 ),
                               ),
@@ -104,7 +122,7 @@ class DriverProfilePage extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Amadou Diallo',
+                                  displayName,
                                   style: AppTextStyles.pageTitle(
                                     context,
                                   ).copyWith(fontSize: 17),
@@ -119,7 +137,7 @@ class DriverProfilePage extends StatelessWidget {
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      '4.8',
+                                      rating.toStringAsFixed(1),
                                       style: TextStyle(
                                         fontFamily: 'Inter',
                                         fontSize: 14,
@@ -129,7 +147,7 @@ class DriverProfilePage extends StatelessWidget {
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      '(245 ${t('profile_rides')})',
+                                      '($totalTrips ${t('profile_rides')})',
                                       style: TextStyle(
                                         fontFamily: 'Inter',
                                         fontSize: 13,
@@ -291,8 +309,14 @@ class DriverProfilePage extends StatelessWidget {
                 label: t('profile_logout'),
                 iconColor: Colors.red,
                 labelColor: Colors.red,
-                onTap: () =>
-                    AppRouter.clearAndGo(context, AppRouter.driverLogin),
+                onTap: () async {
+                  final onlineProv = context.read<OnlineProvider>();
+                  if (onlineProv.isOnline) await onlineProv.toggleOnline();
+                  await context.read<AuthProvider>().logout();
+                  if (context.mounted) {
+                    AppRouter.clearAndGo(context, AppRouter.driverLogin);
+                  }
+                },
               ),
             ),
 

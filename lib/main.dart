@@ -1,16 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:provider/provider.dart';
 import 'routing/router.dart';
 import 'theme/app_theme.dart';
 import 'theme/theme_provider.dart';
 import 'theme/locale_provider.dart';
 import 'l10n/app_localizations.dart';
+import 'core/api/api_client.dart';
+import 'providers/auth_provider.dart';
+import 'providers/online_provider.dart';
+import 'providers/ride_provider.dart';
 
-final themeProvider = ThemeProvider();
+final themeProvider  = ThemeProvider();
 final localeProvider = LocaleProvider();
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -59,15 +64,22 @@ class _SmartWayAppState extends State<SmartWayApp> {
   Widget build(BuildContext context) {
     return KeyedSubtree(
       key: ValueKey(_restartCount),
-      child: ListenableBuilder(
-        listenable: Listenable.merge([themeProvider, localeProvider]),
-        builder: (context, _) {
-          WidgetsBinding.instance.addPostFrameCallback(
-            (_) => _applySystemUI(themeProvider.mode),
-          );
+      child: MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => AuthProvider()..init()),
+          ChangeNotifierProvider(create: (_) => OnlineProvider()),
+          ChangeNotifierProvider(create: (_) => RideProvider()),
+        ],
+        child: ListenableBuilder(
+          listenable: Listenable.merge([themeProvider, localeProvider]),
+          builder: (context, _) {
+            WidgetsBinding.instance.addPostFrameCallback(
+              (_) => _applySystemUI(themeProvider.mode),
+            );
 
           return MaterialApp(
-            title: 'Moviroo_Driver',
+            navigatorKey: navigatorKey,
+            title: 'Moviroo Driver',
             debugShowCheckedModeBanner: false,
             theme: AppTheme.lightTheme,
             darkTheme: AppTheme.darkTheme,
@@ -101,7 +113,7 @@ class _SmartWayAppState extends State<SmartWayApp> {
               }
               return supportedLocales.first;
             },
-            initialRoute: AppRouter.initialRoute,
+            initialRoute: '/driver/login',
             onGenerateRoute: (settings) {
               final builder = AppRouter.routes[settings.name];
               if (builder == null) return null;
@@ -113,7 +125,7 @@ class _SmartWayAppState extends State<SmartWayApp> {
               );
             },
           );
-        },
+        }),
       ),
     );
   }

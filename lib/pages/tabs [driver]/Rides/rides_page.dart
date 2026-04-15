@@ -3,9 +3,12 @@
 // ════════════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../../../l10n/app_localizations.dart';
 import '../../../../../theme/app_colors.dart';
 import '../../../../../theme/app_text_styles.dart';
+import '../../../providers/ride_provider.dart';
+import '../../../core/models/offer_model.dart';
 import '../widgets/tab_bar.dart';
 import 'ride_model.dart';
 import 'ride_dummy_data.dart';
@@ -42,6 +45,10 @@ class _RidesPageState extends State<RidesPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
+    // Load pending offers when the page opens
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<RideProvider>().loadPendingOffers();
+    });
   }
 
   @override
@@ -106,7 +113,7 @@ class _RidesPageState extends State<RidesPage>
       body: TabBarView(
         controller: _tabController,
         children: [
-          _AvailableTab(rides: _ridesFor(RideStatus.available)),
+          const _AvailableTab(),
           _UpcomingTab(rides: _ridesFor(RideStatus.upcoming)),
           _RideListTab(
             rides: _ridesFor(RideStatus.completed),
@@ -136,68 +143,272 @@ class _RidesPageState extends State<RidesPage>
 }
 
 // ════════════════════════════════════════════════════════════════════
-//  AVAILABLE TAB
+//  AVAILABLE TAB  —  real offers from RideProvider
 // ════════════════════════════════════════════════════════════════════
 
-class _AvailableTab extends StatefulWidget {
-  final List<RideModel> rides;
-  const _AvailableTab({required this.rides});
-
-  @override
-  State<_AvailableTab> createState() => _AvailableTabState();
-}
-
-class _AvailableTabState extends State<_AvailableTab> {
-  late List<RideModel> _rides;
-
-  @override
-  void initState() {
-    super.initState();
-    _rides = List.from(widget.rides);
-  }
-
-  void _accept(RideModel ride) {
-    final t = AppLocalizations.of(context).translate;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: AppColors.success,
-        content: Text(
-          t('ride_accepted_snack').replaceAll('{id}', ride.id),
-          style: const TextStyle(fontFamily: 'Inter', color: Colors.white),
-        ),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-    setState(() => _rides.remove(ride));
-  }
-
-  void _reject(RideModel ride) {
-    final t = AppLocalizations.of(context).translate;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        backgroundColor: AppColors.error,
-        content: Text(
-          t('ride_rejected_snack').replaceAll('{id}', ride.id),
-          style: const TextStyle(fontFamily: 'Inter', color: Colors.white),
-        ),
-        duration: const Duration(seconds: 2),
-      ),
-    );
-    setState(() => _rides.remove(ride));
-  }
+class _AvailableTab extends StatelessWidget {
+  const _AvailableTab();
 
   @override
   Widget build(BuildContext context) {
-    if (_rides.isEmpty) {
-      return RideEmptyState(
-        message: AppLocalizations.of(context).translate('ride_empty_available'),
+    final rideProvider = context.watch<RideProvider>();
+    final t = AppLocalizations.of(context).translate;
+
+    if (rideProvider.loading) {
+      return const Center(
+        child: CircularProgressIndicator(color: Color(0xFFA855F7)),
       );
     }
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      itemCount: _rides.length,
-      itemBuilder: (_, i) =>
-          RideCard(ride: _rides[i], onAccept: _accept, onReject: _reject),
+
+    if (rideProvider.error != null) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(rideProvider.error!, style: TextStyle(color: AppColors.error)),
+            const SizedBox(height: 12),
+            TextButton(
+              onPressed: () => context.read<RideProvider>().loadPendingOffers(),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (rideProvider.pendingOffers.isEmpty) {
+      return RideEmptyState(message: t('ride_empty_available'));
+    }
+
+    return RefreshIndicator(
+      color: const Color(0xFFA855F7),
+      onRefresh: () => context.read<RideProvider>().loadPendingOffers(),
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        itemCount: rideProvider.pendingOffers.length,
+        itemBuilder: (_, i) {
+          final offer = rideProvider.pendingOffers[i];
+          return _OfferCard(offer: offer);
+        },
+      ),
+    );
+  }
+}
+
+// ── Offer card for real dispatch offers ──────────────────────────────────────
+
+class _OfferCard extends StatelessWidget {
+  final OfferModel offer;
+  const _OfferCard({required this.offer});
+
+  @override
+  Widget build(BuildContext context) {
+    final ride = offer.ride;
+    final t = AppLocalizations.of(context).translate;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        color: AppColors.surface(context),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border(context)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Header ─────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+            child: Row(
+              children: [
+                // Avatar with initials
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      colors: [Color(0xFFA855F7), Color(0xFF7C3AED)],
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      ride.passengerInitials,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        ride.passengerName ?? 'Passenger',
+                        style: AppTextStyles.bodyMedium(context).copyWith(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 15,
+                        ),
+                      ),
+                      if (ride.vehicleClassName.isNotEmpty)
+                        Text(
+                          ride.vehicleClassName,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.subtext(context),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                Text(
+                  '${ride.price.toStringAsFixed(1)} TND',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.primaryPurple,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          Divider(color: AppColors.border(context), height: 1),
+
+          // ── Route ──────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            child: Column(
+              children: [
+                _RouteRow(
+                  icon: Icons.my_location_rounded,
+                  color: AppColors.success,
+                  text: ride.from,
+                ),
+                const SizedBox(height: 6),
+                _RouteRow(
+                  icon: Icons.location_on_rounded,
+                  color: AppColors.error,
+                  text: ride.to,
+                ),
+              ],
+            ),
+          ),
+
+          // ── Distance / Time info ───────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            child: Row(
+              children: [
+                Icon(Icons.schedule_outlined, size: 13, color: AppColors.subtext(context)),
+                const SizedBox(width: 4),
+                Text(
+                  ride.rideTime,
+                  style: TextStyle(fontSize: 12, color: AppColors.subtext(context)),
+                ),
+                if ((ride.distanceKm ?? 0) > 0) ...[
+                  const SizedBox(width: 12),
+                  Icon(Icons.route_rounded, size: 13, color: AppColors.subtext(context)),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${ride.distanceKm!.toStringAsFixed(1)} km',
+                    style: TextStyle(fontSize: 12, color: AppColors.subtext(context)),
+                  ),
+                ],
+              ],
+            ),
+          ),
+
+          // ── Accept / Reject buttons ────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 14),
+            child: Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () async {
+                      final ok = await context.read<RideProvider>().rejectOffer(offer.id);
+                      if (context.mounted && !ok) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(context.read<RideProvider>().error ?? 'Error'),
+                            backgroundColor: AppColors.error,
+                          ),
+                        );
+                      }
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.error,
+                      side: BorderSide(color: AppColors.error),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: Text(t('ride_reject')),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () async {
+                      final ok = await context.read<RideProvider>().acceptOffer(offer.id);
+                      if (context.mounted) {
+                        if (ok) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(t('ride_accepted_snack').replaceAll('{id}', offer.id)),
+                              backgroundColor: AppColors.success,
+                            ),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(context.read<RideProvider>().error ?? 'Error'),
+                              backgroundColor: AppColors.error,
+                            ),
+                          );
+                        }
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primaryPurple,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: Text(t('ride_accept'), style: const TextStyle(color: Colors.white)),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RouteRow extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String text;
+  const _RouteRow({required this.icon, required this.color, required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(icon, color: color, size: 14),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            text,
+            style: AppTextStyles.bodySmall(context).copyWith(fontSize: 13),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
     );
   }
 }

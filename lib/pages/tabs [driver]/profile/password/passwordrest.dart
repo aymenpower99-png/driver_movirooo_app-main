@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:moviroo_driver_app/pages/tabs%20%5Bdriver%5D/widgets/_TopBar.dart';
+import 'package:provider/provider.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../providers/auth_provider.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
-import '../../../../routing/router.dart';
 
 class PasswordResetPage extends StatefulWidget {
   const PasswordResetPage({super.key});
@@ -20,6 +21,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
   bool _obscureCurrent = true;
   bool _obscureNew = true;
   bool _obscureConfirm = true;
+  bool _saving = false;
 
   @override
   void dispose() {
@@ -27,6 +29,55 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
     _newCtrl.dispose();
     _confirmCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _save() async {
+    final t = AppLocalizations.of(context).translate;
+    final current = _currentCtrl.text.trim();
+    final newPass = _newCtrl.text.trim();
+    final confirm = _confirmCtrl.text.trim();
+
+    if (current.isEmpty || newPass.isEmpty || confirm.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t('fill_all_fields')), backgroundColor: Colors.red),
+      );
+      return;
+    }
+    if (newPass != confirm) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t('passwords_do_not_match')), backgroundColor: Colors.red),
+      );
+      return;
+    }
+    if (newPass.length < 8) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t('password_too_short')), backgroundColor: Colors.red),
+      );
+      return;
+    }
+
+    setState(() => _saving = true);
+    final auth = context.read<AuthProvider>();
+    final ok = await auth.updatePassword(
+      currentPassword: current,
+      newPassword: newPass,
+    );
+    if (!mounted) return;
+    setState(() => _saving = false);
+
+    if (ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(t('password_updated')), backgroundColor: Colors.green),
+      );
+      Navigator.pop(context);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(auth.error ?? t('something_went_wrong')),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   InputDecoration _fieldDecoration(
@@ -96,15 +147,25 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
           width: double.infinity,
           height: 56,
           child: ElevatedButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: _saving ? null : _save,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryPurple,
+              disabledBackgroundColor: AppColors.primaryPurple.withOpacity(0.5),
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(30),
               ),
             ),
-            child: Text(
+            child: _saving
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      color: Colors.white,
+                    ),
+                  )
+                : Text(
               t('save_new_password'),
               style: const TextStyle(
                 color: Colors.white,
