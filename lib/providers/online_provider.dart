@@ -127,7 +127,10 @@ class OnlineProvider extends ChangeNotifier {
     return await Geolocator.isLocationServiceEnabled();
   }
 
-  /// Get location with medium accuracy + 3-second timeout.
+  /// Get location using a fast strategy:
+  ///   1. Try last-known position first (instant, no wait)
+  ///   2. Fall back to low-accuracy getCurrentPosition (faster fix, ~1-3s)
+  ///   3. Fall back to medium-accuracy with 15s timeout
   /// Returns null on any failure — never blocks going online.
   Future<Position?> _getLocation() async {
     try {
@@ -137,13 +140,24 @@ class OnlineProvider extends ChangeNotifier {
       }
       if (perm == LocationPermission.denied ||
           perm == LocationPermission.deniedForever) {
-        return null; // proceed without coords — don't block
+        return null;
       }
+
+      // Step 1: last known position — instant, no GPS warm-up
+      final last = await Geolocator.getLastKnownPosition();
+      if (last != null) return last;
+
+      // Step 2: low-accuracy fresh fix (faster satellite acquisition)
+      try {
+        return await Geolocator.getCurrentPosition(
+          locationSettings: const LocationSettings(accuracy: LocationAccuracy.low),
+        ).timeout(const Duration(seconds: 15));
+      } catch (_) {}
+
+      // Step 3: medium-accuracy with generous timeout
       return await Geolocator.getCurrentPosition(
         locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium),
-      ).timeout(const Duration(seconds: 3), onTimeout: () {
-        throw TimeoutException('GPS timeout');
-      });
+      ).timeout(const Duration(seconds: 30));
     } catch (_) {
       return null; // GPS unavailable — still allow going online
     }
@@ -207,11 +221,18 @@ class OnlineProvider extends ChangeNotifier {
     _heartbeatTimer?.cancel();
     _heartbeatTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
       try {
-        final pos = await Geolocator.getCurrentPosition(
-          locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium),
-        ).timeout(const Duration(seconds: 5));
+        // Prefer last-known position (instant) for heartbeat
+        Position? pos = await Geolocator.getLastKnownPosition();
+        // If last-known is stale (>2min), refresh with a quick low-accuracy fix
+        if (pos == null ||
+            DateTime.now().difference(pos.timestamp).inMinutes > 2) {
+          pos = await Geolocator.getCurrentPosition(
+            locationSettings: const LocationSettings(accuracy: LocationAccuracy.low),
+          ).timeout(const Duration(seconds: 15));
+        }
         await _dispatch.heartbeat(lat: pos.latitude, lng: pos.longitude);
       } catch (_) {
+        // Send heartbeat without coords if GPS unavailable — keeps session alive
         try { await _dispatch.heartbeat(); } catch (_) {}
       }
     });
