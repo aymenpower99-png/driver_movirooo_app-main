@@ -32,4 +32,7 @@ class Endpoints {
   static const String tickets       = '/support/tickets';
   static String ticket(String id)   => '/support/tickets/$id';
   static String ticketReply(String id) => '/support/tickets/$id/reply';
+
+  // ── Rides ─────────────────────────────────────────────────────────────
+  static const String rides = '/rides';
 }

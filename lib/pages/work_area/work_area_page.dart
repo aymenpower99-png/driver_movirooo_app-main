@@ -93,8 +93,9 @@ class _WorkAreaPageState extends State<WorkAreaPage> {
               width: double.infinity,
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                gradient: AppColors.purpleGradient,
+                color: AppColors.surface(context),
                 borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.border(context)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -104,25 +105,25 @@ class _WorkAreaPageState extends State<WorkAreaPage> {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.2),
+                          color: AppColors.primaryPurple.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Icon(Icons.location_on_rounded, color: Colors.white, size: 24),
+                        child: Icon(Icons.location_on_rounded, color: AppColors.primaryPurple, size: 24),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
+                            Text(
                               'Current Area',
-                              style: TextStyle(color: Colors.white70, fontSize: 13),
+                              style: TextStyle(color: AppColors.subtext(context), fontSize: 13),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               area?.displayName ?? 'Not assigned',
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: AppColors.text(context),
                                 fontSize: 18,
                                 fontWeight: FontWeight.w700,
                               ),
@@ -134,11 +135,11 @@ class _WorkAreaPageState extends State<WorkAreaPage> {
                   ),
                   if (area != null) ...[
                     const SizedBox(height: 16),
-                    const Divider(color: Colors.white24),
+                    Divider(color: AppColors.border(context)),
                     const SizedBox(height: 12),
-                    _areaDetail(Icons.flag_outlined, 'Country', area.country),
+                    _areaDetail(context, Icons.flag_outlined, 'Country', area.country),
                     const SizedBox(height: 8),
-                    _areaDetail(Icons.location_city_outlined, 'City', area.ville),
+                    _areaDetail(context, Icons.location_city_outlined, 'City', area.ville),
                   ],
                 ],
               ),
@@ -213,14 +214,14 @@ class _WorkAreaPageState extends State<WorkAreaPage> {
     );
   }
 
-  Widget _areaDetail(IconData icon, String label, String value) {
+  Widget _areaDetail(BuildContext context, IconData icon, String label, String value) {
     return Row(
       children: [
-        Icon(icon, color: Colors.white70, size: 18),
+        Icon(icon, color: AppColors.subtext(context), size: 18),
         const SizedBox(width: 10),
-        Text(label, style: const TextStyle(color: Colors.white60, fontSize: 13)),
+        Text(label, style: TextStyle(color: AppColors.subtext(context), fontSize: 13)),
         const Spacer(),
-        Text(value, style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500)),
+        Text(value, style: TextStyle(color: AppColors.text(context), fontSize: 14, fontWeight: FontWeight.w500)),
       ],
     );
   }

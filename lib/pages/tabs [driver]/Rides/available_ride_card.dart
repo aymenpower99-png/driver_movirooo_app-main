@@ -1,20 +1,16 @@
 // ════════════════════════════════════════════════════════════════════
-//  ride_card.dart  —  one card for ALL tabs
+//  ride_card.dart  —  one card for ALL tabs (uses global RideModel)
 // ════════════════════════════════════════════════════════════════════
 
 import 'package:flutter/material.dart';
 import '../../../../../l10n/app_localizations.dart';
 import '../../../../../theme/app_colors.dart';
 import '../../../../../theme/app_text_styles.dart';
-import 'ride_model.dart';
+import '../../../core/models/ride_model.dart';
 import 'ride_widgets.dart';
 
 class RideCard extends StatelessWidget {
   final RideModel ride;
-
-  /// Only provided for the Available tab
-  final void Function(RideModel)? onAccept;
-  final void Function(RideModel)? onReject;
 
   /// Only provided for the Upcoming tab
   final void Function(RideModel)? onTrack;
@@ -27,15 +23,12 @@ class RideCard extends StatelessWidget {
   const RideCard({
     super.key,
     required this.ride,
-    this.onAccept,
-    this.onReject,
     this.onTrack,
     this.onChat,
     this.statusLabel,
     this.statusColor,
   });
 
-  bool get _isAvailable => onAccept != null && onReject != null;
   bool get _isUpcoming => onTrack != null && onChat != null;
 
   @override
@@ -65,7 +58,7 @@ class RideCard extends StatelessWidget {
                   ),
                   alignment: Alignment.center,
                   child: Text(
-                    ride.passengerAvatar,
+                    ride.passengerInitials,
                     style: const TextStyle(
                       fontFamily: 'Inter',
                       fontSize: 13,
@@ -75,70 +68,57 @@ class RideCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(width: 10),
-                // Name + passenger count
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        ride.passengerName,
+                        ride.passengerName ?? 'Passenger',
                         style: AppTextStyles.bodyLarge(context),
                       ),
-                      const SizedBox(height: 3),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.people_outline,
-                            size: 13,
+                      if (ride.vehicleClassName.isNotEmpty) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          ride.vehicleClassName,
+                          style: TextStyle(
+                            fontSize: 12,
                             color: AppColors.subtext(context),
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            ride.passengerCount == 1
-                                ? '${ride.passengerCount} ${AppLocalizations.of(context).translate('ride_passenger_one')}'
-                                : '${ride.passengerCount} ${AppLocalizations.of(context).translate('ride_passengers_many')}',
-                            style: AppTextStyles.bodySmall(context),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
-                // Right badge: price (available) or status pill (others)
-                _isAvailable
-                    ? _PriceBadge(price: ride.price)
-                    : _StatusPill(label: statusLabel!, color: statusColor!),
+                _StatusPill(
+                  label: statusLabel ?? ride.status,
+                  color: statusColor ?? AppColors.primaryPurple,
+                ),
               ],
             ),
           ),
 
           Divider(height: 1, color: AppColors.border(context)),
 
-          // ── Date / Time ──────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
-            child: Row(
-              children: [
-                RideInfoChip(
-                  icon: Icons.calendar_today_outlined,
-                  label: _formatDate(ride.dateTime),
-                ),
-                const SizedBox(width: 18),
-                RideInfoChip(
-                  icon: Icons.access_time_outlined,
-                  label: _formatTime(ride.dateTime),
-                ),
-                if (!_isAvailable) ...[
-                  const SizedBox(width: 18),
+          // ── Ride time ──────────────────────────────────────────
+          if (ride.rideTime.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
+              child: Row(
+                children: [
                   RideInfoChip(
-                    icon: Icons.people_outline,
-                    label:
-                        '${ride.passengerCount} ${AppLocalizations.of(context).translate('ride_pax')}',
+                    icon: Icons.schedule_outlined,
+                    label: ride.rideTime,
                   ),
+                  if ((ride.distanceKm ?? 0) > 0) ...[
+                    const SizedBox(width: 18),
+                    RideInfoChip(
+                      icon: Icons.route_rounded,
+                      label: '${ride.distanceKm!.toStringAsFixed(1)} km',
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
 
           // ── Route ────────────────────────────────────────────────
           Padding(
@@ -150,21 +130,16 @@ class RideCard extends StatelessWidget {
                   child: RideRouteTimeline(
                     from: ride.from,
                     to: ride.to,
-                    textStyle: _isAvailable
-                        ? AppTextStyles.bodyMedium(context)
-                        : AppTextStyles.bodySmall(context),
+                    textStyle: AppTextStyles.bodySmall(context),
                   ),
                 ),
-                // Price shown on the right for non-available tabs
-                if (!_isAvailable) ...[
-                  const SizedBox(width: 8),
-                  Text(
-                    '\$${ride.price.toStringAsFixed(2)}',
-                    style: AppTextStyles.priceMedium(
-                      context,
-                    ).copyWith(color: statusColor ?? AppColors.primaryPurple),
-                  ),
-                ],
+                const SizedBox(width: 8),
+                Text(
+                  '${ride.price.toStringAsFixed(1)} TND',
+                  style: AppTextStyles.priceMedium(
+                    context,
+                  ).copyWith(color: statusColor ?? AppColors.primaryPurple),
+                ),
               ],
             ),
           ),
@@ -176,7 +151,6 @@ class RideCard extends StatelessWidget {
               padding: const EdgeInsets.all(12),
               child: Row(
                 children: [
-                  // Track on Map
                   Expanded(
                     child: OutlinedButton.icon(
                       onPressed: () => onTrack!(ride),
@@ -197,7 +171,6 @@ class RideCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: 10),
-                  // Chat
                   Expanded(
                     child: ElevatedButton.icon(
                       onPressed: () => onChat!(ride),
@@ -222,113 +195,7 @@ class RideCard extends StatelessWidget {
               ),
             ),
           ],
-
-          // ── Accept / Reject  (Available tab only) ────────────────
-          if (_isAvailable) ...[
-            Divider(height: 1, color: AppColors.border(context)),
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed: () => onReject!(ride),
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: AppColors.error,
-                        side: BorderSide(color: AppColors.error),
-                        padding: const EdgeInsets.symmetric(vertical: 13),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: Text(
-                        AppLocalizations.of(
-                          context,
-                        ).translate('ride_action_reject'),
-                        style: AppTextStyles.buttonSecondary.copyWith(
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    flex: 2,
-                    child: ElevatedButton(
-                      onPressed: () => onAccept!(ride),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryPurple,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 13),
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                      child: Text(
-                        AppLocalizations.of(
-                          context,
-                        ).translate('ride_action_accept'),
-                        style: AppTextStyles.buttonPrimary.copyWith(
-                          fontSize: 14,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
         ],
-      ),
-    );
-  }
-
-  String _formatDate(DateTime dt) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${months[dt.month - 1]} ${dt.day}, ${dt.year}';
-  }
-
-  String _formatTime(DateTime dt) {
-    final h = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
-    final m = dt.minute.toString().padLeft(2, '0');
-    final p = dt.hour >= 12 ? 'PM' : 'AM';
-    return '$h:$m $p';
-  }
-}
-
-// ─── Price badge ─────────────────────────────────────────────────────
-
-class _PriceBadge extends StatelessWidget {
-  final double price;
-  const _PriceBadge({required this.price});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-      decoration: BoxDecoration(
-        color: AppColors.primaryPurple.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        '\$${price.toStringAsFixed(2)}',
-        style: AppTextStyles.priceMedium(
-          context,
-        ).copyWith(color: AppColors.primaryPurple),
       ),
     );
   }

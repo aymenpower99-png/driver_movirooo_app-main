@@ -9,9 +9,8 @@ import '../../../../../theme/app_colors.dart';
 import '../../../../../theme/app_text_styles.dart';
 import '../../../providers/ride_provider.dart';
 import '../../../core/models/offer_model.dart';
+import '../../../core/models/ride_model.dart';
 import '../widgets/tab_bar.dart';
-import 'ride_model.dart';
-import 'ride_dummy_data.dart';
 import 'ride_widgets.dart';
 import 'available_ride_card.dart';
 
@@ -45,9 +44,10 @@ class _RidesPageState extends State<RidesPage>
   void initState() {
     super.initState();
     _tabController = TabController(length: 4, vsync: this);
-    // Load pending offers when the page opens
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<RideProvider>().loadPendingOffers();
+      final provider = context.read<RideProvider>();
+      provider.loadPendingOffers();
+      provider.loadDriverRides();
     });
   }
 
@@ -57,11 +57,10 @@ class _RidesPageState extends State<RidesPage>
     super.dispose();
   }
 
-  List<RideModel> _ridesFor(RideStatus status) =>
-      dummyRides.where((r) => r.status == status).toList();
-
   @override
   Widget build(BuildContext context) {
+    final rideProvider = context.watch<RideProvider>();
+
     return Scaffold(
       backgroundColor: AppColors.bg(context),
       appBar: AppBar(
@@ -114,9 +113,10 @@ class _RidesPageState extends State<RidesPage>
         controller: _tabController,
         children: [
           const _AvailableTab(),
-          _UpcomingTab(rides: _ridesFor(RideStatus.upcoming)),
+          _UpcomingTab(rides: rideProvider.upcomingRides),
           _RideListTab(
-            rides: _ridesFor(RideStatus.completed),
+            rides: rideProvider.completedRides,
+            loading: rideProvider.ridesLoading,
             emptyMessage: AppLocalizations.of(
               context,
             ).translate('ride_empty_completed'),
@@ -126,7 +126,8 @@ class _RidesPageState extends State<RidesPage>
             statusColor: AppColors.success,
           ),
           _RideListTab(
-            rides: _ridesFor(RideStatus.cancelled),
+            rides: rideProvider.cancelledRides,
+            loading: rideProvider.ridesLoading,
             emptyMessage: AppLocalizations.of(
               context,
             ).translate('ride_empty_cancelled'),
@@ -421,22 +422,21 @@ class _UpcomingTab extends StatelessWidget {
   final List<RideModel> rides;
   const _UpcomingTab({required this.rides});
 
-  /// Maps the rides-page RideModel → tracking RideModel
   tracking.RideModel _toTrackingRide(RideModel r) {
-    final initial = r.passengerName.trim().isNotEmpty
-        ? r.passengerName.trim()[0].toUpperCase()
+    final initial = (r.passengerName ?? '').trim().isNotEmpty
+        ? r.passengerName!.trim()[0].toUpperCase()
         : '?';
     return tracking.RideModel(
       id: r.id,
       passenger: tracking.PassengerModel(
-        name: r.passengerName,
-        rating: 4.8, // swap for r.rating if your RideModel has it
+        name: r.passengerName ?? 'Passenger',
+        rating: 4.8,
         avatarInitial: initial,
       ),
       pickupAddress: r.from,
       dropOffAddress: r.to,
-      distanceKm: 0, // swap for r.distanceKm if available
-      etaMinutes: 0, // swap for r.etaMinutes if available
+      distanceKm: r.distanceKm ?? 0,
+      etaMinutes: 0,
       earningsAmount: r.price,
       currency: 'TND',
     );
@@ -449,21 +449,25 @@ class _UpcomingTab extends StatelessWidget {
         message: AppLocalizations.of(context).translate('ride_empty_upcoming'),
       );
     }
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      itemCount: rides.length,
-      itemBuilder: (_, i) => RideCard(
-        ride: rides[i],
-        statusLabel: AppLocalizations.of(
-          context,
-        ).translate('ride_status_scheduled'),
-        statusColor: AppColors.primaryPurple,
-        onTrack: (ride) => Navigator.of(
-          context,
-        ).push(TrackPassengerPage.route(_toTrackingRide(ride))),
-        onChat: (ride) {
-          Navigator.pushNamed(context, '/chat', arguments: {'rideId': ride.id});
-        },
+    return RefreshIndicator(
+      color: AppColors.primaryPurple,
+      onRefresh: () => context.read<RideProvider>().loadDriverRides(),
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        itemCount: rides.length,
+        itemBuilder: (_, i) => RideCard(
+          ride: rides[i],
+          statusLabel: AppLocalizations.of(
+            context,
+          ).translate('ride_status_scheduled'),
+          statusColor: AppColors.primaryPurple,
+          onTrack: (ride) => Navigator.of(
+            context,
+          ).push(TrackPassengerPage.route(_toTrackingRide(ride))),
+          onChat: (ride) {
+            Navigator.pushNamed(context, '/chat', arguments: {'rideId': ride.id});
+          },
+        ),
       ),
     );
   }
@@ -475,12 +479,14 @@ class _UpcomingTab extends StatelessWidget {
 
 class _RideListTab extends StatelessWidget {
   final List<RideModel> rides;
+  final bool loading;
   final String emptyMessage;
   final String statusLabel;
   final Color statusColor;
 
   const _RideListTab({
     required this.rides,
+    this.loading = false,
     required this.emptyMessage,
     required this.statusLabel,
     required this.statusColor,
@@ -488,14 +494,23 @@ class _RideListTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (loading) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primaryPurple),
+      );
+    }
     if (rides.isEmpty) return RideEmptyState(message: emptyMessage);
-    return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      itemCount: rides.length,
-      itemBuilder: (_, i) => RideCard(
-        ride: rides[i],
-        statusLabel: statusLabel,
-        statusColor: statusColor,
+    return RefreshIndicator(
+      color: AppColors.primaryPurple,
+      onRefresh: () => context.read<RideProvider>().loadDriverRides(),
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        itemCount: rides.length,
+        itemBuilder: (_, i) => RideCard(
+          ride: rides[i],
+          statusLabel: statusLabel,
+          statusColor: statusColor,
+        ),
       ),
     );
   }

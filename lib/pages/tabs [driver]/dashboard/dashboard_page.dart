@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:location/location.dart' as loc;
 import 'package:provider/provider.dart';
 
 import '../../../../theme/app_colors.dart';
@@ -189,9 +190,17 @@ class _DashboardPageState extends State<DashboardPage>
                 ),
               ),
               ElevatedButton.icon(
-                onPressed: () => Geolocator.openLocationSettings(),
-                icon: const Icon(Icons.settings, size: 18),
-                label: const Text('Open Settings'),
+                onPressed: () async {
+                  // Try native in-app dialog first
+                  final location = loc.Location();
+                  final enabled = await location.requestService();
+                  if (!enabled) {
+                    // Fallback to system settings if native dialog fails
+                    await Geolocator.openLocationSettings();
+                  }
+                },
+                icon: const Icon(Icons.gps_fixed, size: 18),
+                label: const Text('Turn On'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryPurple,
                   foregroundColor: Colors.white,

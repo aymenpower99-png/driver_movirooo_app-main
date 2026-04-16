@@ -51,7 +51,7 @@ class RideModel {
 
   factory RideModel.fromJson(Map<String, dynamic> j) {
     final passenger = j['passenger'] as Map<String, dynamic>?;
-    final cls       = j['class']    as Map<String, dynamic>?;
+    final cls       = (j['vehicleClass'] ?? j['class']) as Map<String, dynamic>?;
     final vehicle   = j['vehicle']  as Map<String, dynamic>?;
 
     return RideModel(

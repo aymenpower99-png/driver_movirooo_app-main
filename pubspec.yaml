@@ -39,6 +39,7 @@ dependencies:
 
   # ── GPS / Location ────────────────────────────────────────
   geolocator: ^13.0.4
+  location: ^8.0.0
 
 dev_dependencies:
   flutter_test:

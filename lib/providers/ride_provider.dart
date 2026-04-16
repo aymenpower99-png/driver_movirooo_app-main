@@ -8,17 +8,30 @@ class RideProvider extends ChangeNotifier {
   final DispatchService _dispatch = DispatchService();
 
   List<OfferModel> _pendingOffers  = [];
-  final List<RideModel>  _completedRides = [];
+  List<RideModel>  _allRides       = [];
   bool             _loading        = false;
+  bool             _ridesLoading   = false;
   String?          _error;
   OfferModel?      _activeOffer;   // offer currently being reviewed by driver
 
   // ── Getters ───────────────────────────────────────────────────────────────
   List<OfferModel> get pendingOffers  => _pendingOffers;
-  List<RideModel>  get completedRides => _completedRides;
   bool             get loading        => _loading;
+  bool             get ridesLoading   => _ridesLoading;
   String?          get error          => _error;
   OfferModel?      get activeOffer    => _activeOffer;
+
+  // Categorised ride lists derived from _allRides
+  List<RideModel> get upcomingRides => _allRides.where((r) =>
+      r.status == 'ASSIGNED' ||
+      r.status == 'EN_ROUTE_TO_PICKUP' ||
+      r.status == 'ARRIVED').toList();
+
+  List<RideModel> get completedRides => _allRides.where((r) =>
+      r.status == 'COMPLETED').toList();
+
+  List<RideModel> get cancelledRides => _allRides.where((r) =>
+      r.status == 'CANCELLED').toList();
 
   // ── Fetch pending offers ──────────────────────────────────────────────────
   Future<void> loadPendingOffers() async {
@@ -81,5 +94,20 @@ class RideProvider extends ChangeNotifier {
   void clearError() {
     _error = null;
     notifyListeners();
+  }
+
+  // ── Load all driver rides (upcoming/completed/cancelled) ──────────────
+  Future<void> loadDriverRides() async {
+    _ridesLoading = true;
+    _error = null;
+    notifyListeners();
+    try {
+      _allRides = await _dispatch.getDriverRides();
+    } on Exception catch (e) {
+      _error = 'Could not load rides. $e';
+    } finally {
+      _ridesLoading = false;
+      notifyListeners();
+    }
   }
 }
