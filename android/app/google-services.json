@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "72379381319",
+    "project_id": "moviroo-system",
+    "storage_bucket": "moviroo-system.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:72379381319:android:5eb7a279fece6e9009e362",
+        "android_client_info": {
+          "package_name": "com.example.moviroo_driver_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAMzIegm_mDgxyGfRD0mwtSV4_4zkfxAQE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
