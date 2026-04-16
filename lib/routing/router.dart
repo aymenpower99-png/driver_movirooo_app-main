@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:moviroo_driver_app/pages/auth/LoginDriver.dart' show DriverLoginPage;
 import 'package:moviroo_driver_app/pages/auth/splash_page.dart';
 import 'package:moviroo_driver_app/pages/contact_support/contact_support_page.dart';
+import 'package:moviroo_driver_app/pages/support/my_tickets_page.dart';
+import 'package:moviroo_driver_app/pages/support/ticket_detail_page.dart';
+import 'package:moviroo_driver_app/pages/work_area/work_area_page.dart';
 
 import 'package:moviroo_driver_app/pages/tabs%20%5Bdriver%5D/chat/chat_page.dart';
 import 'package:moviroo_driver_app/pages/tabs%20%5Bdriver%5D/profile/password/passwordrest.dart';
@@ -38,6 +41,9 @@ static const String driverDone = '/driver/done';
 static const String initialRoute = driverLogin;
 static const String ratePassenger = '/rate-passenger';
 static const String rest = '/driver/password-reset';
+static const String myTickets = '/driver/my-tickets';
+static const String ticketDetail = '/driver/ticket-detail';
+static const String workArea = '/driver/work-area';
   static Map<String, WidgetBuilder> get routes => {
     splash:        (_) => const SplashPage(),
     contactSupport: (_) => const ContactSupportPage(),
@@ -53,8 +59,9 @@ rateApp: (_) => RatePage(),
   activeRide: (_) => const ActiveRidePage(),
     chat: (_) => const ChatPage(),
     mapPreview: (_) => const MapPreviewPage(),
-
-
+    myTickets: (_) => const MyTicketsPage(),
+    ticketDetail: (_) => const TicketDetailPage(),
+    workArea: (_) => const WorkAreaPage(),
   };
 
   static Future<T?> push<T>(

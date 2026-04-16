@@ -38,8 +38,8 @@ class _OtpVerifyPageState extends State<OtpVerifyPage>
 
   @override
   void dispose() {
-    for (final c in _ctrls) c.dispose();
-    for (final n in _nodes) n.dispose();
+    for (final c in _ctrls) { c.dispose(); }
+    for (final n in _nodes) { n.dispose(); }
     _animCtrl.dispose();
     super.dispose();
   }
@@ -53,13 +53,6 @@ class _OtpVerifyPageState extends State<OtpVerifyPage>
     if (_code.length == 6) _verify();
   }
 
-  void _onBackspace(int index) {
-    if (_ctrls[index].text.isEmpty && index > 0) {
-      _ctrls[index - 1].clear();
-      _nodes[index - 1].requestFocus();
-    }
-  }
-
   Future<void> _verify() async {
     final code = _code;
     if (code.length < 6) return;
@@ -71,7 +64,7 @@ class _OtpVerifyPageState extends State<OtpVerifyPage>
     if (ok) {
       AppRouter.clearAndGo(context, AppRouter.driverDashboard);
     } else {
-      for (final c in _ctrls) c.clear();
+      for (final c in _ctrls) { c.clear(); }
       _nodes[0].requestFocus();
     }
   }
@@ -134,7 +127,7 @@ class _OtpVerifyPageState extends State<OtpVerifyPage>
                         width: 64,
                         height: 64,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFA855F7).withOpacity(0.10),
+                          color: const Color(0xFFA855F7).withValues(alpha: 0.10),
                           borderRadius: BorderRadius.circular(18),
                         ),
                         child: const Icon(
@@ -158,7 +151,7 @@ class _OtpVerifyPageState extends State<OtpVerifyPage>
                       Text(
                         'Enter the 6-digit code sent to your device.',
                         style: AppTextStyles.bodyMedium(context).copyWith(
-                          color: AppColors.text(context).withOpacity(0.6),
+                          color: AppColors.text(context).withValues(alpha: 0.6),
                           fontSize: 14,
                           height: 1.55,
                         ),
@@ -183,7 +176,7 @@ class _OtpVerifyPageState extends State<OtpVerifyPage>
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFFA855F7),
                             disabledBackgroundColor:
-                                const Color(0xFFA855F7).withOpacity(0.45),
+                                const Color(0xFFA855F7).withValues(alpha: 0.45),
                             elevation: 0,
                             shadowColor: Colors.transparent,
                             shape: RoundedRectangleBorder(

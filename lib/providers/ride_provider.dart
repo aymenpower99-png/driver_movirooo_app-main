@@ -8,7 +8,7 @@ class RideProvider extends ChangeNotifier {
   final DispatchService _dispatch = DispatchService();
 
   List<OfferModel> _pendingOffers  = [];
-  List<RideModel>  _completedRides = [];
+  final List<RideModel>  _completedRides = [];
   bool             _loading        = false;
   String?          _error;
   OfferModel?      _activeOffer;   // offer currently being reviewed by driver

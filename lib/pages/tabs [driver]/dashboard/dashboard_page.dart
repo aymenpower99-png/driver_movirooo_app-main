@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../theme/app_colors.dart';
@@ -86,8 +88,23 @@ class _DashboardPageState extends State<DashboardPage>
     await _bounceCtrl.forward();
     await _bounceCtrl.reverse();
 
+    // If going online, check GPS first
+    if (!online.isOnline) {
+      final gpsOn = await Geolocator.isLocationServiceEnabled();
+      if (!gpsOn) {
+        _showGpsRequiredDialog(online);
+        return;
+      }
+    }
+
     final wasOnline = online.isOnline;
     await online.toggleOnline();
+
+    // If provider detected GPS off after our check (race), show modal
+    if (online.gpsRequired) {
+      _showGpsRequiredDialog(online);
+      return;
+    }
 
     if (wasOnline) {
       await _cardCtrl.reverse();
@@ -96,10 +113,107 @@ class _DashboardPageState extends State<DashboardPage>
     }
   }
 
+  /// Shows a non-dismissable dialog that waits for GPS to be enabled.
+  void _showGpsRequiredDialog(OnlineProvider online) {
+    StreamSubscription<ServiceStatus>? sub;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        // Listen for GPS service status changes
+        sub = Geolocator.getServiceStatusStream().listen((status) {
+          if (status == ServiceStatus.enabled) {
+            sub?.cancel();
+            if (!ctx.mounted) return;
+            Navigator.of(ctx).pop();
+            online.clearGpsRequired();
+            // GPS is now on — retry toggle
+            _handleToggle(online);
+          }
+        });
+
+        return PopScope(
+          canPop: false,
+          child: AlertDialog(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+            backgroundColor: AppColors.surface(context),
+            title: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryPurple.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.location_off_rounded,
+                    color: AppColors.primaryPurple,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Enable Location',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.text(context),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            content: Text(
+              'GPS must be enabled to go online. Please turn on your device location to start receiving ride requests.',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.subtext(context),
+                height: 1.5,
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  sub?.cancel();
+                  online.clearGpsRequired();
+                  Navigator.of(ctx).pop();
+                },
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(color: AppColors.subtext(context)),
+                ),
+              ),
+              ElevatedButton.icon(
+                onPressed: () => Geolocator.openLocationSettings(),
+                icon: const Icon(Icons.settings, size: 18),
+                label: const Text('Open Settings'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryPurple,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    ).then((_) {
+      // Cleanup if dialog closed without GPS enable
+      sub?.cancel();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final online = context.watch<OnlineProvider>();
-    final auth = context.watch<AuthProvider>();
     final driver = online.driverProfile;
     final isOnline = online.isOnline;
 
@@ -160,10 +274,12 @@ class _DashboardPageState extends State<DashboardPage>
                         child: SlideTransition(
                           position: _cardSlide,
                           child: ActivityCard(
-                            isOnline:     isOnline,
-                            onlineTime:   online.todayOnlineFormatted,
-                            vehicleName:  driver?.vehicle?.displayName ?? '—',
-                            vehicleClass: driver?.vehicle?.className   ?? '—',
+                            isOnline:       isOnline,
+                            onlineTime:     online.todayOnlineFormatted,
+                            vehicleName:    driver?.vehicle?.displayName ?? '—',
+                            vehicleClass:   driver?.vehicle?.className   ?? '—',
+                            acceptanceRate: driver?.acceptanceRate       ?? 100,
+                            cancellations:  driver?.cancellationCount    ?? 0,
                           ),
                         ),
                       ),

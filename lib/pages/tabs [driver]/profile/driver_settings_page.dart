@@ -5,15 +5,8 @@ import '../../../../l10n/app_localizations.dart';
 import 'package:moviroo_driver_app/pages/contact_support/contact_support_page.dart';
 import 'package:moviroo_driver_app/pages/help_center/help_center_page.dart';
 
-class DriverSettingsPage extends StatefulWidget {
+class DriverSettingsPage extends StatelessWidget {
   const DriverSettingsPage({super.key});
-
-  @override
-  State<DriverSettingsPage> createState() => _DriverSettingsPageState();
-}
-
-class _DriverSettingsPageState extends State<DriverSettingsPage> {
-  bool _locationAlways = true;
 
   @override
   Widget build(BuildContext context) {
@@ -33,7 +26,7 @@ class _DriverSettingsPageState extends State<DriverSettingsPage> {
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
+                    color: Colors.black.withValues(alpha: 0.06),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),
@@ -61,15 +54,14 @@ class _DriverSettingsPageState extends State<DriverSettingsPage> {
           // ── PRIVACY & SECURITY ───────────────────────────────────
           _SectionHeader(label: t('settings_privacy_section')),
 
-          _ToggleRow(
-            label: t('settings_location_always'),
-            value: _locationAlways,
-            onChanged: (v) => setState(() => _locationAlways = v),
-          ),
-          _RowDivider(),
           _TapRow(
             label: t('change_password'),
             onTap: () => Navigator.pushNamed(context, '/driver/password-reset'),
+          ),
+          _RowDivider(),
+          _TapRow(
+            label: t('settings_work_area'),
+            onTap: () => Navigator.pushNamed(context, '/driver/work-area'),
           ),
 
           const SizedBox(height: 28),
@@ -86,7 +78,6 @@ class _DriverSettingsPageState extends State<DriverSettingsPage> {
           ),
           _RowDivider(),
 
-          // ✅ Direct push to ContactSupportPage
           _TapRow(
             label: t('settings_contact_support'),
             onTap: () => Navigator.push(
@@ -94,11 +85,11 @@ class _DriverSettingsPageState extends State<DriverSettingsPage> {
               MaterialPageRoute(builder: (_) => const ContactSupportPage()),
             ),
           ),
-
           _RowDivider(),
+
           _TapRow(
-            label: t('settings_rate_app'),
-            onTap: () => Navigator.pushNamed(context, '/rate-app'),
+            label: t('settings_my_tickets'),
+            onTap: () => Navigator.pushNamed(context, '/driver/my-tickets'),
           ),
 
           const SizedBox(height: 28),
@@ -106,16 +97,6 @@ class _DriverSettingsPageState extends State<DriverSettingsPage> {
           // ── ABOUT ────────────────────────────────────────────────
           _SectionHeader(label: t('settings_about_section')),
 
-          _TapRow(
-            label: t('settings_terms'),
-            onTap: () => Navigator.pushNamed(context, '/terms-of-service'),
-          ),
-          _RowDivider(),
-          _TapRow(
-            label: t('settings_privacy_policy'),
-            onTap: () => Navigator.pushNamed(context, '/privacy-policy'),
-          ),
-          _RowDivider(),
           _TapRow(
             label: t('settings_app_version'),
             onTap: () => Navigator.pushNamed(context, '/app-version'),
@@ -183,35 +164,3 @@ class _TapRow extends StatelessWidget {
   }
 }
 
-// ── Toggle Row ────────────────────────────────────────────────────────────────
-
-class _ToggleRow extends StatelessWidget {
-  final String label;
-  final bool value;
-  final ValueChanged<bool> onChanged;
-
-  const _ToggleRow({
-    required this.label,
-    required this.value,
-    required this.onChanged,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(label, style: AppTextStyles.settingsItem(context)),
-          ),
-          Switch.adaptive(
-            value: value,
-            onChanged: onChanged,
-            activeColor: AppColors.primaryPurple,
-          ),
-        ],
-      ),
-    );
-  }
-}

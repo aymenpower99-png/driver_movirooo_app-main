@@ -15,7 +15,7 @@ class DriverCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.12),
+            color: Colors.black.withValues(alpha: 0.12),
             blurRadius: 20,
             offset: const Offset(0, -4),
           ),
@@ -29,10 +29,10 @@ class DriverCard extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 28,
-                backgroundColor: AppColors.primaryPurple.withOpacity(0.15),
+                backgroundColor: AppColors.primaryPurple.withValues(alpha: 0.15),
                 backgroundImage:
                     const AssetImage('images/driver_avatar.png'),
-                onBackgroundImageError: (_, __) {},
+                onBackgroundImageError: (_, _) {},
                 child: Icon(Icons.person_rounded,
                     color: AppColors.primaryPurple, size: 28),
               ),
@@ -132,10 +132,10 @@ class _ActionBtn extends StatelessWidget {
       child: Container(
         width: 42, height: 42,
         decoration: BoxDecoration(
-          color: AppColors.primaryPurple.withOpacity(0.10),
+          color: AppColors.primaryPurple.withValues(alpha: 0.10),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-              color: AppColors.primaryPurple.withOpacity(0.25)),
+              color: AppColors.primaryPurple.withValues(alpha: 0.25)),
         ),
         child: Icon(icon, color: AppColors.primaryPurple, size: 20),
       ),

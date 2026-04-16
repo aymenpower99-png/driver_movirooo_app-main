@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:moviroo_driver_app/pages/tabs%20%5Bdriver%5D/widgets/_TopBar.dart';
+import '../../widgets/_TopBar.dart';
 import 'package:provider/provider.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../../providers/auth_provider.dart';
@@ -150,7 +150,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
             onPressed: _saving ? null : _save,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryPurple,
-              disabledBackgroundColor: AppColors.primaryPurple.withOpacity(0.5),
+              disabledBackgroundColor: AppColors.primaryPurple.withValues(alpha: 0.5),
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(30),
@@ -290,10 +290,10 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.primaryPurple.withOpacity(0.07),
+                    color: AppColors.primaryPurple.withValues(alpha: 0.07),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: AppColors.primaryPurple.withOpacity(0.20),
+                      color: AppColors.primaryPurple.withValues(alpha: 0.20),
                     ),
                   ),
                   child: Row(

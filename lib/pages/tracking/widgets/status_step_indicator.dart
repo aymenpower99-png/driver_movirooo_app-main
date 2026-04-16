@@ -25,14 +25,6 @@ class _StatusStepIndicatorState extends State<StatusStepIndicator>
     RideStatus.completed,
   ];
 
-  static const List<String> _labels = [
-    'Assigned',
-    'On the Way',
-    'Arrived',
-    'Start Ride',
-    'Complete',
-  ];
-
   List<String> _localizedLabels(BuildContext context) {
     final t = AppLocalizations.of(context).translate;
     return [
@@ -113,7 +105,7 @@ class _StatusStepIndicatorState extends State<StatusStepIndicator>
               return Expanded(
                 child: AnimatedBuilder(
                   animation: _fill,
-                  builder: (_, __) => Stack(
+                  builder: (_, _) => Stack(
                     children: [
                       Container(height: 2, color: inactiveLineColor),
                       FractionallySizedBox(
@@ -153,7 +145,7 @@ class _StatusStepIndicatorState extends State<StatusStepIndicator>
           } else if (isCurrent) {
             dot = AnimatedBuilder(
               animation: _fill,
-              builder: (_, __) {
+              builder: (_, _) {
                 final alpha =
                     0.2 + 0.15 * ((_fill.value * 3.14159) % 3.14159 / 3.14159);
                 return Container(

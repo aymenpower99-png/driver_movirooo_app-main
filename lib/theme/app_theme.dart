@@ -93,7 +93,7 @@ class AppTheme {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(_cardRadius),
         side: BorderSide(
-          color: Colors.black.withOpacity(0.08), // matches Figma #000000 at 8%
+          color: Colors.black.withValues(alpha: 0.08), // matches Figma #000000 at 8%
           width: 1,
         ),
       ),

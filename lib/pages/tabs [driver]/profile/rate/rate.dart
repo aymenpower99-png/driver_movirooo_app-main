@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:moviroo_driver_app/l10n/app_localizations.dart';
-import 'package:moviroo_driver_app/pages/tabs%20%5Bdriver%5D/widgets/_TopBar.dart';
+import '../../widgets/_TopBar.dart';
 import 'package:moviroo_driver_app/routing/router.dart';
 import 'package:moviroo_driver_app/theme/app_colors.dart';
 
@@ -35,10 +35,9 @@ class _RatePageState extends State<RatePage> {
               TopBar(title: t('rate_title')),
               const SizedBox(height: 120),
 
-              Container(
+              SizedBox(
                 width: 72,
                 height: 72,
-
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(20),
                   child: Image.asset(

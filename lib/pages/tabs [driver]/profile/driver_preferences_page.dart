@@ -156,7 +156,7 @@ class _ToggleRow extends StatelessWidget {
           Switch.adaptive(
             value: value,
             onChanged: onChanged,
-            activeColor: AppColors.primaryPurple,
+            activeTrackColor: AppColors.primaryPurple,
           ),
         ],
       ),

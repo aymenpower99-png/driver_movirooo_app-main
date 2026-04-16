@@ -78,7 +78,7 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
     return InputDecoration(
       hintText: hint,
       hintStyle: AppTextStyles.bodyMedium(context).copyWith(
-        color: AppColors.text(context).withOpacity(0.35),
+        color: AppColors.text(context).withValues(alpha: 0.35),
         fontSize: 14,
       ),
       prefixIcon: const Icon(
@@ -169,7 +169,7 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
                         width: 64,
                         height: 64,
                         decoration: BoxDecoration(
-                          color: const Color(0xFFA855F7).withOpacity(0.10),
+                          color: const Color(0xFFA855F7).withValues(alpha: 0.10),
                           borderRadius: BorderRadius.circular(18),
                         ),
                         child: const Icon(
@@ -210,7 +210,7 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
                                   )
                                 : t('forgot_password_subtitle'),
                             style: AppTextStyles.bodyMedium(context).copyWith(
-                              color: AppColors.text(context).withOpacity(0.6),
+                              color: AppColors.text(context).withValues(alpha: 0.6),
                               fontSize: 14,
                               height: 1.55,
                             ),
@@ -239,10 +239,10 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
                                 width: 88,
                                 height: 88,
                                 decoration: BoxDecoration(
-                                  color: Colors.green.withOpacity(0.10),
+                                  color: Colors.green.withValues(alpha: 0.10),
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: Colors.green.withOpacity(0.25),
+                                    color: Colors.green.withValues(alpha: 0.25),
                                     width: 1.5,
                                   ),
                                 ),
@@ -271,7 +271,7 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
                                     Icons.info_outline_rounded,
                                     color: AppColors.text(
                                       context,
-                                    ).withOpacity(0.4),
+                                    ).withValues(alpha: 0.4),
                                     size: 18,
                                   ),
                                   const SizedBox(width: 12),
@@ -282,7 +282,7 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
                                           .copyWith(
                                             color: AppColors.text(
                                               context,
-                                            ).withOpacity(0.6),
+                                            ).withValues(alpha: 0.6),
                                             fontSize: 13,
                                             height: 1.55,
                                           ),
@@ -361,7 +361,7 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
                               style: AppTextStyles.bodySmall(context).copyWith(
                                 color: AppColors.text(
                                   context,
-                                ).withOpacity(0.55),
+                                ).withValues(alpha: 0.55),
                                 fontWeight: FontWeight.w700,
                                 fontSize: 10.5,
                                 letterSpacing: 1.1,
@@ -396,7 +396,7 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
                             backgroundColor: const Color(0xFFA855F7),
                             disabledBackgroundColor: const Color(
                               0xFFA855F7,
-                            ).withOpacity(0.45),
+                            ).withValues(alpha: 0.45),
                             elevation: 0,
                             shadowColor: Colors.transparent,
                             shape: RoundedRectangleBorder(
@@ -435,7 +435,7 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
                             text: TextSpan(
                               style: AppTextStyles.bodySmall(context).copyWith(
                                 fontSize: 13,
-                                color: AppColors.text(context).withOpacity(0.6),
+                                color: AppColors.text(context).withValues(alpha: 0.6),
                               ),
                               children: [
                                 TextSpan(text: t('remembered_password')),

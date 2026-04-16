@@ -77,7 +77,7 @@ class RecentMonths extends StatelessWidget {
 
 class _MonthCard extends StatelessWidget {
   final _MonthData data;
-  const _MonthCard({super.key, required this.data});
+  const _MonthCard({required this.data});
 
   @override
   Widget build(BuildContext context) {

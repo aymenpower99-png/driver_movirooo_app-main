@@ -119,7 +119,7 @@ class _SmartWayAppState extends State<SmartWayApp> {
               if (builder == null) return null;
               return PageRouteBuilder(
                 settings: settings,
-                pageBuilder: (context, _, __) => builder(context),
+                pageBuilder: (context, _, _) => builder(context),
                 transitionDuration: Duration.zero,
                 reverseTransitionDuration: Duration.zero,
               );

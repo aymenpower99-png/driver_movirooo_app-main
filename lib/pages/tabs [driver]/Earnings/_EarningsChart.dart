@@ -49,7 +49,7 @@ class EarningsChart extends StatelessWidget {
               ),
               const SizedBox(width: 14),
               _LegendDot(
-                color: AppColors.primaryPurple.withOpacity(0.30),
+                color: AppColors.primaryPurple.withValues(alpha: 0.30),
                 label: AppLocalizations.of(
                   context,
                 ).translate('earnings_chart_comm'),
@@ -78,7 +78,7 @@ class EarningsChart extends StatelessWidget {
                         Container(
                           height: commH,
                           decoration: BoxDecoration(
-                            color: AppColors.primaryPurple.withOpacity(0.25),
+                            color: AppColors.primaryPurple.withValues(alpha: 0.25),
                             borderRadius: const BorderRadius.vertical(
                               top: Radius.circular(6),
                             ),

@@ -35,7 +35,7 @@ class LabeledDropdownField extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          value: value,
+          initialValue: value,
           onChanged: onChanged,
           validator: validator,
           isExpanded: true,

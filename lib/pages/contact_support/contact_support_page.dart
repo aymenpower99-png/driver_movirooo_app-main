@@ -4,7 +4,9 @@ import 'package:image_picker/image_picker.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../l10n/app_localizations.dart';
-import 'constants/support_categories.dart';
+import '../../core/models/ticket_model.dart';
+import '../../routing/router.dart';
+import '../../services/support_service.dart';
 import 'widgets/labeled_dropdown_field.dart';
 import 'widgets/labeled_input_field.dart';
 import 'widgets/photo_grid.dart';
@@ -23,6 +25,7 @@ class _ContactSupportPageState extends State<ContactSupportPage> {
   final _messageController = TextEditingController();
   String? _selectedCategory;
   final List<File> _attachments = [];
+  bool _submitting = false;
 
   @override
   void dispose() {
@@ -107,20 +110,47 @@ class _ContactSupportPageState extends State<ContactSupportPage> {
 
   // ── Submit ─────────────────────────────────────────────────────────────────
 
-  void _submitForm() {
+  Future<void> _submitForm() async {
     final t = AppLocalizations.of(context).translate;
-    if (_formKey.currentState!.validate()) {
-      // TODO: wire up to backend
+    if (!_formKey.currentState!.validate() || _submitting) return;
+
+    // Map localized category string to backend enum
+    final categories = _localizedCategories(context);
+    final catIndex = categories.indexOf(_selectedCategory ?? '');
+    final backendCategory = (catIndex >= 0 && catIndex < kCategoryMapping.length)
+        ? kCategoryMapping[catIndex]
+        : TicketCategory.other;
+
+    setState(() => _submitting = true);
+    try {
+      await SupportService().createTicket(
+        subject: _subjectController.text.trim(),
+        description: _messageController.text.trim(),
+        category: backendCategory,
+      );
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(t('support_message_sent')),
           backgroundColor: AppColors.success,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
+      Navigator.pop(context);
+      AppRouter.push(context, AppRouter.myTickets);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Failed to submit ticket. Please try again.'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _submitting = false);
     }
   }
 
@@ -156,7 +186,7 @@ class _ContactSupportPageState extends State<ContactSupportPage> {
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
+                    color: Colors.black.withValues(alpha: 0.06),
                     blurRadius: 6,
                     offset: const Offset(0, 2),
                   ),
@@ -242,23 +272,30 @@ class _ContactSupportPageState extends State<ContactSupportPage> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: _submitForm,
+                  onPressed: _submitting ? null : _submitForm,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryPurple,
                     foregroundColor: Colors.white,
+                    disabledBackgroundColor: AppColors.primaryPurple.withValues(alpha: 0.5),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                     elevation: 0,
                   ),
-                  child: Text(
-                    t('support_send'),
-                    style: AppTextStyles.settingsItem(context).copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  child: _submitting
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        )
+                      : Text(
+                          t('support_send'),
+                          style: AppTextStyles.settingsItem(context).copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                 ),
               ),
 

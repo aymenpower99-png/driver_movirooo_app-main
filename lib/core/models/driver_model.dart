@@ -5,7 +5,9 @@ class DriverModel {
   final String  availabilityStatus; // PENDING | SETUP_REQUIRED | OFFLINE | ONLINE | ON_TRIP
   final double  ratingAverage;
   final int     totalTrips;
+  final int     cancellationCount;
   final VehicleInfo? vehicle;
+  final WorkAreaInfo? workArea;
 
   const DriverModel({
     required this.id,
@@ -13,19 +15,32 @@ class DriverModel {
     required this.availabilityStatus,
     required this.ratingAverage,
     required this.totalTrips,
+    this.cancellationCount = 0,
     this.vehicle,
+    this.workArea,
   });
 
   bool get isOnline => availabilityStatus == 'ONLINE' || availabilityStatus == 'ON_TRIP';
+
+  /// Acceptance rate as percentage (0–100).
+  int get acceptanceRate {
+    if (totalTrips == 0) return 100;
+    final accepted = totalTrips - cancellationCount;
+    return ((accepted / totalTrips) * 100).round().clamp(0, 100);
+  }
 
   factory DriverModel.fromJson(Map<String, dynamic> j) => DriverModel(
         id:                 j['id']                 as String,
         userId:             j['userId']             as String,
         availabilityStatus: j['availabilityStatus'] as String? ?? 'OFFLINE',
         ratingAverage:      _toDouble(j['ratingAverage']),
-        totalTrips:         (j['totalTrips'] as num?)?.toInt() ?? 0,
+        totalTrips:         (j['totalTrips']        as num?)?.toInt() ?? 0,
+        cancellationCount:  (j['cancellationCount'] as num?)?.toInt() ?? 0,
         vehicle: j['vehicle'] != null
             ? VehicleInfo.fromJson(j['vehicle'] as Map<String, dynamic>)
+            : null,
+        workArea: j['workArea'] != null
+            ? WorkAreaInfo.fromJson(j['workArea'] as Map<String, dynamic>)
             : null,
       );
 
@@ -41,7 +56,9 @@ class DriverModel {
         availabilityStatus: availabilityStatus ?? this.availabilityStatus,
         ratingAverage:      ratingAverage,
         totalTrips:         totalTrips,
+        cancellationCount:  cancellationCount,
         vehicle:            vehicle,
+        workArea:           workArea,
       );
 }
 
@@ -71,11 +88,31 @@ class VehicleInfo {
     final cls = j['vehicleClass'] as Map<String, dynamic>?;
     return VehicleInfo(
       id:          j['id']          as String,
-      plateNumber: j['plateNumber'] as String? ?? '',
+      plateNumber: j['licensePlate'] as String? ?? j['plateNumber'] as String? ?? '',
       make:        j['make']        as String?,
       model:       j['model']       as String?,
       color:       j['color']       as String?,
       className:   cls?['name']     as String?,
     );
   }
+}
+
+class WorkAreaInfo {
+  final String id;
+  final String country;
+  final String ville;
+
+  const WorkAreaInfo({
+    required this.id,
+    required this.country,
+    required this.ville,
+  });
+
+  String get displayName => '$ville, $country';
+
+  factory WorkAreaInfo.fromJson(Map<String, dynamic> j) => WorkAreaInfo(
+        id:      j['id']      as String,
+        country: j['country'] as String? ?? '',
+        ville:   j['ville']   as String? ?? '',
+      );
 }

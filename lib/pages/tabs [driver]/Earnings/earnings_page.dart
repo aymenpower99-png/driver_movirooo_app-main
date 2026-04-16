@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:moviroo_driver_app/pages/tabs%20%5Bdriver%5D/earnings/EarningsTabs.dart';
-import 'package:moviroo_driver_app/pages/tabs%20%5Bdriver%5D/widgets/tab_bar.dart';
+import 'EarningsTabs.dart';
+import '../widgets/tab_bar.dart';
 import '../../../../theme/app_colors.dart';
 import '_EarningsSummaryCard.dart';
 import '_StatsRow.dart';

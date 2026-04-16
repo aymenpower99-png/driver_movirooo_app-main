@@ -96,11 +96,12 @@ class _ChatInputBarState extends State<ChatInputBar> {
     _recordTimer?.cancel();
     await _recorder.stopRecorder();
     _currentPath = null;
-    if (mounted)
+    if (mounted) {
       setState(() {
         _isRecording = false;
         _recordSeconds = 0;
       });
+    }
   }
 
   String _fmtSeconds(int s) {

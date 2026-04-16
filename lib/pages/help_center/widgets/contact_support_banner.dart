@@ -15,10 +15,10 @@ class ContactSupportBanner extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: AppColors.primaryPurple.withOpacity(0.08),
+          color: AppColors.primaryPurple.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: AppColors.primaryPurple.withOpacity(0.25),
+            color: AppColors.primaryPurple.withValues(alpha: 0.25),
             width: 1,
           ),
         ),
@@ -28,7 +28,7 @@ class ContactSupportBanner extends StatelessWidget {
               width: 42,
               height: 42,
               decoration: BoxDecoration(
-                color: AppColors.primaryPurple.withOpacity(0.15),
+                color: AppColors.primaryPurple.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: const Icon(

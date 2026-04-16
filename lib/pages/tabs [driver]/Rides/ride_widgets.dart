@@ -56,7 +56,7 @@ class RideEmptyState extends StatelessWidget {
           Icon(
             Icons.directions_car_outlined,
             size: 56,
-            color: AppColors.subtext(context).withOpacity(0.3),
+            color: AppColors.subtext(context).withValues(alpha: 0.3),
           ),
           const SizedBox(height: 16),
           Text(

@@ -13,8 +13,6 @@ class EarningsTabs extends StatelessWidget {
     required this.onTap,
   });
 
-  static const List<String> _tabs = ['Weekly', 'Monthly', 'All-Time'];
-
   List<String> _tabLabels(BuildContext context) {
     final t = AppLocalizations.of(context).translate;
     return [

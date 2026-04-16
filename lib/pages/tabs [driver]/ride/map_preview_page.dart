@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:moviroo_driver_app/pages/tabs%20%5Bdriver%5D/ActiveRide/drivercard.dart';
-import '../../../../theme/app_colors.dart';
 import '_RouteCard.dart';
 import '_EtaBottomSheet.dart';
 
@@ -40,7 +39,7 @@ class _MapPreviewPageState extends State<MapPreviewPage> {
                   end: Alignment.bottomCenter,
                   colors: [
                     Colors.transparent,
-                    Colors.black.withOpacity(0.85),
+                    Colors.black.withValues(alpha: 0.85),
                     Colors.black,
                   ],
                 ),
@@ -126,9 +125,9 @@ class _MapBtn extends StatelessWidget {
       child: Container(
         width: 42, height: 42,
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.55),
+          color: Colors.black.withValues(alpha: 0.55),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.white.withOpacity(0.12)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
         ),
         child: Icon(icon, color: Colors.white, size: 20),
       ),

@@ -46,10 +46,12 @@ class _VoiceMessageBubbleState extends State<VoiceMessageBubble> {
       // Explicitly no loop
       await _player.setLoopMode(LoopMode.off);
       final duration = await _player.setFilePath(widget.audioPath!);
-      if (mounted) setState(() {
-        _total = duration ?? Duration.zero;
-        _ready = true;
-      });
+      if (mounted) {
+        setState(() {
+          _total = duration ?? Duration.zero;
+          _ready = true;
+        });
+      }
 
       _player.positionStream.listen((pos) {
         if (mounted) setState(() => _position = pos);

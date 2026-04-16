@@ -15,7 +15,7 @@ class DriverCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.12),
+            color: Colors.black.withValues(alpha: 0.12),
             blurRadius: 20,
             offset: const Offset(0, -4),
           ),
@@ -29,15 +29,15 @@ class DriverCard extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 26,
-                backgroundColor: AppColors.primaryPurple.withOpacity(0.15),
+                backgroundColor: AppColors.primaryPurple.withValues(alpha: 0.15),
                 backgroundImage: const AssetImage('images/driver_avatar.png'),
-                onBackgroundImageError: (_, __) {},
+                onBackgroundImageError: (_, _) {},
                 child: ClipOval(
                   child: Image.asset(
                     'images/driver_avatar.png',
                     width: 52, height: 52,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Icon(
+                    errorBuilder: (_, _, _) => Icon(
                       Icons.person_rounded,
                       color: AppColors.primaryPurple,
                       size: 26,
@@ -115,10 +115,10 @@ class DriverCard extends StatelessWidget {
             child: Container(
               width: 44, height: 44,
               decoration: BoxDecoration(
-                color: AppColors.primaryPurple.withOpacity(0.12),
+                color: AppColors.primaryPurple.withValues(alpha: 0.12),
                 borderRadius: BorderRadius.circular(14),
                 border: Border.all(
-                    color: AppColors.primaryPurple.withOpacity(0.25)),
+                    color: AppColors.primaryPurple.withValues(alpha: 0.25)),
               ),
               child: Icon(
                 Icons.chat_bubble_outline_rounded,

@@ -163,14 +163,6 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
     );
   }
 
-  void _showReportDialog(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const _ReportIssueSheet(),
-    );
-  }
-
   void _showCancelDialog(BuildContext context) {
     showModalBottomSheet(
       context: context,

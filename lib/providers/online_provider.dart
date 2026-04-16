@@ -23,6 +23,10 @@ class OnlineProvider extends ChangeNotifier {
   DriverModel? _driverProfile;
   bool         _initialized = false; // guard: loadDriverProfile runs only once
 
+  /// Set to true when the user tried to go online but GPS is disabled.
+  /// Dashboard should show a persistent "Enable GPS" dialog.
+  bool _gpsRequired = false;
+
   // ── Session tracking ──────────────────────────────────────────────────────
   DateTime? _lastOnlineAt; // when current online session started
 
@@ -44,6 +48,7 @@ class OnlineProvider extends ChangeNotifier {
   bool         get loading       => _loading;
   String?      get error         => _error;
   DriverModel? get driverProfile => _driverProfile;
+  bool         get gpsRequired   => _gpsRequired;
 
   /// Milliseconds elapsed in the current online session (0 if offline).
   int get _sessionMs {
@@ -116,6 +121,14 @@ class OnlineProvider extends ChangeNotifier {
   }
 
   // ── GPS ───────────────────────────────────────────────────────────────────
+
+  /// Check if device GPS service is enabled.
+  Future<bool> isGpsEnabled() async {
+    return await Geolocator.isLocationServiceEnabled();
+  }
+
+  /// Get location with medium accuracy + 3-second timeout.
+  /// Returns null on any failure — never blocks going online.
   Future<Position?> _getLocation() async {
     try {
       var perm = await Geolocator.checkPermission();
@@ -124,16 +137,22 @@ class OnlineProvider extends ChangeNotifier {
       }
       if (perm == LocationPermission.denied ||
           perm == LocationPermission.deniedForever) {
-        _error = 'Location permission is required to go online.';
-        notifyListeners();
-        return null;
+        return null; // proceed without coords — don't block
       }
       return await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
-      );
+        locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium),
+      ).timeout(const Duration(seconds: 3), onTimeout: () {
+        throw TimeoutException('GPS timeout');
+      });
     } catch (_) {
       return null; // GPS unavailable — still allow going online
     }
+  }
+
+  /// Called by dashboard after GPS dialog confirms GPS is now enabled.
+  void clearGpsRequired() {
+    _gpsRequired = false;
+    notifyListeners();
   }
 
   // ── Toggle ────────────────────────────────────────────────────────────────
@@ -141,6 +160,7 @@ class OnlineProvider extends ChangeNotifier {
     if (_loading) return;
     _loading = true;
     _error   = null;
+    _gpsRequired = false;
     notifyListeners();
 
     try {
@@ -158,12 +178,16 @@ class OnlineProvider extends ChangeNotifier {
         _isOnline = false;
       } else {
         // ── Going ONLINE ───────────────────────────────────────────────────
-        final pos = await _getLocation();
-        if (_error != null) { // permission denied
+        // Check GPS service is on (UI should have shown modal already)
+        final gpsOn = await Geolocator.isLocationServiceEnabled();
+        if (!gpsOn) {
+          _gpsRequired = true;
           _loading = false;
           notifyListeners();
           return;
         }
+
+        final pos = await _getLocation();
         await _dispatch.goOnline(lat: pos?.latitude, lng: pos?.longitude);
         _lastOnlineAt = DateTime.now();
         _startTimers(initialPosition: pos);
@@ -185,7 +209,7 @@ class OnlineProvider extends ChangeNotifier {
       try {
         final pos = await Geolocator.getCurrentPosition(
           locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium),
-        );
+        ).timeout(const Duration(seconds: 5));
         await _dispatch.heartbeat(lat: pos.latitude, lng: pos.longitude);
       } catch (_) {
         try { await _dispatch.heartbeat(); } catch (_) {}

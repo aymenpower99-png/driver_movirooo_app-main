@@ -135,7 +135,7 @@ class EtaBottomSheet extends StatelessWidget {
                 backgroundColor: const Color(0xFF7C3AED),
                 foregroundColor: Colors.white,
                 elevation: 0,
-                shadowColor: const Color(0xFF7C3AED).withOpacity(0.50),
+                shadowColor: const Color(0xFF7C3AED).withValues(alpha: 0.50),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(18),
                 ),

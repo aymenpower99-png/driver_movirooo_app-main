@@ -57,7 +57,7 @@ class DriverProfilePage extends StatelessWidget {
                   border: Border.all(color: AppColors.border(context)),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.06),
+                      color: Colors.black.withValues(alpha: 0.06),
                       blurRadius: 16,
                       offset: const Offset(0, 4),
                     ),
@@ -82,7 +82,7 @@ class DriverProfilePage extends StatelessWidget {
                                     end: Alignment.bottomRight,
                                   ),
                                   border: Border.all(
-                                    color: AppColors.primaryPurple.withOpacity(0.3),
+                                    color: AppColors.primaryPurple.withValues(alpha: 0.3),
                                     width: 2,
                                   ),
                                 ),
@@ -171,7 +171,7 @@ class DriverProfilePage extends StatelessWidget {
                               width: 36,
                               height: 36,
                               decoration: BoxDecoration(
-                                color: AppColors.primaryPurple.withOpacity(
+                                color: AppColors.primaryPurple.withValues(alpha:
                                   0.08,
                                 ),
                                 borderRadius: BorderRadius.circular(10),
@@ -312,6 +312,7 @@ class DriverProfilePage extends StatelessWidget {
                 onTap: () async {
                   final onlineProv = context.read<OnlineProvider>();
                   if (onlineProv.isOnline) await onlineProv.toggleOnline();
+                  if (!context.mounted) return;
                   await context.read<AuthProvider>().logout();
                   if (context.mounted) {
                     AppRouter.clearAndGo(context, AppRouter.driverLogin);
@@ -417,52 +418,4 @@ class _SectionHeader extends StatelessWidget {
   }
 }
 
-// ── Stat Cell ─────────────────────────────────────────────────────────────────
 
-class _StatCell extends StatelessWidget {
-  final String value;
-  final String label;
-  final IconData icon;
-  final Color iconColor;
-  final Color accentColor;
-
-  const _StatCell({
-    required this.value,
-    required this.label,
-    required this.icon,
-    required this.iconColor,
-    required this.accentColor,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Expanded(
-      child: Column(
-        children: [
-          Container(
-            width: 36,
-            height: 36,
-            decoration: BoxDecoration(
-              color: accentColor,
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: iconColor, size: 18),
-          ),
-          const SizedBox(height: 6),
-          Text(value, style: AppTextStyles.profileStatValue(context)),
-          const SizedBox(height: 2),
-          Text(label, style: AppTextStyles.profileStatLabel(context)),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Vertical Divider ──────────────────────────────────────────────────────────
-
-class _VerticalDivider extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Container(width: 1, height: 44, color: AppColors.border(context));
-  }
-}

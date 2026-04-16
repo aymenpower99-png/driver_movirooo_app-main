@@ -162,8 +162,9 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
               controller: _emailController,
               keyboardType: TextInputType.emailAddress,
               validator: (v) {
-                if (v == null || v.trim().isEmpty)
+                if (v == null || v.trim().isEmpty) {
                   return t('validation_required');
+                }
                 if (!v.contains('@')) return t('validation_invalid_email');
                 return null;
               },
@@ -181,7 +182,7 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
                 onPressed: loading ? null : _saveChanges,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryPurple,
-                  disabledBackgroundColor: AppColors.primaryPurple.withOpacity(
+                  disabledBackgroundColor: AppColors.primaryPurple.withValues(alpha:
                     0.5,
                   ),
                   shape: RoundedRectangleBorder(

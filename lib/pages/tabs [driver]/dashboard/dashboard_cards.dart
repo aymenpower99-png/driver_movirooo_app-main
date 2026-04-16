@@ -85,7 +85,7 @@ class _PowerSectionState extends State<PowerSection>
                   if (widget.isOnline)
                     AnimatedBuilder(
                       animation: _pulseCtrl,
-                      builder: (_, __) => Transform.scale(
+                      builder: (_, _) => Transform.scale(
                         scale: _pulseScale.value,
                         child: Container(
                           width: 100,
@@ -356,11 +356,8 @@ class ActivityCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rateColor = acceptanceRate >= 90
-        ? AppColors.success
-        : acceptanceRate >= 70
-        ? AppColors.warning
-        : AppColors.error;
+    const rateColor = AppColors.success; // always green
+    const cancelColor = AppColors.error;  // always red
 
     return Container(
       width: double.infinity,
@@ -443,14 +440,12 @@ class ActivityCard extends StatelessWidget {
           const SizedBox(height: 10),
           _ActivityRow(
             icon: Icons.cancel_outlined,
-            iconColor: cancellations > 0
-                ? AppColors.error
-                : AppColors.subtext(context),
+            iconColor: cancelColor,
             label: AppLocalizations.of(
               context,
             ).translate('dashboard_cancellations'),
             value: '$cancellations',
-            valueColor: cancellations > 0 ? AppColors.error : null,
+            valueColor: cancelColor,
           ),
         ],
       ),

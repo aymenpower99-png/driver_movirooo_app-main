@@ -27,4 +27,9 @@ class Endpoints {
 
   static String acceptOffer(String id) => '/dispatch/offers/$id/accept';
   static String rejectOffer(String id) => '/dispatch/offers/$id/reject';
+
+  // ── Support Tickets ──────────────────────────────────────────────────────
+  static const String tickets       = '/support/tickets';
+  static String ticket(String id)   => '/support/tickets/$id';
+  static String ticketReply(String id) => '/support/tickets/$id/reply';
 }

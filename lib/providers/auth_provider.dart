@@ -27,12 +27,24 @@ class AuthProvider extends ChangeNotifier {
   // ── Init — check persisted session on app start ───────────────────────────
   Future<void> init() async {
     if (await TokenStorage.hasSession()) {
+      // Instant auth from cached user — no network wait, no splash delay
+      final cached = await TokenStorage.getUser();
+      if (cached != null) {
+        _user   = UserModel.fromJsonString(cached);
+        _status = AuthStatus.authenticated;
+        notifyListeners(); // splash disappears immediately
+
+        // Refresh user from backend silently in background
+        _auth.getMe().then((freshUser) {
+          _user = freshUser;
+          TokenStorage.saveUser(freshUser.toJsonString());
+          notifyListeners();
+        }).catchError((_) {}); // ignore — cached user is good enough
+        return;
+      }
+
+      // No cached user — must wait for network (first launch after login)
       try {
-        final cached = await TokenStorage.getUser();
-        if (cached != null) {
-          _user = UserModel.fromJsonString(cached);
-        }
-        // Refresh user from backend (silently)
         _user = await _auth.getMe();
         await TokenStorage.saveUser(_user!.toJsonString());
         _status = AuthStatus.authenticated;

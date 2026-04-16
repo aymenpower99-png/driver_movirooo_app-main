@@ -116,7 +116,7 @@ class ChatBubble extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.08),
+                color: Colors.black.withValues(alpha: 0.08),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -133,12 +133,12 @@ class ChatBubble extends StatelessWidget {
               ),
               if (showTranslation && message.translatedText != null) ...[
                 const SizedBox(height: 6),
-                Divider(color: textColor.withOpacity(0.2), height: 1),
+                Divider(color: textColor.withValues(alpha: 0.2), height: 1),
                 const SizedBox(height: 6),
                 Text(
                   message.translatedText!,
                   style: AppTextStyles.bodySmall(context).copyWith(
-                    color: textColor.withOpacity(0.75),
+                    color: textColor.withValues(alpha: 0.75),
                     fontSize: 12,
                     fontStyle: FontStyle.italic,
                   ),
@@ -153,7 +153,7 @@ class ChatBubble extends StatelessWidget {
                       AppLocalizations.of(context).translate('chat_edited'),
                       style: AppTextStyles.bodySmall(context).copyWith(
                         fontSize: 10,
-                        color: textColor.withOpacity(0.45),
+                        color: textColor.withValues(alpha: 0.45),
                         fontStyle: FontStyle.italic,
                       ),
                     ),
@@ -161,7 +161,7 @@ class ChatBubble extends StatelessWidget {
                     message.time,
                     style: AppTextStyles.bodySmall(
                       context,
-                    ).copyWith(fontSize: 10, color: textColor.withOpacity(0.5)),
+                    ).copyWith(fontSize: 10, color: textColor.withValues(alpha: 0.5)),
                   ),
                 ],
               ),
@@ -197,7 +197,7 @@ class _MessageActionsSheet extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.12),
+            color: Colors.black.withValues(alpha: 0.12),
             blurRadius: 20,
             offset: const Offset(0, -4),
           ),
@@ -211,7 +211,7 @@ class _MessageActionsSheet extends StatelessWidget {
             height: 4,
             margin: const EdgeInsets.only(top: 10, bottom: 8),
             decoration: BoxDecoration(
-              color: AppColors.subtext(context).withOpacity(0.2),
+              color: AppColors.subtext(context).withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -228,7 +228,7 @@ class _MessageActionsSheet extends StatelessWidget {
               height: 1,
               indent: 20,
               endIndent: 20,
-              color: AppColors.subtext(context).withOpacity(0.15),
+              color: AppColors.subtext(context).withValues(alpha: 0.15),
             ),
           ],
           _ActionTile(

@@ -31,7 +31,7 @@ class TranslationBanner extends StatelessWidget {
             width: 30,
             height: 30,
             decoration: BoxDecoration(
-              color: AppColors.primaryPurple.withOpacity(0.12),
+              color: AppColors.primaryPurple.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(

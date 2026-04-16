@@ -25,7 +25,7 @@ class _SlideToCompleteState extends State<SlideToComplete> {
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: AppColors.primaryPurple.withOpacity(0.40),
+            color: AppColors.primaryPurple.withValues(alpha: 0.40),
             blurRadius: 16,
             offset: const Offset(0, 4),
           ),
@@ -47,7 +47,7 @@ class _SlideToCompleteState extends State<SlideToComplete> {
                   child: Text(
                     'SLIDE TO COMPLETE TRIP',
                     style: AppTextStyles.bodySmall(context).copyWith(
-                      color: Colors.white.withOpacity(0.85),
+                      color: Colors.white.withValues(alpha: 0.85),
                       fontWeight: FontWeight.w700,
                       letterSpacing: 1.2,
                       fontSize: 12,
@@ -92,7 +92,7 @@ class _SlideToCompleteState extends State<SlideToComplete> {
                       borderRadius: BorderRadius.circular(26),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withOpacity(0.15),
+                          color: Colors.black.withValues(alpha: 0.15),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),

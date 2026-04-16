@@ -57,7 +57,7 @@ class _DriverLoginPageState extends State<DriverLoginPage>
     return InputDecoration(
       hintText: hint,
       hintStyle: AppTextStyles.bodyMedium(context).copyWith(
-        color: AppColors.text(context).withOpacity(0.35),
+        color: AppColors.text(context).withValues(alpha: 0.35),
         fontSize: 14,
       ),
       prefixIcon: Icon(prefixIcon, color: const Color(0xFFA855F7), size: 19),
@@ -244,7 +244,7 @@ class _DriverLoginPageState extends State<DriverLoginPage>
                                         : Icons.visibility_off_outlined,
                                     color: AppColors.text(
                                       context,
-                                    ).withOpacity(0.45),
+                                    ).withValues(alpha: 0.45),
                                     size: 19,
                                   ),
                                 ),
@@ -295,7 +295,7 @@ class _DriverLoginPageState extends State<DriverLoginPage>
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primaryPurple,
                           disabledBackgroundColor: AppColors.primaryPurple
-                              .withOpacity(0.45),
+                              .withValues(alpha: 0.45),
                           elevation: 0,
                           shadowColor: Colors.transparent,
                           shape: RoundedRectangleBorder(
