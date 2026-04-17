@@ -32,13 +32,14 @@ class _HelpCenterPageState extends State<HelpCenterPage> {
   List<HelpCategory> _categories = [];
   bool _loading = true;
   String? _error;
-  bool _loaded = false;
+  String? _currentLang;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (!_loaded) {
-      _loaded = true;
+    final lang = Localizations.localeOf(context).languageCode;
+    if (_currentLang != lang) {
+      _currentLang = lang;
       _loadArticles();
     }
   }
