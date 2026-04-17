@@ -13,6 +13,7 @@ import 'l10n/app_localizations.dart';
 import 'core/api/api_client.dart';
 import 'core/notifications/notification_service.dart';
 import 'providers/auth_provider.dart';
+import 'providers/earnings_provider.dart';
 import 'providers/online_provider.dart';
 import 'providers/ride_provider.dart';
 
@@ -82,6 +83,7 @@ class _SmartWayAppState extends State<SmartWayApp> {
       child: MultiProvider(
         providers: [
           ChangeNotifierProvider(create: (_) => AuthProvider()..init()),
+          ChangeNotifierProvider(create: (_) => EarningsProvider()),
           ChangeNotifierProvider(create: (_) => OnlineProvider()),
           ChangeNotifierProvider(create: (_) => RideProvider()),
         ],

@@ -35,4 +35,11 @@ class Endpoints {
 
   // ── Rides ─────────────────────────────────────────────────────────────
   static const String rides = '/rides';
+
+  // ── Help Center ──────────────────────────────────────────────────────
+  static const String helpCenter = '/help-center';
+
+  // ── Earnings ─────────────────────────────────────────────────────────
+  static const String earningsMe     = '/earnings/me';
+  static const String earningsConfig = '/earnings/config';
 }

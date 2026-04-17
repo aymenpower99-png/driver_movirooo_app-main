@@ -97,9 +97,9 @@ class DriverSettingsPage extends StatelessWidget {
           // ── ABOUT ────────────────────────────────────────────────
           _SectionHeader(label: t('settings_about_section')),
 
-          _TapRow(
+          _InfoRow(
             label: t('settings_app_version'),
-            onTap: () => Navigator.pushNamed(context, '/app-version'),
+            value: 'v1.0.0',
           ),
         ],
       ),
@@ -159,6 +159,35 @@ class _TapRow extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ── Info Row (non-tappable, displays a value) ─────────────────────────────────
+
+class _InfoRow extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _InfoRow({required this.label, required this.value});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(label, style: AppTextStyles.settingsItem(context)),
+          ),
+          Text(
+            value,
+            style: AppTextStyles.bodySmall(context).copyWith(
+              color: AppColors.subtext(context),
+            ),
+          ),
+        ],
       ),
     );
   }

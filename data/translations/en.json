@@ -113,6 +113,9 @@
   "earnings_online_time": "Online Time",
   "earnings_active_hours": "Active Hours",
   "earnings_report_note": "Monthly performance reports are finalized on the 1st of every month.",
+  "earnings_load_error": "Failed to load earnings",
+  "earnings_no_data": "No earnings data available",
+  "retry": "Retry",
 
   "start_navigation": "Start Navigation",
 

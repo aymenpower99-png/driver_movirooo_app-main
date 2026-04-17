@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import '../../../../core/models/earnings_model.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
-import '../../../../l10n/app_localizations.dart';
 
 class MonthlyBreakdown extends StatelessWidget {
-  const MonthlyBreakdown({super.key});
+  final EarningsModel earnings;
+  const MonthlyBreakdown({super.key, required this.earnings});
 
   @override
   Widget build(BuildContext context) {
@@ -19,83 +20,49 @@ class MonthlyBreakdown extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            AppLocalizations.of(
-              context,
-            ).translate('earnings_monthly_breakdown'),
-            style: AppTextStyles.bodyLarge(
-              context,
-            ).copyWith(fontWeight: FontWeight.w900, fontSize: 17),
+            'Monthly Breakdown',
+            style: AppTextStyles.bodyLarge(context).copyWith(
+              fontWeight: FontWeight.w900,
+              fontSize: 17,
+            ),
           ),
-
           const SizedBox(height: 16),
-
-          // ── Gross ──────────────────────────────────────
           _BreakdownRow(
-            label: AppLocalizations.of(
-              context,
-            ).translate('earnings_gross_revenue'),
-            value: '4,275.00 DT',
+            label: 'Base Salary',
+            value: '${earnings.baseSalary.toStringAsFixed(2)} DT',
             isNegative: false,
           ),
-
           Divider(height: 20, color: AppColors.border(context)),
-
-          // ── Commission ─────────────────────────────────
           _BreakdownRow(
-            label: AppLocalizations.of(
-              context,
-            ).translate('earnings_commission'),
-            value: '-855.00 DT',
-            isNegative: true,
-            showInfo: true,
+            label:
+                'Commission (${earnings.ridesCompleted > earnings.ridesThreshold ? earnings.ridesCompleted - earnings.ridesThreshold : 0} extra rides)',
+            value: '+${earnings.commission.toStringAsFixed(2)} DT',
+            isNegative: false,
+            valueColor: Colors.green,
           ),
-
           Divider(height: 20, color: AppColors.border(context)),
-
-          // ── Net payout ─────────────────────────────────
+          _BreakdownRow(
+            label: 'Deductions (${earnings.missedDays} missed days)',
+            value: '-${earnings.deductionAmount.toStringAsFixed(2)} DT',
+            isNegative: true,
+          ),
+          Divider(height: 20, color: AppColors.border(context)),
           Row(
             children: [
               Expanded(
                 child: Text(
-                  AppLocalizations.of(context).translate('earnings_net_payout'),
-                  style: AppTextStyles.bodyLarge(
-                    context,
-                  ).copyWith(fontWeight: FontWeight.w900),
+                  'Net Earnings',
+                  style: AppTextStyles.bodyLarge(context).copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
               ),
               Text(
-                '3,420.00 DT',
+                '${earnings.total.toStringAsFixed(2)} DT',
                 style: TextStyle(
                   color: AppColors.primaryPurple,
                   fontWeight: FontWeight.w900,
                   fontSize: 17,
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 14),
-
-          // ── Info note ──────────────────────────────────
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(
-                Icons.info_outline_rounded,
-                color: AppColors.primaryPurple,
-                size: 14,
-              ),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(
-                  AppLocalizations.of(
-                    context,
-                  ).translate('earnings_report_note'),
-                  style: TextStyle(
-                    color: AppColors.primaryPurple,
-                    fontSize: 11,
-                    height: 1.4,
-                  ),
                 ),
               ),
             ],
@@ -110,13 +77,13 @@ class _BreakdownRow extends StatelessWidget {
   final String label;
   final String value;
   final bool isNegative;
-  final bool showInfo;
+  final Color? valueColor;
 
   const _BreakdownRow({
     required this.label,
     required this.value,
     required this.isNegative,
-    this.showInfo = false,
+    this.valueColor,
   });
 
   @override
@@ -124,32 +91,19 @@ class _BreakdownRow extends StatelessWidget {
     return Row(
       children: [
         Expanded(
-          child: Row(
-            children: [
-              Text(
-                label,
-                style: AppTextStyles.bodyMedium(
-                  context,
-                ).copyWith(color: AppColors.subtext(context)),
-              ),
-              if (showInfo) ...[
-                const SizedBox(width: 4),
-                Icon(
-                  Icons.help_outline_rounded,
-                  size: 14,
-                  color: AppColors.subtext(context),
-                ),
-              ],
-            ],
+          child: Text(
+            label,
+            style: AppTextStyles.bodyMedium(context).copyWith(
+              color: AppColors.subtext(context),
+            ),
           ),
         ),
         Text(
           value,
           style: AppTextStyles.bodyLarge(context).copyWith(
             fontWeight: FontWeight.w800,
-            color: isNegative
-                ? AppColors.text(context)
-                : AppColors.text(context),
+            color:
+                valueColor ?? (isNegative ? Colors.red : AppColors.text(context)),
           ),
         ),
       ],
