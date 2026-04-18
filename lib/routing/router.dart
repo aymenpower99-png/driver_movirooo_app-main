@@ -1,21 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:moviroo_driver_app/pages/auth/LoginDriver.dart' show DriverLoginPage;
+import 'package:moviroo_driver_app/pages/auth/login_driver.dart' show DriverLoginPage;
 import 'package:moviroo_driver_app/pages/auth/splash_page.dart';
 import 'package:moviroo_driver_app/pages/contact_support/contact_support_page.dart';
 import 'package:moviroo_driver_app/pages/support/my_tickets_page.dart';
 import 'package:moviroo_driver_app/pages/support/ticket_detail_page.dart';
 import 'package:moviroo_driver_app/pages/work_area/work_area_page.dart';
 
-import 'package:moviroo_driver_app/pages/tabs%20%5Bdriver%5D/chat/chat_page.dart';
-import 'package:moviroo_driver_app/pages/tabs%20%5Bdriver%5D/profile/password/passwordrest.dart';
-import 'package:moviroo_driver_app/pages/tabs%20%5Bdriver%5D/profile/rate/rate.dart';
-import '../pages/tabs [driver]/ActiveRide/active_ride_page.dart';
-import '../pages/tabs [driver]/ride/map_preview_page.dart';
-
-import '../pages/tabs [driver]/dashboard/dashboard_page.dart';
-import '../pages/tabs [driver]/Earnings/earnings_page.dart';
-import '../pages/tabs [driver]/Rides/rides_page.dart';
-import '../pages/tabs [driver]/profile/driver_profile_page.dart';
+import '../pages/tabs/chat/chat_page.dart';
+import '../pages/tabs/profile/password/passwordrest.dart';
+import '../pages/tabs/profile/rate/rate.dart';
+import '../pages/tabs/active_ride/active_ride_page.dart';
+import '../pages/tabs/ride/map_preview_page.dart';
+import '../pages/tabs/dashboard/dashboard_page.dart';
+import '../pages/tabs/earnings/earnings_page.dart';
+import '../pages/tabs/rides/rides_page.dart';
+import '../pages/tabs/profile/driver_profile_page.dart';
 
 class AppRouter {
   static const String splash = '/splash';

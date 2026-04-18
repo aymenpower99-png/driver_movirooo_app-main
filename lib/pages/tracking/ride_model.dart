@@ -1,4 +1,4 @@
-// lib/pages/tabs/[driver]/Rides/tracking/ride_model.dart
+// lib/pages/tracking/ride_model.dart
 
 enum RideStatus {
   assigned,

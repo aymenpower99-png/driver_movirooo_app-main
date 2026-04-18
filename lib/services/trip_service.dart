@@ -36,11 +36,17 @@ class TripService {
     required String rideId,
     required String issueType,
     required String description,
+    String? pickupAddress,
+    String? dropOffAddress,
+    String? passengerName,
   }) async {
     await _dio.post(Endpoints.tickets, data: {
       'rideId': rideId,
       'issueType': issueType,
       'description': description,
+      ?'pickupAddress': pickupAddress,
+      ?'dropOffAddress': dropOffAddress,
+      ?'passengerName': passengerName,
     });
   }
 

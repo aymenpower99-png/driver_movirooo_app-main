@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/widgets.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/dispatch_service.dart';
@@ -13,7 +13,11 @@ import '../core/models/driver_model.dart';
 ///   • allTimeOnlineMs — never resets, accumulates across all days
 ///
 /// Both are persisted in SharedPreferences and survive app restarts.
-class OnlineProvider extends ChangeNotifier {
+///
+/// Also observes app lifecycle: when returning to foreground while online,
+/// an immediate heartbeat is sent to prevent the backend stale-sweep from
+/// marking the driver offline during background periods.
+class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
   final DispatchService _dispatch = DispatchService();
   final DriverService   _driver   = DriverService();
 
@@ -42,6 +46,12 @@ class OnlineProvider extends ChangeNotifier {
   // ── Timers ────────────────────────────────────────────────────────────────
   Timer? _heartbeatTimer;
   Timer? _uiTimer;
+
+  /// Consecutive heartbeat failures. Reset on any success.
+  /// After [_maxHeartbeatFails] failures the DB sweep will have expired us —
+  /// mark offline locally so the UI matches what the backend sees.
+  int _heartbeatFailCount = 0;
+  static const _maxHeartbeatFails = 6; // 6 × 20 s = 120 s (sweep threshold)
 
   // ── Getters ───────────────────────────────────────────────────────────────
   bool         get isOnline      => _isOnline;
@@ -107,6 +117,9 @@ class OnlineProvider extends ChangeNotifier {
     if (_initialized) return;
     _initialized = true;
     await _loadPersistedTime();
+    // Register lifecycle observer so we can send an immediate heartbeat
+    // when the driver brings the app back to the foreground.
+    WidgetsBinding.instance.addObserver(this);
     try {
       _driverProfile = await _driver.getMe();
       _isOnline = _driverProfile!.isOnline;
@@ -117,6 +130,29 @@ class OnlineProvider extends ChangeNotifier {
       notifyListeners();
     } catch (_) {
       // Non-fatal — keep UI working
+    }
+  }
+
+  /// Called by Flutter when the app moves between foreground/background.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && _isOnline) {
+      // App came back to foreground — send an immediate heartbeat so the
+      // backend doesn't declare us stale after background throttling paused timers.
+      _sendImmediateHeartbeat();
+    }
+  }
+
+  Future<void> _sendImmediateHeartbeat() async {
+    try {
+      final pos = await Geolocator.getLastKnownPosition();
+      if (pos != null) {
+        await _dispatch.heartbeat(lat: pos.latitude, lng: pos.longitude);
+      } else {
+        await _dispatch.heartbeat();
+      }
+    } catch (_) {
+      try { await _dispatch.heartbeat(); } catch (_) {}
     }
   }
 
@@ -204,6 +240,7 @@ class OnlineProvider extends ChangeNotifier {
         final pos = await _getLocation();
         await _dispatch.goOnline(lat: pos?.latitude, lng: pos?.longitude);
         _lastOnlineAt = DateTime.now();
+        _heartbeatFailCount = 0;
         _startTimers(initialPosition: pos);
         _isOnline = true;
       }
@@ -219,21 +256,50 @@ class OnlineProvider extends ChangeNotifier {
   // ── Timers ────────────────────────────────────────────────────────────────
   void _startTimers({Position? initialPosition}) {
     _heartbeatTimer?.cancel();
-    _heartbeatTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
+    _heartbeatFailCount = 0;
+    // Send heartbeat every 20s. Backend stale threshold is 120s, so this gives
+    // 6x redundancy against network hiccups, GPS delays, and background throttling.
+    _heartbeatTimer = Timer.periodic(const Duration(seconds: 20), (_) async {
+      bool success = false;
       try {
-        // Prefer last-known position (instant) for heartbeat
-        Position? pos = await Geolocator.getLastKnownPosition();
-        // If last-known is stale (>2min), refresh with a quick low-accuracy fix
-        if (pos == null ||
-            DateTime.now().difference(pos.timestamp).inMinutes > 2) {
-          pos = await Geolocator.getCurrentPosition(
-            locationSettings: const LocationSettings(accuracy: LocationAccuracy.low),
-          ).timeout(const Duration(seconds: 15));
+        // Use last-known position only — instant, never blocks the timer.
+        final pos = await Geolocator.getLastKnownPosition();
+        if (pos != null) {
+          await _dispatch.heartbeat(lat: pos.latitude, lng: pos.longitude);
+        } else {
+          await _dispatch.heartbeat();
         }
-        await _dispatch.heartbeat(lat: pos.latitude, lng: pos.longitude);
+        success = true;
       } catch (_) {
-        // Send heartbeat without coords if GPS unavailable — keeps session alive
-        try { await _dispatch.heartbeat(); } catch (_) {}
+        // Last-resort: bare heartbeat without coords
+        try {
+          await _dispatch.heartbeat();
+          success = true;
+        } catch (_) {}
+      }
+
+      if (success) {
+        if (_heartbeatFailCount > 0) {
+          _heartbeatFailCount = 0;
+        }
+      } else {
+        _heartbeatFailCount++;
+        if (_heartbeatFailCount >= _maxHeartbeatFails) {
+          // 120s without a successful heartbeat — backend sweep has marked us
+          // offline. Sync local state so the UI matches the DB.
+          _isOnline = false;
+          _heartbeatFailCount = 0;
+          if (_lastOnlineAt != null) {
+            final ms = DateTime.now().difference(_lastOnlineAt!).inMilliseconds;
+            _todayOnlineMs   += ms;
+            _allTimeOnlineMs += ms;
+            _lastOnlineAt = null;
+            await _persistTime();
+          }
+          _stopTimers();
+          _error = 'Connection lost. Toggle online to reconnect.';
+          notifyListeners();
+        }
       }
     });
 
@@ -257,6 +323,7 @@ class OnlineProvider extends ChangeNotifier {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _stopTimers();
     super.dispose();
   }

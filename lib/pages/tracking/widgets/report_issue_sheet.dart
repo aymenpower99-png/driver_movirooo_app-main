@@ -141,6 +141,9 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
         rideId: widget.rideId,
         issueType: _selected!.label,
         description: _noteController.text.trim(),
+        pickupAddress: widget.pickupAddress,
+        dropOffAddress: widget.dropOffAddress,
+        passengerName: widget.passengerName,
       );
     } catch (_) {
       // submit to backend best-effort; still close page

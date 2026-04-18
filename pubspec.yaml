@@ -42,7 +42,7 @@ dependencies:
   location: ^8.0.0
 
   # ── Map ───────────────────────────────────────────────────
-  maplibre_gl: ^0.25.0
+  mapbox_maps_flutter: ^2.3.0
 
   # ── Deep linking / Phone dialer ──────────────────────────
   url_launcher: ^6.3.1

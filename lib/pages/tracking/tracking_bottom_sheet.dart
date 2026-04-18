@@ -1,4 +1,4 @@
-// lib/pages/tabs/[driver]/Rides/tracking/tracking_bottom_sheet.dart
+// lib/pages/tracking/tracking_bottom_sheet.dart
 
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -254,7 +254,14 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
 
   Future<void> _callPassenger() async {
     final phone = widget.ride.passenger.phone;
-    if (phone == null || phone.isEmpty) return;
+    if (phone == null || phone.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No phone number available')),
+        );
+      }
+      return;
+    }
     final uri = Uri(scheme: 'tel', path: phone);
     if (await canLaunchUrl(uri)) {
       await launchUrl(uri);

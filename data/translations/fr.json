@@ -128,6 +128,7 @@
   "rides_tab_upcoming": "À venir",
   "rides_tab_completed": "Terminées",
   "rides_tab_cancelled": "Annulées",
+  "ride_status_new": "Nouveau",
   "ride_status_scheduled": "Programmée",
   "ride_status_completed": "Terminée",
   "ride_status_cancelled": "Annulée",

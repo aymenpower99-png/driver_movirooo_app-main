@@ -131,6 +131,7 @@
   "rides_tab_upcoming": "Upcoming",
   "rides_tab_completed": "Completed",
   "rides_tab_cancelled": "Cancelled",
+  "ride_status_new": "New",
   "ride_status_scheduled": "Scheduled",
   "ride_status_completed": "Completed",
   "ride_status_cancelled": "Cancelled",

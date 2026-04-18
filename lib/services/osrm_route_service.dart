@@ -1,21 +1,18 @@
 import 'package:dio/dio.dart';
-import 'package:maplibre_gl/maplibre_gl.dart';
+import 'package:moviroo_driver_app/core/models/geo_point.dart';
 
 /// Fetches real road routes from the free OSRM demo server.
-/// Returns a list of LatLng representing the road geometry.
 class OsrmRouteService {
   static final _dio = Dio(BaseOptions(
     connectTimeout: const Duration(seconds: 5),
     receiveTimeout: const Duration(seconds: 5),
   ));
 
-  /// Fetch route between two points.
-  /// Returns decoded coordinates + duration (seconds) + distance (meters).
-  static Future<OsrmRouteResult?> fetchRoute(LatLng from, LatLng to) async {
+  static Future<OsrmRouteResult?> fetchRoute(GeoPoint from, GeoPoint to) async {
     final url =
         'https://router.project-osrm.org/route/v1/driving/'
-        '${from.longitude},${from.latitude};'
-        '${to.longitude},${to.latitude}'
+        '${from.lon},${from.lat};'
+        '${to.lon},${to.lat}'
         '?geometries=geojson&overview=full';
 
     try {
@@ -34,9 +31,9 @@ class OsrmRouteService {
       final duration = (route['duration'] as num).toDouble();
       final distance = (route['distance'] as num).toDouble();
 
-      // OSRM returns [lon, lat] — flip to LatLng(lat, lon)
+      // OSRM returns [lon, lat] — flip to GeoPoint(lat, lon)
       final points = coords
-          .map<LatLng>((c) => LatLng(
+          .map<GeoPoint>((c) => GeoPoint(
                 (c[1] as num).toDouble(),
                 (c[0] as num).toDouble(),
               ))
@@ -54,7 +51,7 @@ class OsrmRouteService {
 }
 
 class OsrmRouteResult {
-  final List<LatLng> points;
+  final List<GeoPoint> points;
   final double durationSeconds;
   final double distanceMeters;
 
@@ -81,3 +78,4 @@ class OsrmRouteResult {
     return '${distanceMeters.toInt()} m';
   }
 }
+
