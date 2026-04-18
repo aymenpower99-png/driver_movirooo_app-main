@@ -7,7 +7,7 @@ import '../../../../../l10n/app_localizations.dart';
 import '../../../../../theme/app_colors.dart';
 import '../../../../../theme/app_text_styles.dart';
 import 'ride_model.dart';
-import 'ride_widgets.dart';
+import 'ride_widgets.dart';  // includes formatRideDate, formatRideTime
 
 class SimpleRideCard extends StatelessWidget {
   final RideModel ride;
@@ -107,12 +107,12 @@ class SimpleRideCard extends StatelessWidget {
               children: [
                 RideInfoChip(
                   icon: Icons.calendar_today_outlined,
-                  label: _formatDate(ride.dateTime),
+                  label: formatRideDate(ride.dateTime),
                 ),
                 const SizedBox(width: 14),
                 RideInfoChip(
                   icon: Icons.access_time_outlined,
-                  label: _formatTime(ride.dateTime),
+                  label: formatRideTime(ride.dateTime),
                 ),
                 const SizedBox(width: 14),
                 RideInfoChip(
@@ -137,7 +137,7 @@ class SimpleRideCard extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '\$${ride.price.toStringAsFixed(2)}',
+                  '${ride.price.toStringAsFixed(1)} TND',
                   style: AppTextStyles.priceMedium(
                     context,
                   ).copyWith(color: accentColor),
@@ -150,28 +150,4 @@ class SimpleRideCard extends StatelessWidget {
     );
   }
 
-  String _formatDate(DateTime dt) {
-    const months = [
-      'Jan',
-      'Feb',
-      'Mar',
-      'Apr',
-      'May',
-      'Jun',
-      'Jul',
-      'Aug',
-      'Sep',
-      'Oct',
-      'Nov',
-      'Dec',
-    ];
-    return '${months[dt.month - 1]} ${dt.day}';
-  }
-
-  String _formatTime(DateTime dt) {
-    final h = dt.hour % 12 == 0 ? 12 : dt.hour % 12;
-    final m = dt.minute.toString().padLeft(2, '0');
-    final p = dt.hour >= 12 ? 'PM' : 'AM';
-    return '$h:$m $p';
-  }
 }

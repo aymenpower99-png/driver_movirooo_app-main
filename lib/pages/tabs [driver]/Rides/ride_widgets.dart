@@ -11,13 +11,18 @@ import '../../../../../theme/app_text_styles.dart';
 
 class RideDot extends StatelessWidget {
   final Color color;
-  const RideDot({super.key, required this.color});
+  final bool filled;
+  const RideDot({super.key, required this.color, this.filled = true});
 
   @override
   Widget build(BuildContext context) => Container(
-    width: 9,
-    height: 9,
-    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+    width: 10,
+    height: 10,
+    decoration: BoxDecoration(
+      color: filled ? color : Colors.transparent,
+      shape: BoxShape.circle,
+      border: Border.all(color: color, width: 2),
+    ),
   );
 }
 
@@ -85,6 +90,29 @@ class RideEmptyState extends StatelessWidget {
   }
 }
 
+// ─── Date / time formatting helpers ──────────────────────────────────
+
+const _frenchMonths = [
+  'janvier', 'février', 'mars', 'avril', 'mai', 'juin',
+  'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre',
+];
+
+String formatRideDate(DateTime dt) {
+  return '${dt.day} ${_frenchMonths[dt.month - 1]} ${dt.year}';
+}
+
+String formatRideTime(DateTime dt) {
+  final h = dt.hour.toString().padLeft(2, '0');
+  final m = dt.minute.toString().padLeft(2, '0');
+  return '$h:$m';
+}
+
+/// Try to parse an ISO 8601 string; returns null on failure.
+DateTime? tryParseDateTime(String? s) {
+  if (s == null || s.isEmpty) return null;
+  return DateTime.tryParse(s);
+}
+
 // ─── Route timeline (from → to with dots + connector) ────────────────
 
 class RideRouteTimeline extends StatelessWidget {
@@ -109,9 +137,9 @@ class RideRouteTimeline extends StatelessWidget {
         Column(
           children: [
             const SizedBox(height: 3),
-            RideDot(color: AppColors.primaryPurple),
+            RideDot(color: AppColors.primaryPurple, filled: false),
             Container(width: 1.5, height: 26, color: AppColors.border(context)),
-            RideDot(color: AppColors.secondaryPurple),
+            RideDot(color: AppColors.primaryPurple, filled: true),
           ],
         ),
         const SizedBox(width: 10),

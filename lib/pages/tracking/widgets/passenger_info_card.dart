@@ -17,6 +17,7 @@ class PassengerInfoCard extends StatelessWidget {
   final bool showContactButtons;
   final bool showMetaTile;
   final bool showActions;
+  final String? rideId;
   final VoidCallback? onCall;
   final VoidCallback? onMessage;
   final VoidCallback? onCancelRide;
@@ -31,6 +32,7 @@ class PassengerInfoCard extends StatelessWidget {
     required this.showContactButtons,
     this.showMetaTile = false,
     this.showActions = true,
+    this.rideId,
     this.onCall,
     this.onMessage,
     this.onCancelRide,
@@ -213,8 +215,10 @@ class PassengerInfoCard extends StatelessWidget {
                         MaterialPageRoute(
                           builder: (_) => ReportIssuePage(
                             passengerName: passenger.name,
+                            rideId: rideId ?? '',
+                            pickupAddress: pickupAddress,
+                            dropOffAddress: dropOffAddress,
                             onSubmit: (issue, note, photos) {
-                              // TODO: forward to your bloc / repository
                               debugPrint(
                                 'Report: ${issue.label} | $note | ${photos.length} photo(s)',
                               );

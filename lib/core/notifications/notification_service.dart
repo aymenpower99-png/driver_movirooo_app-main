@@ -1,5 +1,11 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
+// Channel must match what the backend sends (android.notification.channelId)
+const _kChannelId   = 'ride_offers';
+const _kChannelName = 'Ride Offers';
+const _kChannelDesc = 'New ride requests and trip updates';
 
 class NotificationService {
   NotificationService._();
@@ -16,7 +22,7 @@ class NotificationService {
     await _setForegroundOptions();
     _listenToMessages();
     await _handleInitialMessage();
-    await printToken();
+    if (kDebugMode) await printToken();
   }
 
   // ─── Permission ──────────────────────────────────────────────────────────
@@ -32,13 +38,30 @@ class NotificationService {
   // ─── Local Notifications Setup ───────────────────────────────────────────
 
   Future<void> _initLocalNotifications() async {
+    // Create high-importance Android channel
+    const AndroidNotificationChannel channel = AndroidNotificationChannel(
+      _kChannelId,
+      _kChannelName,
+      description: _kChannelDesc,
+      importance: Importance.max,
+      playSound: true,
+    );
+
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(channel);
+
     const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
     const InitializationSettings initSettings =
         InitializationSettings(android: androidSettings);
 
-    await _localNotifications.initialize(initSettings);
+    await _localNotifications.initialize(
+      initSettings,
+      onDidReceiveNotificationResponse: _onNotificationTap,
+    );
   }
 
   // ─── Foreground Options ──────────────────────────────────────────────────
@@ -55,43 +78,75 @@ class NotificationService {
   // ─── Show Local Notification Popup ───────────────────────────────────────
 
   Future<void> _showNotification(RemoteMessage message) async {
-    const AndroidNotificationDetails androidDetails =
+    final AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
-      'default_channel',
-      'Default Channel',
-      channelDescription: 'Default notification channel',
+      _kChannelId,
+      _kChannelName,
+      channelDescription: _kChannelDesc,
       importance: Importance.max,
-      priority: Priority.high,
+      priority: Priority.max,
       showWhen: true,
+      icon: '@mipmap/ic_launcher',
     );
 
-    const NotificationDetails details =
+    final NotificationDetails details =
         NotificationDetails(android: androidDetails);
 
     await _localNotifications.show(
       DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      message.notification?.title,
+      message.notification?.title ?? _titleForType(message.data['type']),
       message.notification?.body,
       details,
+      payload: message.data['type'],
     );
+  }
+
+  String _titleForType(String? type) {
+    switch (type) {
+      case 'RIDE_OFFER':     return '🚗 New Ride Request';
+      case 'RIDE_CANCELLED': return '❌ Ride Cancelled';
+      default:               return 'Moviroo';
+    }
+  }
+
+  // ─── Notification tap (local) ─────────────────────────────────────────────
+
+  void _onNotificationTap(NotificationResponse response) {
+    final type = response.payload;
+    onNotificationTap?.call(type);
   }
 
   // ─── Listeners ───────────────────────────────────────────────────────────
 
+  /// Called when a RIDE_OFFER push arrives while app is in foreground.
+  void Function()? onRideOfferReceived;
+
+  /// Called when user taps a notification — payload is the notification type.
+  void Function(String? type)? onNotificationTap;
+
   void _listenToMessages() {
     // App is open (foreground)
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print('📩 Foreground notification received!');
-      print('   Title: ${message.notification?.title}');
-      print('   Body:  ${message.notification?.body}');
+      debugPrint('📩 Foreground push: ${message.notification?.title}');
       _showNotification(message);
+      _handleData(message.data);
     });
 
     // App in background, user taps notification
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      print('🔔 Notification tapped (background): ${message.notification?.title}');
-      // TODO: navigate to specific screen based on message.data
+      debugPrint('🔔 Notification tapped (background): ${message.notification?.title}');
+      _handleData(message.data, tapped: true);
     });
+  }
+
+  void _handleData(Map<String, dynamic> data, {bool tapped = false}) {
+    final type = data['type'] as String?;
+    if (type == 'RIDE_OFFER') {
+      onRideOfferReceived?.call();
+    }
+    if (tapped) {
+      onNotificationTap?.call(type);
+    }
   }
 
   // ─── App Launched from Terminated via Notification ───────────────────────
@@ -100,27 +155,23 @@ class NotificationService {
     final RemoteMessage? initialMessage =
         await FirebaseMessaging.instance.getInitialMessage();
     if (initialMessage != null) {
-      print('🚀 App launched from notification: ${initialMessage.notification?.title}');
-      // TODO: navigate to specific screen based on initialMessage.data
+      debugPrint('🚀 App launched from notification: ${initialMessage.notification?.title}');
+      _handleData(initialMessage.data, tapped: true);
     }
   }
 
-  // ─── Print Token (for testing) ───────────────────────────────────────────
+  // ─── Token helpers ────────────────────────────────────────────────────────
 
   Future<void> printToken() async {
     final token = await FirebaseMessaging.instance.getToken();
-    print('=============================');
-    print('FCM Token: $token');
-    print('=============================');
+    debugPrint('=============================');
+    debugPrint('FCM Token: $token');
+    debugPrint('=============================');
   }
-
-  // ─── Get Token (to send to your backend) ─────────────────────────────────
 
   Future<String?> getToken() async {
-    return await FirebaseMessaging.instance.getToken();
+    return FirebaseMessaging.instance.getToken();
   }
-
-  // ─── Token Refresh (call this to keep backend updated) ───────────────────
 
   void onTokenRefresh(Function(String) callback) {
     FirebaseMessaging.instance.onTokenRefresh.listen(callback);

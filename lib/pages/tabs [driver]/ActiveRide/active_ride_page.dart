@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:maplibre_gl/maplibre_gl.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 import '_NavigationBar.dart';
 import '_DriverCard.dart';
 import '_SlideToComplete.dart';
+
+// Same free OSM tile style
+const _osmStyleUrl = 'https://tiles.openfreemap.org/styles/liberty';
 
 class ActiveRidePage extends StatefulWidget {
   const ActiveRidePage({super.key});
@@ -15,9 +19,11 @@ class ActiveRidePage extends StatefulWidget {
 class _ActiveRidePageState extends State<ActiveRidePage> {
   final DraggableScrollableController _sheetController =
       DraggableScrollableController();
+  MapLibreMapController? _mapController;
 
-  // 0.18 = collapsed (juste driver card visible)
-  // 1.0  = expanded (map visible en scrollant vers le haut)
+  // Default center: Tunis
+  static const LatLng _defaultCenter = LatLng(36.8065, 10.1815);
+
   static const double _minSize = 0.18;
   static const double _maxSize = 1.0;
 
@@ -27,6 +33,10 @@ class _ActiveRidePageState extends State<ActiveRidePage> {
     super.dispose();
   }
 
+  void _onMapCreated(MapLibreMapController controller) {
+    _mapController = controller;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -34,15 +44,24 @@ class _ActiveRidePageState extends State<ActiveRidePage> {
       body: Stack(
         children: [
 
-          // ── 1. MAP FULLSCREEN (fond) ───────────────────────
+          // ── 1. MAP FULLSCREEN ────────────────────────────
           Positioned.fill(
-            child: Image.asset(
-              'images/map_preview.png',
-              fit: BoxFit.cover,
+            child: MapLibreMap(
+              styleString: _osmStyleUrl,
+              initialCameraPosition: const CameraPosition(
+                target: _defaultCenter,
+                zoom: 13,
+              ),
+              onMapCreated: _onMapCreated,
+              myLocationEnabled: true,
+              myLocationTrackingMode: MyLocationTrackingMode.tracking,
+              compassEnabled: false,
+              rotateGesturesEnabled: true,
+              tiltGesturesEnabled: true,
             ),
           ),
 
-          // ── 2. NAVIGATION INSTRUCTION (haut) ──────────────
+          // ── 2. NAVIGATION INSTRUCTION (top) ────────────
           Positioned(
             top: 0, left: 0, right: 0,
             child: SafeArea(
@@ -54,22 +73,30 @@ class _ActiveRidePageState extends State<ActiveRidePage> {
             ),
           ),
 
-          // ── 3. BOUTONS CARTE (droite) ──────────────────────
+          // ── 3. MAP BUTTONS (right) ─────────────────────
           Positioned(
             right: 16,
             top: MediaQuery.of(context).padding.top + 100,
             child: Column(
               children: [
-                _MapBtn(icon: Icons.add, onTap: () {}),
+                _MapBtn(icon: Icons.add, onTap: () {
+                  _mapController?.animateCamera(CameraUpdate.zoomIn());
+                }),
                 const SizedBox(height: 8),
-                _MapBtn(icon: Icons.remove, onTap: () {}),
+                _MapBtn(icon: Icons.remove, onTap: () {
+                  _mapController?.animateCamera(CameraUpdate.zoomOut());
+                }),
                 const SizedBox(height: 8),
-                _MapBtn(icon: Icons.my_location_rounded, onTap: () {}),
+                _MapBtn(icon: Icons.my_location_rounded, onTap: () {
+                  _mapController?.animateCamera(
+                    CameraUpdate.newLatLngZoom(_defaultCenter, 14),
+                  );
+                }),
               ],
             ),
           ),
 
-          // ── 4. DRAGGABLE BOTTOM SHEET ──────────────────────
+          // ── 4. DRAGGABLE BOTTOM SHEET ─────────────────
           DraggableScrollableSheet(
             controller: _sheetController,
             initialChildSize: _minSize,
@@ -96,7 +123,7 @@ class _ActiveRidePageState extends State<ActiveRidePage> {
                   controller: scrollController,
                   slivers: [
 
-                    // ── Handle ─────────────────────────────
+                    // ── Handle ──────────────────────────
                     SliverToBoxAdapter(
                       child: Center(
                         child: Container(
@@ -110,24 +137,22 @@ class _ActiveRidePageState extends State<ActiveRidePage> {
                       ),
                     ),
 
-                    // ── Driver Card ────────────────────────
+                    // ── Driver Card ────────────────────
                     SliverToBoxAdapter(
                       child: DriverCard(),
                     ),
 
-                    // ── Slide to complete ──────────────────
+                    // ── Slide to complete ──────────────
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
                         child: SlideToComplete(
-                          onCompleted: () {
-                            // → page confirmation
-                          },
+                          onCompleted: () {},
                         ),
                       ),
                     ),
 
-                    // ── Divider ────────────────────────────
+                    // ── Divider ────────────────────────
                     SliverToBoxAdapter(
                       child: Divider(
                         color: AppColors.border(context),
@@ -135,7 +160,7 @@ class _ActiveRidePageState extends State<ActiveRidePage> {
                       ),
                     ),
 
-                    // ── Trip Details (quand expanded) ──────
+                    // ── Trip Details (expanded) ─────────
                     SliverToBoxAdapter(
                       child: Padding(
                         padding: const EdgeInsets.all(16),

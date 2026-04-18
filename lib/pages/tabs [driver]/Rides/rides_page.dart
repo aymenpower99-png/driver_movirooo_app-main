@@ -286,14 +286,14 @@ class _OfferCard extends StatelessWidget {
             child: Column(
               children: [
                 _RouteRow(
-                  icon: Icons.my_location_rounded,
-                  color: AppColors.success,
+                  icon: Icons.radio_button_unchecked_rounded,
+                  color: AppColors.primaryPurple,
                   text: ride.from,
                 ),
                 const SizedBox(height: 6),
                 _RouteRow(
-                  icon: Icons.location_on_rounded,
-                  color: AppColors.error,
+                  icon: Icons.circle,
+                  color: AppColors.primaryPurple,
                   text: ride.to,
                 ),
               ],
@@ -305,19 +305,27 @@ class _OfferCard extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
             child: Row(
               children: [
-                Icon(Icons.schedule_outlined, size: 13, color: AppColors.subtext(context)),
-                const SizedBox(width: 4),
-                Text(
-                  ride.rideTime,
-                  style: TextStyle(fontSize: 12, color: AppColors.subtext(context)),
-                ),
+                if (ride.rideTime.isNotEmpty) ...[
+                  Builder(builder: (_) {
+                    final dt = tryParseDateTime(ride.rideTime);
+                    if (dt == null) {
+                      return RideInfoChip(icon: Icons.schedule_outlined, label: ride.rideTime);
+                    }
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        RideInfoChip(icon: Icons.calendar_today_outlined, label: formatRideDate(dt)),
+                        const SizedBox(width: 12),
+                        RideInfoChip(icon: Icons.access_time_outlined, label: formatRideTime(dt)),
+                      ],
+                    );
+                  }),
+                ],
                 if ((ride.distanceKm ?? 0) > 0) ...[
                   const SizedBox(width: 12),
-                  Icon(Icons.route_rounded, size: 13, color: AppColors.subtext(context)),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${ride.distanceKm!.toStringAsFixed(1)} km',
-                    style: TextStyle(fontSize: 12, color: AppColors.subtext(context)),
+                  RideInfoChip(
+                    icon: Icons.route_rounded,
+                    label: '${ride.distanceKm!.toStringAsFixed(1)} km',
                   ),
                 ],
               ],
@@ -345,6 +353,7 @@ class _OfferCard extends StatelessWidget {
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.error,
                       side: BorderSide(color: AppColors.error),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     child: Text(t('ride_reject')),
@@ -357,12 +366,30 @@ class _OfferCard extends StatelessWidget {
                       final ok = await context.read<RideProvider>().acceptOffer(offer.id);
                       if (context.mounted) {
                         if (ok) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(t('ride_accepted_snack').replaceAll('{id}', offer.id)),
-                              backgroundColor: AppColors.success,
+                          // Navigate directly to tracking page
+                          final ride = offer.ride;
+                          final initial = (ride.passengerName ?? '').trim().isNotEmpty
+                              ? ride.passengerName!.trim()[0].toUpperCase()
+                              : '?';
+                          final trackRide = tracking.RideModel(
+                            id: offer.rideId,
+                            passenger: tracking.PassengerModel(
+                              name: ride.passengerName ?? 'Passenger',
+                              rating: 4.8,
+                              avatarInitial: initial,
                             ),
+                            pickupAddress: ride.from,
+                            dropOffAddress: ride.to,
+                            distanceKm: ride.distanceKm ?? 0,
+                            etaMinutes: 0,
+                            earningsAmount: ride.price,
+                            currency: 'TND',
+                            pickupLat: ride.pickupLat,
+                            pickupLon: ride.pickupLon,
+                            dropoffLat: ride.dropoffLat,
+                            dropoffLon: ride.dropoffLon,
                           );
+                          Navigator.of(context).push(TrackPassengerPage.route(trackRide));
                         } else {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
@@ -376,6 +403,7 @@ class _OfferCard extends StatelessWidget {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.primaryPurple,
                       elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                     ),
                     child: Text(t('ride_accept'), style: const TextStyle(color: Colors.white)),
@@ -439,6 +467,10 @@ class _UpcomingTab extends StatelessWidget {
       etaMinutes: 0,
       earningsAmount: r.price,
       currency: 'TND',
+      pickupLat: r.pickupLat,
+      pickupLon: r.pickupLon,
+      dropoffLat: r.dropoffLat,
+      dropoffLon: r.dropoffLon,
     );
   }
 
@@ -465,7 +497,10 @@ class _UpcomingTab extends StatelessWidget {
             context,
           ).push(TrackPassengerPage.route(_toTrackingRide(ride))),
           onChat: (ride) {
-            Navigator.pushNamed(context, '/chat', arguments: {'rideId': ride.id});
+            Navigator.pushNamed(context, '/chat', arguments: {
+              'rideId': ride.id,
+              'passengerName': ride.passengerName ?? 'Passenger',
+            });
           },
         ),
       ),

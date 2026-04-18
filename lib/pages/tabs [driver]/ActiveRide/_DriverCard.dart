@@ -3,7 +3,9 @@ import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 
 class DriverCard extends StatelessWidget {
-  const DriverCard({super.key});
+  final String? rideId;
+  final String? passengerName;
+  const DriverCard({super.key, this.rideId, this.passengerName});
 
   @override
   Widget build(BuildContext context) {
@@ -110,7 +112,12 @@ class DriverCard extends StatelessWidget {
               const SizedBox(width: 8),
               _ActionBtn(
                 icon: Icons.chat_bubble_outline_rounded,
-                onTap: () {Navigator.pushNamed(context, '/chat');},
+                onTap: () {
+                  Navigator.pushNamed(context, '/chat', arguments: {
+                    'rideId': rideId ?? '',
+                    'passengerName': passengerName ?? 'Passenger',
+                  });
+                },
               ),
             ],
           ),

@@ -59,12 +59,14 @@ class PassengerModel {
   final double rating;
   final String avatarInitial;
   final String? avatarUrl;
+  final String? phone;
 
   const PassengerModel({
     required this.name,
     required this.rating,
     required this.avatarInitial,
     this.avatarUrl,
+    this.phone,
   });
 }
 
@@ -77,6 +79,10 @@ class RideModel {
   final int etaMinutes;
   final double earningsAmount;
   final String currency;
+  final double? pickupLat;
+  final double? pickupLon;
+  final double? dropoffLat;
+  final double? dropoffLon;
 
   const RideModel({
     required this.id,
@@ -87,6 +93,10 @@ class RideModel {
     required this.etaMinutes,
     required this.earningsAmount,
     this.currency = 'TND',
+    this.pickupLat,
+    this.pickupLon,
+    this.dropoffLat,
+    this.dropoffLon,
   });
 }
 

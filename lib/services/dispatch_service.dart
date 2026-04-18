@@ -47,6 +47,11 @@ class DispatchService {
     );
   }
 
+  // ── FCM Token ─────────────────────────────────────────────────────────────
+  Future<void> registerFcmToken(String token) async {
+    await _dio.post(Endpoints.registerFcmToken, data: {'token': token});
+  }
+
   // ── Driver Rides ──────────────────────────────────────────────────────
   Future<List<RideModel>> getDriverRides() async {
     final res = await _dio.get(Endpoints.rides);

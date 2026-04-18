@@ -229,7 +229,7 @@ class _HelpCenterPageState extends State<HelpCenterPage> {
                             shrinkWrap: true,
                             physics: const NeverScrollableScrollPhysics(),
                             itemCount: articles.length,
-                            separatorBuilder: (_, __) => const SizedBox(height: 10),
+                            separatorBuilder: (_, _) => const SizedBox(height: 10),
                             itemBuilder: (_, i) => ArticleListTile(
                               article: articles[i],
                               onTap: () => _openArticle(articles[i]),

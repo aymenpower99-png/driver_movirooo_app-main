@@ -30,8 +30,19 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-  // ✅ All notification logic is here
   await NotificationService.instance.init();
+
+  // Navigate to Rides tab when driver taps a notification
+  NotificationService.instance.onNotificationTap = (type) {
+    final ctx = navigatorKey.currentContext;
+    if (ctx == null) return;
+    if (type == 'RIDE_OFFER' || type == 'RIDE_CANCELLED') {
+      Navigator.of(ctx).pushNamedAndRemoveUntil(
+        AppRouter.driverRides,
+        (r) => r.settings.name == AppRouter.driverDashboard,
+      );
+    }
+  };
 
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -85,7 +96,17 @@ class _SmartWayAppState extends State<SmartWayApp> {
           ChangeNotifierProvider(create: (_) => AuthProvider()..init()),
           ChangeNotifierProvider(create: (_) => EarningsProvider()),
           ChangeNotifierProvider(create: (_) => OnlineProvider()),
-          ChangeNotifierProvider(create: (_) => RideProvider()),
+          ChangeNotifierProxyProvider<OnlineProvider, RideProvider>(
+            create: (_) => RideProvider(),
+            update: (_, onlineProvider, rideProvider) {
+              if (onlineProvider.isOnline) {
+                rideProvider?.startPolling();
+              } else {
+                rideProvider?.stopPolling();
+              }
+              return rideProvider!;
+            },
+          ),
         ],
         child: ListenableBuilder(
           listenable: Listenable.merge([themeProvider, localeProvider]),

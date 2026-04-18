@@ -7,7 +7,6 @@ import 'package:provider/provider.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../routing/router.dart';
 import '../../../providers/online_provider.dart';
-import '../../../providers/auth_provider.dart';
 import '../widgets/tab_bar.dart';
 import 'dashboard_widgets.dart';
 import 'dashboard_cards.dart';

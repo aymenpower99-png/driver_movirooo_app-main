@@ -27,6 +27,7 @@ class Endpoints {
 
   static String acceptOffer(String id) => '/dispatch/offers/$id/accept';
   static String rejectOffer(String id) => '/dispatch/offers/$id/reject';
+  static const String registerFcmToken = '/dispatch/fcm-token';
 
   // ── Support Tickets ──────────────────────────────────────────────────────
   static const String tickets       = '/support/tickets';
@@ -36,10 +37,21 @@ class Endpoints {
   // ── Rides ─────────────────────────────────────────────────────────────
   static const String rides = '/rides';
 
+  // ── Trip lifecycle ────────────────────────────────────────────────────
+  static String tripEnroute(String rideId) => '/trips/$rideId/enroute';
+  static String tripArrived(String rideId) => '/trips/$rideId/arrived';
+  static String tripStart(String rideId)   => '/trips/$rideId/start';
+  static String tripEnd(String rideId)     => '/trips/$rideId/end';
+  static String tripCancel(String rideId)  => '/trips/$rideId/cancel';
+  static String tripStatus(String rideId)  => '/trips/$rideId';
+
   // ── Help Center ──────────────────────────────────────────────────────
   static const String helpCenter = '/help-center';
 
   // ── Earnings ─────────────────────────────────────────────────────────
   static const String earningsMe     = '/earnings/me';
   static const String earningsConfig = '/earnings/config';
+
+  // ── Chat ─────────────────────────────────────────────────────────────
+  static String chatMessages(String rideId) => '/chat/$rideId/messages';
 }

@@ -1,6 +1,7 @@
 // lib/pages/tabs/[driver]/Rides/tracking/tracking_bottom_sheet.dart
 
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:moviroo_driver_app/l10n/app_localizations.dart';
 import 'package:moviroo_driver_app/theme/app_colors.dart';
 import 'package:moviroo_driver_app/pages/tracking/ride_model.dart';
@@ -8,6 +9,7 @@ import 'package:moviroo_driver_app/pages/tracking/widgets/passenger_info_card.da
 import 'package:moviroo_driver_app/pages/tracking/widgets/confirm_action_modal.dart';
 import 'package:moviroo_driver_app/pages/tracking/completion/ride_completion_page.dart';
 import 'package:moviroo_driver_app/pages/tracking/completion/ride_cancellation_page.dart';
+import 'package:moviroo_driver_app/services/trip_service.dart';
 
 class TrackingBottomSheet extends StatefulWidget {
   final RideModel ride;
@@ -26,8 +28,12 @@ class TrackingBottomSheet extends StatefulWidget {
 class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
   RideStatus _status = RideStatus.assigned;
   bool _isCollapsed = false;
+  bool _apiLoading  = false;
+
+  final TripService _tripService = TripService();
 
   void _handlePrimaryTap() {
+    if (_apiLoading) return;
     final t = AppLocalizations.of(context).translate;
     if (_status == RideStatus.assigned) {
       ConfirmActionModal.show(
@@ -38,17 +44,66 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
         onConfirm: _advance,
       );
     } else if (_status == RideStatus.startRide) {
-      Navigator.of(context).push(RideCompletionPage.route(widget.ride));
+      _completeRide();
     } else {
       _advance();
     }
   }
 
-  void _advance() {
+  /// Calls the correct backend endpoint then advances local state.
+  Future<void> _advance() async {
     final next = _status.next;
     if (next == null) return;
-    setState(() => _status = next);
-    widget.onStatusChanged?.call(_status);
+
+    setState(() => _apiLoading = true);
+    try {
+      switch (_status) {
+        case RideStatus.assigned:
+          await _tripService.startEnroute(widget.ride.id);
+          break;
+        case RideStatus.onTheWay:
+          await _tripService.arrived(widget.ride.id);
+          break;
+        case RideStatus.arrived:
+          await _tripService.startTrip(widget.ride.id);
+          break;
+        default:
+          break;
+      }
+      setState(() {
+        _status     = next;
+        _apiLoading = false;
+      });
+      widget.onStatusChanged?.call(_status);
+    } catch (e) {
+      setState(() => _apiLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Failed: $e'),
+          backgroundColor: AppColors.error,
+        ));
+      }
+    }
+  }
+
+  /// Calls endTrip on backend then navigates to completion page.
+  Future<void> _completeRide() async {
+    setState(() => _apiLoading = true);
+    try {
+      await _tripService.endTrip(widget.ride.id);
+      setState(() => _apiLoading = false);
+      if (mounted) {
+        Navigator.of(context).push(RideCompletionPage.route(widget.ride));
+      }
+    } catch (e) {
+      setState(() => _apiLoading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text('Failed to complete ride: $e'),
+          backgroundColor: AppColors.error,
+        ));
+      }
+    }
   }
 
   @override
@@ -118,6 +173,7 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
                       // ── Passenger card ────────────────────────────────
                       PassengerInfoCard(
                         passenger: ride.passenger,
+                        rideId: ride.id,
                         pickupAddress: ride.pickupAddress,
                         dropOffAddress: ride.dropOffAddress,
                         distanceKm: ride.distanceKm,
@@ -125,8 +181,8 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
                         showContactButtons: _status != RideStatus.assigned,
                         showMetaTile: _status != RideStatus.assigned,
                         showActions: _status != RideStatus.startRide,
-                        onCall: () {},
-                        onMessage: () {},
+                        onCall: _callPassenger,
+                        onMessage: _openChat,
                         onCancelRide: () => _showCancelDialog(context),
                       ),
                     ],
@@ -150,6 +206,7 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
                             ? const _CompletedBanner()
                             : _PrimaryButton(
                                 label: _status.primaryButtonLabel,
+                                loading: _apiLoading,
                                 onTap: _handlePrimaryTap,
                               ),
                       ),
@@ -170,15 +227,45 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
       builder: (_) => _CancelRideSheet(
         onConfirm: () {
           Navigator.of(context).pop(); // close modal
-          Navigator.of(context).push(
-            RideCancellationPage.route(
-              ride: widget.ride,
-              cancelledBy: CancelledBy.driver,
-            ),
-          );
+          _cancelRide();
         },
       ),
     );
+  }
+
+  Future<void> _cancelRide() async {
+    setState(() => _apiLoading = true);
+    try {
+      await _tripService.cancelTrip(widget.ride.id);
+    } catch (_) {
+      // proceed to cancellation page even if API call fails
+    } finally {
+      if (mounted) setState(() => _apiLoading = false);
+    }
+    if (mounted) {
+      Navigator.of(context).push(
+        RideCancellationPage.route(
+          ride: widget.ride,
+          cancelledBy: CancelledBy.driver,
+        ),
+      );
+    }
+  }
+
+  Future<void> _callPassenger() async {
+    final phone = widget.ride.passenger.phone;
+    if (phone == null || phone.isEmpty) return;
+    final uri = Uri(scheme: 'tel', path: phone);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
+  }
+
+  void _openChat() {
+    Navigator.of(context).pushNamed('/chat', arguments: {
+      'rideId': widget.ride.id,
+      'passengerName': widget.ride.passenger.name,
+    });
   }
 }
 
@@ -186,7 +273,8 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
 class _PrimaryButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
-  const _PrimaryButton({required this.label, required this.onTap});
+  final bool loading;
+  const _PrimaryButton({required this.label, required this.onTap, this.loading = false});
 
   @override
   Widget build(BuildContext context) {
@@ -197,7 +285,7 @@ class _PrimaryButton extends StatelessWidget {
         width: double.infinity,
         height: 56,
         child: ElevatedButton(
-          onPressed: onTap,
+          onPressed: loading ? null : onTap,
           style: ElevatedButton.styleFrom(
             backgroundColor: AppColors.primaryPurple,
             foregroundColor: Colors.white,
@@ -206,10 +294,19 @@ class _PrimaryButton extends StatelessWidget {
               borderRadius: BorderRadius.circular(14),
             ),
           ),
-          child: Text(
-            label,
-            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
-          ),
+          child: loading
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.5,
+                    valueColor: AlwaysStoppedAnimation(Colors.white),
+                  ),
+                )
+              : Text(
+                  label,
+                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                ),
         ),
       ),
     );
@@ -244,89 +341,6 @@ class _CompletedBanner extends StatelessWidget {
               fontSize: 16,
               fontWeight: FontWeight.w700,
               color: AppColors.success,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Report Issue Sheet ────────────────────────────────────────────────────────
-class _ReportIssueSheet extends StatelessWidget {
-  const _ReportIssueSheet();
-
-  List<String> _issues(BuildContext context) {
-    final t = AppLocalizations.of(context).translate;
-    return [
-      t('issue_no_show'),
-      t('issue_bad_behavior'),
-      t('issue_wrong_location'),
-      t('issue_safety'),
-      t('issue_app'),
-      t('issue_other'),
-    ];
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final bgColor = isDark ? AppColors.darkSurface : Colors.white;
-
-    return Container(
-      margin: const EdgeInsets.all(12),
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              margin: const EdgeInsets.symmetric(vertical: 10),
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.darkBorder : const Color(0xFFE5E7EB),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          Text(
-            AppLocalizations.of(context).translate('tracking_report_title'),
-            style: TextStyle(
-              fontSize: 17,
-              fontWeight: FontWeight.w700,
-              color: AppColors.text(context),
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            AppLocalizations.of(context).translate('tracking_report_subtitle'),
-            style: TextStyle(fontSize: 13, color: AppColors.subtext(context)),
-          ),
-          const SizedBox(height: 16),
-          ..._issues(context).map(
-            (issue) => ListTile(
-              dense: true,
-              contentPadding: EdgeInsets.zero,
-              leading: Icon(
-                Icons.radio_button_unchecked,
-                size: 18,
-                color: AppColors.subtext(context),
-              ),
-              title: Text(
-                issue,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.text(context),
-                ),
-              ),
-              onTap: () => Navigator.pop(context),
             ),
           ),
         ],

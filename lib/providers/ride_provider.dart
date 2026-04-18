@@ -1,6 +1,8 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../core/models/offer_model.dart';
 import '../core/models/ride_model.dart';
+import '../core/notifications/notification_service.dart';
 import '../services/dispatch_service.dart';
 
 /// Manages pending offers and assigned/completed rides for the driver.
@@ -14,6 +16,8 @@ class RideProvider extends ChangeNotifier {
   String?          _error;
   OfferModel?      _activeOffer;   // offer currently being reviewed by driver
 
+  Timer? _pollTimer;
+
   // ── Getters ───────────────────────────────────────────────────────────────
   List<OfferModel> get pendingOffers  => _pendingOffers;
   bool             get loading        => _loading;
@@ -25,13 +29,75 @@ class RideProvider extends ChangeNotifier {
   List<RideModel> get upcomingRides => _allRides.where((r) =>
       r.status == 'ASSIGNED' ||
       r.status == 'EN_ROUTE_TO_PICKUP' ||
-      r.status == 'ARRIVED').toList();
+      r.status == 'ARRIVED' ||
+      r.status == 'IN_TRIP').toList();
 
   List<RideModel> get completedRides => _allRides.where((r) =>
       r.status == 'COMPLETED').toList();
 
   List<RideModel> get cancelledRides => _allRides.where((r) =>
       r.status == 'CANCELLED').toList();
+
+  // ── Polling ───────────────────────────────────────────────────────────────
+  /// Start background polling for pending offers every [intervalSec] seconds.
+  /// Call this when the driver goes online.
+  void startPolling({int intervalSec = 8}) {
+    if (_pollTimer != null) return; // already polling
+    _pollTimer = Timer.periodic(Duration(seconds: intervalSec), (_) {
+      _silentPollOffers();
+    });
+    // Immediate first fetch
+    _silentPollOffers();
+    // Register FCM token so backend can push ride offers
+    _registerFcmToken();
+  }
+
+  /// Stop background polling. Call this when the driver goes offline.
+  void stopPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = null;
+  }
+
+  Future<void> _silentPollOffers() async {
+    try {
+      final offers = await _dispatch.getPendingOffers();
+      // Only notify if something changed
+      final changed = offers.length != _pendingOffers.length ||
+          offers.any((o) => !_pendingOffers.any((p) => p.id == o.id));
+      if (changed) {
+        _pendingOffers = offers;
+        notifyListeners();
+      }
+    } catch (_) {
+      // Silent — polling should never crash the UI
+    }
+  }
+
+  /// Register the device FCM token with the backend for push notifications
+  Future<void> _registerFcmToken() async {
+    try {
+      final token = await NotificationService.instance.getToken();
+      if (token != null && token.isNotEmpty) {
+        await _dispatch.registerFcmToken(token);
+        debugPrint('✅ FCM token registered with backend');
+      }
+    } catch (e) {
+      debugPrint('⚠️ FCM token registration failed: $e');
+    }
+
+    // Listen for token refresh and update backend
+    NotificationService.instance.onTokenRefresh((newToken) async {
+      try {
+        await _dispatch.registerFcmToken(newToken);
+        debugPrint('✅ FCM token refreshed with backend');
+      } catch (_) {}
+    });
+
+    // When a RIDE_OFFER push arrives, immediately fetch offers
+    NotificationService.instance.onRideOfferReceived = () {
+      _silentPollOffers();
+    };
+  }
 
   // ── Fetch pending offers ──────────────────────────────────────────────────
   Future<void> loadPendingOffers() async {
@@ -109,5 +175,11 @@ class RideProvider extends ChangeNotifier {
       _ridesLoading = false;
       notifyListeners();
     }
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
   }
 }

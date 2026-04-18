@@ -12,6 +12,10 @@ class RideModel {
   final String? className;       // vehicle class name
   final String? vehiclePlate;    // assigned vehicle plate
   final double? distanceKm;
+  final double? pickupLat;
+  final double? pickupLon;
+  final double? dropoffLat;
+  final double? dropoffLon;
 
   const RideModel({
     required this.id,
@@ -26,6 +30,10 @@ class RideModel {
     this.className,
     this.vehiclePlate,
     this.distanceKm,
+    this.pickupLat,
+    this.pickupLon,
+    this.dropoffLat,
+    this.dropoffLon,
   });
 
   // ── Display helpers ───────────────────────────────────────────────
@@ -56,19 +64,23 @@ class RideModel {
 
     return RideModel(
       id:             j['id']              as String,
-      pickupAddress:  j['pickup_address']  as String? ?? '',
-      dropoffAddress: j['dropoff_address'] as String? ?? '',
+      pickupAddress:  j['pickup_address']  as String? ?? j['pickupAddress']  as String? ?? '',
+      dropoffAddress: j['dropoff_address'] as String? ?? j['dropoffAddress'] as String? ?? '',
       status:         j['status']          as String? ?? 'PENDING',
       passengerName:  passenger != null
           ? '${passenger['firstName']} ${passenger['lastName']}'
           : null,
       passengerPhone: passenger?['phone'] as String?,
-      priceEstimate:  _toDouble(j['price_estimate']),
-      priceFinal:     _toDouble(j['price_final']),
-      scheduledAt:    j['scheduled_at'] as String?,
+      priceEstimate:  _toDouble(j['price_estimate'] ?? j['priceEstimate']),
+      priceFinal:     _toDouble(j['price_final']    ?? j['priceFinal']),
+      scheduledAt:    j['scheduled_at'] as String? ?? j['scheduledAt'] as String?,
       className:      cls?['name']      as String?,
       vehiclePlate:   vehicle?['plateNumber'] as String?,
-      distanceKm:     _toDouble(j['distance_km']),
+      distanceKm:     _toDouble(j['distance_km'] ?? j['distanceKm']),
+      pickupLat:      _toDouble(j['pickupLat']),
+      pickupLon:      _toDouble(j['pickupLon']),
+      dropoffLat:     _toDouble(j['dropoffLat']),
+      dropoffLon:     _toDouble(j['dropoffLon']),
     );
   }
 
