@@ -143,10 +143,51 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
   /// Called by Flutter when the app moves between foreground/background.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && _isOnline && !_forcedOffline) {
-      // App came back to foreground — send an immediate heartbeat so the
-      // backend doesn't declare us stale after background throttling paused timers.
-      _sendImmediateHeartbeat();
+    if (state == AppLifecycleState.resumed) {
+      // Always re-sync status from backend on resume.
+      // This catches the case where the backend sweep forced us offline while
+      // we were backgrounded and the FCM background handler couldn't update state.
+      _syncOnResume();
+    }
+  }
+
+  /// Re-fetches driver status from backend on app resume.
+  /// If backend says offline but we think we're online → treat as forced offline.
+  /// If still online → send an immediate heartbeat to keep alive.
+  Future<void> _syncOnResume() async {
+    if (_forcedOffline) return; // already handled locally
+    try {
+      final profile = await _driver.getMe();
+      final backendOnline = profile.isOnline;
+
+      if (_isOnline && !backendOnline) {
+        // Backend marked us offline while we were backgrounded
+        _forcedOffline = true;
+        _isOnline = false;
+        if (_lastOnlineAt != null) {
+          final ms = DateTime.now().difference(_lastOnlineAt!).inMilliseconds;
+          _todayOnlineMs   += ms;
+          _allTimeOnlineMs += ms;
+          _lastOnlineAt = null;
+          await _persistTime();
+        }
+        _stopTimers();
+        _error = 'You went offline due to inactivity. Toggle online to reconnect.';
+        NotificationService.instance.showLocalNotification(
+          title: '⚠️ You went offline',
+          body: 'Your status was changed to offline due to inactivity. Tap to go back online.',
+          payload: 'DRIVER_WENT_OFFLINE',
+        );
+        notifyListeners();
+      } else if (_isOnline) {
+        // Still online — send heartbeat to prevent stale sweep
+        _sendImmediateHeartbeat();
+      }
+    } catch (_) {
+      // Network error on resume — still try heartbeat if online
+      if (_isOnline && !_forcedOffline) {
+        _sendImmediateHeartbeat();
+      }
     }
   }
 

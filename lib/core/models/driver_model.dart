@@ -20,7 +20,10 @@ class DriverModel {
     this.workArea,
   });
 
-  bool get isOnline => availabilityStatus == 'ONLINE' || availabilityStatus == 'ON_TRIP';
+  bool get isOnline {
+    final s = availabilityStatus.toLowerCase();
+    return s == 'online' || s == 'on_trip';
+  }
 
   /// Acceptance rate as percentage (0–100).
   /// totalTrips = completed rides, cancellationCount = cancelled rides.
