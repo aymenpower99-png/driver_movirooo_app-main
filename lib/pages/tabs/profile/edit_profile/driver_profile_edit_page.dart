@@ -4,6 +4,7 @@ import '../../../../../l10n/app_localizations.dart';
 import '../../../../../theme/app_colors.dart';
 import '../../../../../theme/app_text_styles.dart';
 import '../../../../../providers/auth_provider.dart';
+import '../../../../../core/widgets/app_toast.dart';
 
 class DriverProfileEditPage extends StatefulWidget {
   const DriverProfileEditPage({super.key});
@@ -55,23 +56,10 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
     );
     if (!mounted) return;
     if (ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(AppLocalizations.of(context).translate('profile_updated')),
-          backgroundColor: AppColors.success,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          margin: const EdgeInsets.all(16),
-        ),
-      );
+      AppToast.success(context, AppLocalizations.of(context).translate('profile_updated'));
       Navigator.pop(context);
     } else if (auth.error != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(auth.error!),
-          backgroundColor: Colors.red.shade700,
-        ),
-      );
+      AppToast.error(context, auth.error!);
       auth.clearError();
     }
   }

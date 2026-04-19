@@ -38,7 +38,7 @@ class NotificationService {
   // ─── Local Notifications Setup ───────────────────────────────────────────
 
   Future<void> _initLocalNotifications() async {
-    // Create high-importance Android channel
+    // Create high-importance Android channel for ride offers
     const AndroidNotificationChannel channel = AndroidNotificationChannel(
       _kChannelId,
       _kChannelName,
@@ -47,10 +47,21 @@ class NotificationService {
       playSound: true,
     );
 
-    await _localNotifications
+    // Create channel for driver status alerts (online/offline notifications)
+    const AndroidNotificationChannel statusChannel = AndroidNotificationChannel(
+      'driver_status',
+      'Driver Status',
+      description: 'Driver online/offline status alerts',
+      importance: Importance.high,
+      playSound: true,
+    );
+
+    final androidPlugin = _localNotifications
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(channel);
+            AndroidFlutterLocalNotificationsPlugin>();
+
+    await androidPlugin?.createNotificationChannel(channel);
+    await androidPlugin?.createNotificationChannel(statusChannel);
 
     const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -158,6 +169,31 @@ class NotificationService {
       debugPrint('🚀 App launched from notification: ${initialMessage.notification?.title}');
       _handleData(initialMessage.data, tapped: true);
     }
+  }
+
+  // ─── Show a custom local notification (e.g., driver went offline) ────────────
+
+  Future<void> showLocalNotification({
+    required String title,
+    required String body,
+    String? payload,
+  }) async {
+    const androidDetails = AndroidNotificationDetails(
+      'driver_status',
+      'Driver Status',
+      channelDescription: 'Driver online/offline status alerts',
+      importance: Importance.high,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+    );
+    const details = NotificationDetails(android: androidDetails);
+    await _localNotifications.show(
+      DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      title,
+      body,
+      details,
+      payload: payload,
+    );
   }
 
   // ─── Token helpers ────────────────────────────────────────────────────────

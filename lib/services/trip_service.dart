@@ -26,9 +26,12 @@ class TripService {
     await _dio.patch(Endpoints.tripEnd(rideId));
   }
 
-  /// Cancel active ride
-  Future<void> cancelTrip(String rideId) async {
-    await _dio.patch(Endpoints.tripCancel(rideId));
+  /// Cancel active ride with an optional reason
+  Future<void> cancelTrip(String rideId, {String? reason}) async {
+    await _dio.patch(
+      Endpoints.tripCancel(rideId),
+      data: reason != null ? {'reason': reason} : null,
+    );
   }
 
   /// Submit a support ticket linked to a ride
@@ -44,9 +47,9 @@ class TripService {
       'rideId': rideId,
       'issueType': issueType,
       'description': description,
-      ?'pickupAddress': pickupAddress,
-      ?'dropOffAddress': dropOffAddress,
-      ?'passengerName': passengerName,
+      if (pickupAddress  != null) 'pickupAddress':  pickupAddress,
+      if (dropOffAddress != null) 'dropOffAddress': dropOffAddress,
+      if (passengerName  != null) 'passengerName':  passengerName,
     });
   }
 

@@ -7,6 +7,7 @@ import '../../../../l10n/app_localizations.dart';
 import '../../core/models/ticket_model.dart';
 import '../../routing/router.dart';
 import '../../services/support_service.dart';
+import '../../core/widgets/app_toast.dart';
 import 'widgets/labeled_dropdown_field.dart';
 import 'widgets/labeled_input_field.dart';
 import 'widgets/photo_grid.dart';
@@ -129,26 +130,12 @@ class _ContactSupportPageState extends State<ContactSupportPage> {
         category: backendCategory,
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(t('support_message_sent')),
-          backgroundColor: AppColors.success,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
+      AppToast.success(context, t('support_message_sent'));
       Navigator.pop(context);
       AppRouter.push(context, AppRouter.myTickets);
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Failed to submit ticket. Please try again.'),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
+      AppToast.error(context, 'Failed to submit ticket. Please try again.');
     } finally {
       if (mounted) setState(() => _submitting = false);
     }

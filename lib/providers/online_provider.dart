@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/dispatch_service.dart';
 import '../services/driver_service.dart';
 import '../core/models/driver_model.dart';
+import '../core/notifications/notification_service.dart';
 
 /// Manages driver online/offline status, GPS heartbeat, and persistent time tracking.
 ///
@@ -298,6 +299,13 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
           }
           _stopTimers();
           _error = 'Connection lost. Toggle online to reconnect.';
+          // Show a local notification so the driver knows they went offline
+          // even when the screen is off.
+          NotificationService.instance.showLocalNotification(
+            title: '⚠️ You went offline',
+            body:  'Your screen turned off and you disconnected. Tap to go back online.',
+            payload: 'DRIVER_WENT_OFFLINE',
+          );
           notifyListeners();
         }
       }

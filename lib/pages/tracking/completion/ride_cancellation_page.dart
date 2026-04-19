@@ -117,6 +117,56 @@ class _RideCancellationPageState extends State<RideCancellationPage>
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
 
+  void _showRideDetailsDialog(BuildContext context) {
+    final ride = widget.ride;
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            const Icon(Icons.directions_car_rounded,
+                color: AppColors.primaryPurple, size: 20),
+            const SizedBox(width: 8),
+            const Text('Ride Details',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _DetailItem(label: 'Pickup',
+                value: ride.pickupAddress,
+                icon: Icons.radio_button_checked_rounded,
+                color: AppColors.primaryPurple),
+            const SizedBox(height: 8),
+            _DetailItem(label: 'Drop-off',
+                value: ride.dropOffAddress,
+                icon: Icons.location_on_rounded,
+                color: const Color(0xFF7C3AED)),
+            const SizedBox(height: 8),
+            _DetailItem(label: 'Passenger',
+                value: ride.passenger.name,
+                icon: Icons.person_outline_rounded,
+                color: AppColors.subtext(ctx)),
+            const SizedBox(height: 8),
+            _DetailItem(label: 'Distance',
+                value: '${ride.distanceKm.toStringAsFixed(1)} km',
+                icon: Icons.straighten_rounded,
+                color: AppColors.subtext(ctx)),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
   bool get _showRating =>
       widget.cancelledBy == CancelledBy.passenger &&
       widget.driverReachedPassenger;
@@ -159,9 +209,6 @@ class _RideCancellationPageState extends State<RideCancellationPage>
 
   // ── Content ──────────────────────────────────────────────────────
   Widget _buildContent(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final reportColor = isDark ? Colors.white : AppColors.subtext(context);
-
     return FadeTransition(
       opacity: _fade,
       child: SafeArea(
@@ -183,7 +230,7 @@ class _RideCancellationPageState extends State<RideCancellationPage>
               ),
 
               // ── Ride info ────────────────────────────────────────
-              RideSummaryCard(ride: widget.ride, showMeta: false, pickupOnly: true),
+              RideSummaryCard(ride: widget.ride, showMeta: false, pickupOnly: false),
               const SizedBox(height: 10),
 
               // ── Earnings ─────────────────────────────────────────
@@ -211,30 +258,6 @@ class _RideCancellationPageState extends State<RideCancellationPage>
 
               const Spacer(),
 
-              // ── Report Issue ──────────────────────────────────────
-              Center(
-                child: TextButton.icon(
-                  onPressed: () {},
-                  icon: Image.asset(
-                    'images/icons/warning.png',
-                    width: 14,
-                    height: 14,
-                    color: reportColor,
-                  ),
-                  label: Text(
-                    AppLocalizations.of(
-                      context,
-                    ).translate('completion_report_issue'),
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: reportColor,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 6),
-
               // ── Primary CTA ───────────────────────────────────────
               SizedBox(
                 height: 52,
@@ -261,11 +284,11 @@ class _RideCancellationPageState extends State<RideCancellationPage>
               ),
               const SizedBox(height: 8),
 
-              // ── Secondary CTA ─────────────────────────────────────
+              // ── View Details ─────────────────────────────────────
               SizedBox(
                 height: 48,
                 child: OutlinedButton(
-                  onPressed: () {},
+                  onPressed: () => _showRideDetailsDialog(context),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: AppColors.primaryPurple,
                     side: const BorderSide(
@@ -329,6 +352,48 @@ class _CancelledByBadge extends StatelessWidget {
           color: textColor,
         ),
       ),
+    );
+  }
+}
+
+// ── Ride detail item ──────────────────────────────────────────────────────────
+class _DetailItem extends StatelessWidget {
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+  const _DetailItem({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Icon(icon, size: 14, color: color),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(label,
+                  style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.subtext(context),
+                      fontWeight: FontWeight.w500)),
+              Text(value,
+                  style: TextStyle(
+                      fontSize: 13,
+                      color: AppColors.text(context),
+                      fontWeight: FontWeight.w600)),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

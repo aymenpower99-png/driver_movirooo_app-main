@@ -13,18 +13,30 @@ class MyTicketsPage extends StatefulWidget {
   State<MyTicketsPage> createState() => _MyTicketsPageState();
 }
 
-class _MyTicketsPageState extends State<MyTicketsPage> {
+class _MyTicketsPageState extends State<MyTicketsPage>
+    with SingleTickerProviderStateMixin {
   final SupportService _service = SupportService();
   final List<TicketModel> _tickets = [];
   bool _loading = true;
   bool _hasMore = true;
   int _page = 1;
   String? _error;
+  late final TabController _tabCtrl;
 
   @override
   void initState() {
     super.initState();
+    _tabCtrl = TabController(length: 2, vsync: this);
+    _tabCtrl.addListener(() {
+      if (!_tabCtrl.indexIsChanging) setState(() {});
+    });
     _load();
+  }
+
+  @override
+  void dispose() {
+    _tabCtrl.dispose();
+    super.dispose();
   }
 
   Future<void> _load() async {
@@ -59,6 +71,13 @@ class _MyTicketsPageState extends State<MyTicketsPage> {
     }
   }
 
+  /// Report issues are tickets submitted during an active ride (have a rideId)
+  List<TicketModel> get _reportIssues =>
+      _tickets.where((t) => t.rideId != null).toList();
+
+  List<TicketModel> get _otherTickets =>
+      _tickets.where((t) => t.rideId == null).toList();
+
   // ── Build ──────────────────────────────────────────────────────────────────
 
   @override
@@ -71,12 +90,47 @@ class _MyTicketsPageState extends State<MyTicketsPage> {
         leading: _backButton(context),
         title: Text('My Tickets', style: AppTextStyles.pageTitle(context)),
         centerTitle: true,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(46),
+          child: Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16),
+            decoration: BoxDecoration(
+              color: AppColors.surface(context),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: AppColors.border(context)),
+            ),
+            child: TabBar(
+              controller: _tabCtrl,
+              indicator: BoxDecoration(
+                color: AppColors.primaryPurple,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              labelColor: Colors.white,
+              unselectedLabelColor: AppColors.subtext(context),
+              labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+              unselectedLabelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+              indicatorSize: TabBarIndicatorSize.tab,
+              dividerColor: Colors.transparent,
+              tabs: const [
+                Tab(text: 'Report Issues'),
+                Tab(text: 'Other Tickets'),
+              ],
+            ),
+          ),
+        ),
       ),
-      body: _buildBody(),
+      body: TabBarView(
+        controller: _tabCtrl,
+        children: [
+          _buildTab(_reportIssues, emptyIcon: Icons.report_off_outlined, emptyLabel: 'No report issues'),
+          _buildTab(_otherTickets, emptyIcon: Icons.confirmation_num_outlined, emptyLabel: 'No tickets'),
+        ],
+      ),
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildTab(List<TicketModel> tickets,
+      {required IconData emptyIcon, required String emptyLabel}) {
     if (_loading && _tickets.isEmpty) {
       return const Center(child: CircularProgressIndicator(color: AppColors.primaryPurple));
     }
@@ -98,14 +152,14 @@ class _MyTicketsPageState extends State<MyTicketsPage> {
         ),
       );
     }
-    if (_tickets.isEmpty) {
+    if (tickets.isEmpty) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.confirmation_num_outlined, size: 56, color: AppColors.subtext(context)),
+            Icon(emptyIcon, size: 56, color: AppColors.subtext(context)),
             const SizedBox(height: 12),
-            Text('No tickets yet', style: TextStyle(color: AppColors.subtext(context), fontSize: 16)),
+            Text(emptyLabel, style: TextStyle(color: AppColors.subtext(context), fontSize: 16)),
           ],
         ),
       );
@@ -123,20 +177,14 @@ class _MyTicketsPageState extends State<MyTicketsPage> {
         },
         child: ListView.separated(
           padding: const EdgeInsets.all(16),
-          itemCount: _tickets.length + (_hasMore ? 1 : 0),
-          separatorBuilder: (_, _) => const SizedBox(height: 12),
+          itemCount: tickets.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 12),
           itemBuilder: (context, i) {
-            if (i >= _tickets.length) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: Center(child: CircularProgressIndicator(color: AppColors.primaryPurple, strokeWidth: 2)),
-              );
-            }
             return _TicketCard(
-              ticket: _tickets[i],
+              ticket: tickets[i],
               onTap: () async {
-                await AppRouter.push(context, AppRouter.ticketDetail, args: _tickets[i].id);
-                _refresh(); // refresh status after returning
+                await AppRouter.push(context, AppRouter.ticketDetail, args: tickets[i].id);
+                _refresh();
               },
             );
           },

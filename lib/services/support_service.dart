@@ -12,11 +12,15 @@ class SupportService {
     required String subject,
     required String description,
     required TicketCategory category,
+    String? rideId,
+    Map<String, dynamic>? metadata,
   }) async {
     final res = await _dio.post(Endpoints.tickets, data: {
       'subject':     subject,
       'description': description,
       'category':    category.apiValue,
+      if (rideId   != null) 'rideId':   rideId,
+      if (metadata != null) 'metadata': metadata,
     });
     return TicketModel.fromJson(res.data as Map<String, dynamic>);
   }

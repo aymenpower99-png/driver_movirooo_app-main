@@ -10,6 +10,7 @@ import '../../../../../theme/app_text_styles.dart';
 import '../../../providers/ride_provider.dart';
 import '../../../core/models/offer_model.dart';
 import '../../../core/models/ride_model.dart';
+import '../../../core/widgets/app_toast.dart';
 import '../widgets/tab_bar.dart';
 import 'ride_widgets.dart';
 import 'available_ride_card.dart';
@@ -346,12 +347,7 @@ class _OfferCard extends StatelessWidget {
                     onPressed: () async {
                       final ok = await context.read<RideProvider>().rejectOffer(offer.id);
                       if (context.mounted && !ok) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(context.read<RideProvider>().error ?? 'Error'),
-                            backgroundColor: AppColors.error,
-                          ),
-                        );
+                        AppToast.error(context, context.read<RideProvider>().error ?? 'Error');
                       }
                     },
                     style: OutlinedButton.styleFrom(
@@ -393,14 +389,10 @@ class _OfferCard extends StatelessWidget {
                             dropoffLat: ride.dropoffLat,
                             dropoffLon: ride.dropoffLon,
                           );
+                          AppToast.success(context, 'Ride accepted');
                           Navigator.of(context).push(TrackPassengerPage.route(trackRide));
                         } else {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(context.read<RideProvider>().error ?? 'Error'),
-                              backgroundColor: AppColors.error,
-                            ),
-                          );
+                          AppToast.error(context, context.read<RideProvider>().error ?? 'Error');
                         }
                       }
                     },

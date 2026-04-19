@@ -1,3 +1,27 @@
+class TierProgress {
+  final String tierId;
+  final String tierName;
+  final int requiredRides;
+  final double bonusAmount;
+  final bool reached;
+
+  const TierProgress({
+    required this.tierId,
+    required this.tierName,
+    required this.requiredRides,
+    required this.bonusAmount,
+    required this.reached,
+  });
+
+  factory TierProgress.fromJson(Map<String, dynamic> json) => TierProgress(
+        tierId: json['tierId'] as String? ?? '',
+        tierName: json['tierName'] as String? ?? '',
+        requiredRides: (json['requiredRides'] as num?)?.toInt() ?? 0,
+        bonusAmount: (json['bonusAmount'] as num?)?.toDouble() ?? 0,
+        reached: json['reached'] as bool? ?? false,
+      );
+}
+
 class EarningsModel {
   final double baseSalary;
   final double commission;
@@ -12,6 +36,9 @@ class EarningsModel {
   final int ridesThreshold;
   final int ridesLeftForCommission;
   final List<WeeklyData> weekly;
+  final List<TierProgress> tiers;
+  final String? nextTierName;
+  final int? nextTierRidesNeeded;
 
   const EarningsModel({
     required this.baseSalary,
@@ -27,6 +54,9 @@ class EarningsModel {
     required this.ridesThreshold,
     required this.ridesLeftForCommission,
     required this.weekly,
+    this.tiers = const [],
+    this.nextTierName,
+    this.nextTierRidesNeeded,
   });
 
   factory EarningsModel.fromJson(Map<String, dynamic> json) {
@@ -35,6 +65,10 @@ class EarningsModel {
     final weeklyList = (json['weekly'] as List<dynamic>? ?? [])
         .map((w) => WeeklyData.fromJson(w as Map<String, dynamic>))
         .toList();
+    final tiersList = (json['tiers'] as List<dynamic>? ?? [])
+        .map((t) => TierProgress.fromJson(t as Map<String, dynamic>))
+        .toList();
+    final nextTier = json['nextTier'] as Map<String, dynamic>?;
 
     return EarningsModel(
       baseSalary: (json['baseSalary'] as num?)?.toDouble() ?? 0,
@@ -51,6 +85,9 @@ class EarningsModel {
       ridesLeftForCommission:
           (stats['ridesLeftForCommission'] as num?)?.toInt() ?? 0,
       weekly: weeklyList,
+      tiers: tiersList,
+      nextTierName: nextTier?['name'] as String?,
+      nextTierRidesNeeded: (nextTier?['ridesNeeded'] as num?)?.toInt(),
     );
   }
 }

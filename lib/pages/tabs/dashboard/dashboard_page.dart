@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../routing/router.dart';
 import '../../../providers/online_provider.dart';
+import '../../../core/widgets/app_toast.dart';
 import '../widgets/tab_bar.dart';
 import 'dashboard_widgets.dart';
 import 'dashboard_cards.dart';
@@ -228,14 +229,7 @@ class _DashboardPageState extends State<DashboardPage>
     // Show backend errors safely
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (online.error != null) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            SnackBar(
-              content: Text(online.error!),
-              backgroundColor: Colors.red,
-            ),
-          );
+        AppToast.error(context, online.error!);
 
         online.clearError();
       }

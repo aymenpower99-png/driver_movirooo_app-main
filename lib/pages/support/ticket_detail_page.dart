@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../core/models/ticket_model.dart';
+import '../../core/widgets/app_toast.dart';
 import '../../providers/auth_provider.dart';
 import '../../services/support_service.dart';
 import '../../theme/app_colors.dart';
@@ -68,14 +69,7 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
       await _loadTicket();
     } catch (_) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Failed to send reply'),
-            backgroundColor: AppColors.error,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        );
+        AppToast.error(context, 'Failed to send reply');
       }
     } finally {
       if (mounted) setState(() => _sending = false);
@@ -164,7 +158,6 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
     final messages = _ticket!.messages;
 
     if (messages.isEmpty) {
-      // Show the description as the initial message
       return ListView(
         controller: _scrollCtrl,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),

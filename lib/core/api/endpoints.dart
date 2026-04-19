@@ -17,6 +17,7 @@ class Endpoints {
   // ── Driver ────────────────────────────────────────────────────────────────
   static const String driverMe           = '/drivers/me';
   static const String driverAvailability = '/drivers/me/availability';
+  static const String notificationPrefs  = '/drivers/me/notifications';
 
   // ── Dispatch ──────────────────────────────────────────────────────────────
   static const String sendLocation  = '/dispatch/locations';

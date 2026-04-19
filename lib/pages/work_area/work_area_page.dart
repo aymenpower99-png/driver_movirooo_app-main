@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/models/ticket_model.dart';
+import '../../core/widgets/app_toast.dart';
 import '../../providers/online_provider.dart';
 import '../../services/support_service.dart';
 import '../../theme/app_colors.dart';
@@ -26,14 +27,7 @@ class _WorkAreaPageState extends State<WorkAreaPage> {
   Future<void> _requestChange() async {
     final reason = _reasonCtrl.text.trim();
     if (reason.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Please describe the desired area change'),
-          backgroundColor: AppColors.warning,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
+      AppToast.info(context, 'Please describe the desired area change');
       return;
     }
 
@@ -46,24 +40,10 @@ class _WorkAreaPageState extends State<WorkAreaPage> {
       );
       if (!mounted) return;
       _reasonCtrl.clear();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Request submitted successfully'),
-          backgroundColor: AppColors.success,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
+      AppToast.success(context, 'Request submitted successfully');
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Failed to submit request'),
-          backgroundColor: AppColors.error,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
+      AppToast.error(context, 'Failed to submit request');
     } finally {
       if (mounted) setState(() => _sending = false);
     }

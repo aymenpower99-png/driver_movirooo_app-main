@@ -18,4 +18,25 @@ class DriverService {
       data: {'status': status},
     );
   }
+
+  /// Fetch current notification preferences from backend.
+  Future<Map<String, bool>> getNotificationPrefs() async {
+    final res = await _dio.get(Endpoints.notificationPrefs);
+    final data = res.data as Map<String, dynamic>;
+    return {
+      'pushEnabled':  (data['pushEnabled']  as bool?) ?? true,
+      'emailEnabled': (data['emailEnabled'] as bool?) ?? true,
+    };
+  }
+
+  /// Persist notification preferences to backend.
+  Future<void> updateNotificationPrefs({
+    bool? pushEnabled,
+    bool? emailEnabled,
+  }) async {
+    await _dio.patch(Endpoints.notificationPrefs, data: {
+      if (pushEnabled  != null) 'pushEnabled':  pushEnabled,
+      if (emailEnabled != null) 'emailEnabled': emailEnabled,
+    });
+  }
 }

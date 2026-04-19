@@ -115,14 +115,12 @@ class _EarningsPageState extends State<EarningsPage> {
                                         const SizedBox(height: 12),
                                         StatsRow(earnings: earnings),
                                         const SizedBox(height: 12),
-                                        if (earnings
-                                                .ridesLeftForCommission >
-                                            0)
+                                        if (earnings.tiers.isNotEmpty ||
+                                                earnings.ridesLeftForCommission > 0)
                                           _CommissionProgress(
                                               earnings: earnings),
-                                        if (earnings
-                                                .ridesLeftForCommission >
-                                            0)
+                                        if (earnings.tiers.isNotEmpty ||
+                                                earnings.ridesLeftForCommission > 0)
                                           const SizedBox(height: 12),
                                         EarningsChart(
                                             weekly: earnings.weekly),
@@ -154,6 +152,11 @@ class _CommissionProgress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Use tier-based progress if tiers are available
+    if (earnings.tiers.isNotEmpty) {
+      return _TierProgressWidget(earnings: earnings);
+    }
+    // Fallback: single threshold progress bar
     final ridesLeft = earnings.ridesLeftForCommission;
     final threshold = earnings.ridesThreshold;
     final completed = earnings.ridesCompleted;
@@ -191,13 +194,127 @@ class _CommissionProgress extends StatelessWidget {
               value: progress,
               minHeight: 8,
               backgroundColor: AppColors.border(context),
-              valueColor:
-                  AlwaysStoppedAnimation(AppColors.primaryPurple),
+              valueColor: AlwaysStoppedAnimation(AppColors.primaryPurple),
             ),
           ),
           const SizedBox(height: 6),
           Text(
             '$completed / $threshold rides',
+            style: AppTextStyles.bodySmall(context).copyWith(
+              color: AppColors.subtext(context),
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TierProgressWidget extends StatelessWidget {
+  final EarningsModel earnings;
+  const _TierProgressWidget({required this.earnings});
+
+  @override
+  Widget build(BuildContext context) {
+    final completed = earnings.ridesCompleted;
+    final nextTierName = earnings.nextTierName;
+    final ridesNeeded = earnings.nextTierRidesNeeded;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.surface(context),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border(context)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.workspace_premium_rounded,
+                  color: Colors.amber, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  nextTierName != null
+                      ? '$ridesNeeded more rides to reach $nextTierName'
+                      : 'All tiers reached! 🎉',
+                  style: AppTextStyles.bodyMedium(context)
+                      .copyWith(fontWeight: FontWeight.w600),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          // Tier progress pills
+          ...earnings.tiers.map((tier) {
+            final progress = tier.requiredRides > 0
+                ? (completed / tier.requiredRides).clamp(0.0, 1.0)
+                : 1.0;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Icon(
+                        tier.reached
+                            ? Icons.check_circle_rounded
+                            : Icons.radio_button_unchecked_rounded,
+                        size: 14,
+                        color: tier.reached
+                            ? AppColors.primaryPurple
+                            : AppColors.subtext(context),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          '${tier.tierName} — ≥${tier.requiredRides} rides',
+                          style: AppTextStyles.bodySmall(context).copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: tier.reached
+                                ? AppColors.text(context)
+                                : AppColors.subtext(context),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        '+${tier.bonusAmount.toStringAsFixed(0)} DT',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: tier.reached
+                              ? const Color(0xFF10b981)
+                              : AppColors.subtext(context),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 5),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 6,
+                      backgroundColor: AppColors.border(context),
+                      valueColor: AlwaysStoppedAnimation(
+                        tier.reached
+                            ? AppColors.primaryPurple
+                            : AppColors.primaryPurple.withValues(alpha: 0.4),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+          const SizedBox(height: 2),
+          Text(
+            '$completed rides completed this month',
             style: AppTextStyles.bodySmall(context).copyWith(
               color: AppColors.subtext(context),
               fontSize: 11,

@@ -23,10 +23,12 @@ class DriverModel {
   bool get isOnline => availabilityStatus == 'ONLINE' || availabilityStatus == 'ON_TRIP';
 
   /// Acceptance rate as percentage (0–100).
+  /// totalTrips = completed rides, cancellationCount = cancelled rides.
+  /// Rate = completed / (completed + cancelled).
   int get acceptanceRate {
-    if (totalTrips == 0) return 100;
-    final accepted = totalTrips - cancellationCount;
-    return ((accepted / totalTrips) * 100).round().clamp(0, 100);
+    final total = totalTrips + cancellationCount;
+    if (total == 0) return 100;
+    return ((totalTrips / total) * 100).round().clamp(0, 100);
   }
 
   factory DriverModel.fromJson(Map<String, dynamic> j) => DriverModel(

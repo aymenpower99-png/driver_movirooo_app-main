@@ -129,6 +129,8 @@ class TicketModel {
   final DateTime createdAt;
   final DateTime updatedAt;
   final List<TicketMessageModel> messages;
+  final String? rideId;
+  final Map<String, dynamic>? metadata;
 
   const TicketModel({
     required this.id,
@@ -139,6 +141,8 @@ class TicketModel {
     required this.createdAt,
     required this.updatedAt,
     this.messages = const [],
+    this.rideId,
+    this.metadata,
   });
 
   /// Preview of the last message (or description if no messages).
@@ -161,6 +165,8 @@ class TicketModel {
       createdAt:   DateTime.tryParse(j['createdAt'] as String? ?? '') ?? DateTime.now(),
       updatedAt:   DateTime.tryParse(j['updatedAt'] as String? ?? '') ?? DateTime.now(),
       messages:    msgs,
+      rideId:      j['rideId'] as String?,
+      metadata:    j['metadata'] as Map<String, dynamic>?,
     );
   }
 }

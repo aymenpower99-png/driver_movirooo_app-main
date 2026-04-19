@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:moviroo_driver_app/l10n/app_localizations.dart';
 import 'package:moviroo_driver_app/theme/app_colors.dart';
-import 'package:moviroo_driver_app/services/trip_service.dart';
+import 'package:moviroo_driver_app/services/support_service.dart';
+import 'package:moviroo_driver_app/core/models/ticket_model.dart';
+import 'package:moviroo_driver_app/core/widgets/app_toast.dart';
 
 // ── Issue categories ──────────────────────────────────────────────────────────
 
@@ -133,24 +135,51 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
 
   // ── Submit ──────────────────────────────────────────────────────────────────
 
+  /// Maps RideIssue enum to a TicketCategory for the backend.
+  TicketCategory _issueToCategory(RideIssue issue) {
+    switch (issue) {
+      case RideIssue.appIssue:
+        return TicketCategory.technical;
+      case RideIssue.noShow:
+      case RideIssue.wrongLocation:
+      case RideIssue.badBehavior:
+      case RideIssue.safetyConcern:
+        return TicketCategory.ride;
+      case RideIssue.other:
+        return TicketCategory.other;
+    }
+  }
+
   Future<void> _submit() async {
     if (_selected == null || _submitting) return;
     setState(() => _submitting = true);
+    bool success = false;
     try {
-      await TripService().submitTicket(
-        rideId: widget.rideId,
-        issueType: _selected!.label,
-        description: _noteController.text.trim(),
-        pickupAddress: widget.pickupAddress,
-        dropOffAddress: widget.dropOffAddress,
-        passengerName: widget.passengerName,
+      await SupportService().createTicket(
+        subject:     _selected!.label,
+        description: _noteController.text.trim().isEmpty
+            ? _selected!.label
+            : _noteController.text.trim(),
+        category:    _issueToCategory(_selected!),
+        rideId:      widget.rideId,
+        metadata: {
+          'pickupAddress':  widget.pickupAddress,
+          'dropOffAddress': widget.dropOffAddress,
+          'passengerName':  widget.passengerName,
+        },
       );
+      success = true;
     } catch (_) {
-      // submit to backend best-effort; still close page
+      // submit best-effort
     }
     widget.onSubmit(_selected!, _noteController.text.trim(), List.of(_photos));
     if (mounted) {
       setState(() => _submitting = false);
+      if (success) {
+        AppToast.success(context, 'Report submitted successfully');
+      } else {
+        AppToast.error(context, 'Failed to submit report');
+      }
       Navigator.of(context).pop();
     }
   }

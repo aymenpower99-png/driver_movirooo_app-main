@@ -10,6 +10,7 @@ import 'package:moviroo_driver_app/pages/tracking/widgets/confirm_action_modal.d
 import 'package:moviroo_driver_app/pages/tracking/completion/ride_completion_page.dart';
 import 'package:moviroo_driver_app/pages/tracking/completion/ride_cancellation_page.dart';
 import 'package:moviroo_driver_app/services/trip_service.dart';
+import 'package:moviroo_driver_app/core/widgets/app_toast.dart';
 
 class TrackingBottomSheet extends StatefulWidget {
   final RideModel ride;
@@ -78,10 +79,7 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
     } catch (e) {
       setState(() => _apiLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Failed: $e'),
-          backgroundColor: AppColors.error,
-        ));
+        AppToast.error(context, 'Failed: $e');
       }
     }
   }
@@ -93,15 +91,13 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
       await _tripService.endTrip(widget.ride.id);
       setState(() => _apiLoading = false);
       if (mounted) {
+        AppToast.success(context, 'Ride completed');
         Navigator.of(context).push(RideCompletionPage.route(widget.ride));
       }
     } catch (e) {
       setState(() => _apiLoading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('Failed to complete ride: $e'),
-          backgroundColor: AppColors.error,
-        ));
+        AppToast.error(context, 'Failed to complete ride: $e');
       }
     }
   }
@@ -224,25 +220,33 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
-      builder: (_) => _CancelRideSheet(
-        onConfirm: () {
+      isScrollControlled: true,
+      builder: (_) => _CancelReasonSheet(
+        onConfirm: (String reason) {
           Navigator.of(context).pop(); // close modal
-          _cancelRide();
+          _cancelRide(reason);
         },
       ),
     );
   }
 
-  Future<void> _cancelRide() async {
+  Future<void> _cancelRide(String reason) async {
     setState(() => _apiLoading = true);
+    bool success = false;
     try {
-      await _tripService.cancelTrip(widget.ride.id);
+      await _tripService.cancelTrip(widget.ride.id, reason: reason);
+      success = true;
     } catch (_) {
       // proceed to cancellation page even if API call fails
     } finally {
       if (mounted) setState(() => _apiLoading = false);
     }
     if (mounted) {
+      if (success) {
+        AppToast.success(context, 'Ride cancelled');
+      } else {
+        AppToast.error(context, 'Failed to cancel ride');
+      }
       Navigator.of(context).push(
         RideCancellationPage.route(
           ride: widget.ride,
@@ -256,9 +260,7 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
     final phone = widget.ride.passenger.phone;
     if (phone == null || phone.isEmpty) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('No phone number available')),
-        );
+        AppToast.info(context, 'No phone number available');
       }
       return;
     }
@@ -356,10 +358,27 @@ class _CompletedBanner extends StatelessWidget {
   }
 }
 
-// ── Cancel Ride Sheet ─────────────────────────────────────────────────────────
-class _CancelRideSheet extends StatelessWidget {
-  final VoidCallback onConfirm;
-  const _CancelRideSheet({required this.onConfirm});
+// ── Cancel Reason Sheet ───────────────────────────────────────────────────────
+
+const _kCancelReasons = [
+  'Passenger no-show',
+  'Passenger behavior',
+  'Safety concern',
+  'Wrong pickup location',
+  'Route issue',
+  'Other',
+];
+
+class _CancelReasonSheet extends StatefulWidget {
+  final void Function(String reason) onConfirm;
+  const _CancelReasonSheet({required this.onConfirm});
+
+  @override
+  State<_CancelReasonSheet> createState() => _CancelReasonSheetState();
+}
+
+class _CancelReasonSheetState extends State<_CancelReasonSheet> {
+  String? _selected;
 
   @override
   Widget build(BuildContext context) {
@@ -368,7 +387,10 @@ class _CancelRideSheet extends StatelessWidget {
 
     return Container(
       margin: const EdgeInsets.all(12),
-      padding: const EdgeInsets.fromLTRB(24, 8, 24, 32),
+      padding: EdgeInsets.only(
+        left: 24, right: 24, top: 8,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+      ),
       decoration: BoxDecoration(
         color: bgColor,
         borderRadius: BorderRadius.circular(24),
@@ -376,88 +398,108 @@ class _CancelRideSheet extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Drag handle
           Center(
             child: Container(
               margin: const EdgeInsets.symmetric(vertical: 10),
-              width: 40,
-              height: 4,
+              width: 40, height: 4,
               decoration: BoxDecoration(
                 color: isDark ? AppColors.darkBorder : const Color(0xFFE5E7EB),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
           ),
+          // Icon
           Container(
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: isDark
-                  ? AppColors.error.withValues(alpha: 0.15)
-                  : const Color(0xFFFFEBEA),
+              color: AppColors.error.withValues(alpha: isDark ? 0.15 : 0.08),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
-              Icons.cancel_outlined,
-              color: AppColors.error,
-              size: 28,
-            ),
+            child: const Icon(Icons.cancel_outlined, color: AppColors.error, size: 28),
           ),
           const SizedBox(height: 14),
           Text(
             AppLocalizations.of(context).translate('tracking_cancel_title'),
             style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
+              fontSize: 18, fontWeight: FontWeight.w700,
               color: AppColors.text(context),
             ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
-            AppLocalizations.of(
-              context,
-            ).translate('tracking_cancel_description'),
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.subtext(context),
-              height: 1.5,
-            ),
+            'Please select a reason for cancelling:',
+            style: TextStyle(fontSize: 13, color: AppColors.subtext(context)),
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 12),
+          // Reason list
+          ..._kCancelReasons.map((reason) {
+            final selected = _selected == reason;
+            return GestureDetector(
+              onTap: () => setState(() => _selected = reason),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                margin: const EdgeInsets.symmetric(vertical: 3),
+                padding: const EdgeInsets.symmetric(vertical: 11, horizontal: 14),
+                decoration: BoxDecoration(
+                  color: selected
+                      ? AppColors.error.withValues(alpha: 0.08)
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: selected ? AppColors.error : (isDark
+                        ? AppColors.darkBorder
+                        : const Color(0xFFE5E7EB)),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      selected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                      size: 18,
+                      color: selected ? AppColors.error : AppColors.subtext(context),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(reason,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: selected ? FontWeight.w600 : FontWeight.normal,
+                          color: selected ? AppColors.error : AppColors.text(context),
+                        )),
+                  ],
+                ),
+              ),
+            );
+          }),
+          const SizedBox(height: 20),
+          // Confirm
           SizedBox(
-            width: double.infinity,
-            height: 50,
+            width: double.infinity, height: 50,
             child: ElevatedButton(
-              onPressed: onConfirm,
+              onPressed: _selected == null
+                  ? null
+                  : () => widget.onConfirm(_selected!),
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.error,
+                disabledBackgroundColor: AppColors.error.withValues(alpha: 0.35),
                 foregroundColor: Colors.white,
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
+                    borderRadius: BorderRadius.circular(12)),
               ),
-              child: Text(
-                AppLocalizations.of(
-                  context,
-                ).translate('tracking_cancel_confirm'),
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
+              child: const Text('Cancel Ride',
+                  style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           SizedBox(
-            width: double.infinity,
-            height: 46,
+            width: double.infinity, height: 44,
             child: TextButton(
               onPressed: () => Navigator.pop(context),
               child: Text(
                 AppLocalizations.of(context).translate('tracking_keep_ride'),
                 style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
+                  fontSize: 14, fontWeight: FontWeight.w600,
                   color: AppColors.subtext(context),
                 ),
               ),
