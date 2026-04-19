@@ -34,8 +34,9 @@ class MonthlyBreakdown extends StatelessWidget {
           ),
           Divider(height: 20, color: AppColors.border(context)),
           _BreakdownRow(
-            label:
-                'Commission (${earnings.ridesCompleted > earnings.ridesThreshold ? earnings.ridesCompleted - earnings.ridesThreshold : 0} extra rides)',
+            label: earnings.tiers.isNotEmpty
+                ? 'Commission Bonuses (${earnings.tiers.where((t) => t.reached).length} tiers reached)'
+                : 'Commission (${earnings.ridesCompleted > earnings.ridesThreshold ? earnings.ridesCompleted - earnings.ridesThreshold : 0} extra rides)',
             value: '+${earnings.commission.toStringAsFixed(2)} DT',
             isNegative: false,
             valueColor: Colors.green,

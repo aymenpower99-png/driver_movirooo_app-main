@@ -32,6 +32,10 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
   /// Dashboard should show a persistent "Enable GPS" dialog.
   bool _gpsRequired = false;
 
+  /// True when the backend forced the driver offline (stale heartbeat).
+  /// Prevents heartbeat from auto-reconnecting; only explicit toggleOnline clears this.
+  bool _forcedOffline = false;
+
   // ── Session tracking ──────────────────────────────────────────────────────
   DateTime? _lastOnlineAt; // when current online session started
 
@@ -121,6 +125,8 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
     // Register lifecycle observer so we can send an immediate heartbeat
     // when the driver brings the app back to the foreground.
     WidgetsBinding.instance.addObserver(this);
+    // Listen for backend-forced offline via FCM
+    NotificationService.instance.onDriverForcedOffline = _onForcedOffline;
     try {
       _driverProfile = await _driver.getMe();
       _isOnline = _driverProfile!.isOnline;
@@ -137,11 +143,29 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
   /// Called by Flutter when the app moves between foreground/background.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && _isOnline) {
+    if (state == AppLifecycleState.resumed && _isOnline && !_forcedOffline) {
       // App came back to foreground — send an immediate heartbeat so the
       // backend doesn't declare us stale after background throttling paused timers.
       _sendImmediateHeartbeat();
     }
+  }
+
+  /// Called when backend FCM arrives telling us we were forced offline.
+  void _onForcedOffline() {
+    if (!_isOnline) return; // already offline locally
+    _forcedOffline = true;
+    _isOnline = false;
+    _heartbeatFailCount = 0;
+    if (_lastOnlineAt != null) {
+      final ms = DateTime.now().difference(_lastOnlineAt!).inMilliseconds;
+      _todayOnlineMs   += ms;
+      _allTimeOnlineMs += ms;
+      _lastOnlineAt = null;
+      _persistTime();
+    }
+    _stopTimers();
+    _error = 'You went offline due to inactivity. Toggle online to reconnect.';
+    notifyListeners();
   }
 
   Future<void> _sendImmediateHeartbeat() async {
@@ -238,6 +262,7 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
           return;
         }
 
+        _forcedOffline = false; // clear forced-offline flag on explicit go-online
         final pos = await _getLocation();
         await _dispatch.goOnline(lat: pos?.latitude, lng: pos?.longitude);
         _lastOnlineAt = DateTime.now();

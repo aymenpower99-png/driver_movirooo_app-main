@@ -42,11 +42,19 @@ class TrackingMapLogic {
 
     _pointMgr = await _map!.annotations.createPointAnnotationManager();
 
+    // Always show BOTH markers from the start
     _pickupAnn = await _pointMgr!.create(PointAnnotationOptions(
       geometry: Point(coordinates: Position(pickupPt.lon, pickupPt.lat)),
       image: await MapPainters.renderPickupBitmap(),
       iconSize: 1.0,
       iconAnchor: IconAnchor.CENTER,
+    ));
+
+    _dropoffAnn = await _pointMgr!.create(PointAnnotationOptions(
+      geometry: Point(coordinates: Position(dropoffPt.lon, dropoffPt.lat)),
+      image: await MapPainters.renderDropoffBitmap(),
+      iconSize: 1.0,
+      iconAnchor: IconAnchor.BOTTOM,
     ));
 
     await _map!.style.addSource(
@@ -63,7 +71,8 @@ class TrackingMapLogic {
       lineJoin: LineJoin.ROUND,
     ));
 
-    fitToPickup();
+    // Fit camera to show both pickup and drop-off markers
+    fitBothMarkers();
   }
 
   // ── Driver symbol ─────────────────────────────────────────────────────────
@@ -112,14 +121,7 @@ class TrackingMapLogic {
     if (!_srcReady || _dropoffRouteDrawn) return;
     _dropoffRouteDrawn = true;
 
-    if (_dropoffAnn == null) {
-      _dropoffAnn = await _pointMgr!.create(PointAnnotationOptions(
-        geometry: Point(coordinates: Position(dropoffPt.lon, dropoffPt.lat)),
-        image: await MapPainters.renderDropoffBitmap(),
-        iconSize: 1.0,
-        iconAnchor: IconAnchor.BOTTOM,
-      ));
-    }
+    // Dropoff marker already created in onStyleLoaded — no need to recreate
 
     final result = await OsrmRouteService.fetchRoute(pickupPt, dropoffPt);
     final pts = (result != null && result.points.length >= 2)
@@ -133,6 +135,16 @@ class TrackingMapLogic {
     await _map!.style.setStyleSourceProperty(
         'route-src', 'data', _ptsToGeoJson(pts));
     fitToFullRoute();
+  }
+
+  // ── Clear route (remove line but keep markers) ────────────────────────────
+
+  Future<void> clearRoute() async {
+    if (!_srcReady) return;
+    await _map!.style.setStyleSourceProperty(
+        'route-src', 'data', _emptyGeoJson());
+    _pickupRouteDrawn = false;
+    _dropoffRouteDrawn = false;
   }
 
   // ── ETA refresh ───────────────────────────────────────────────────────────
@@ -162,6 +174,31 @@ class TrackingMapLogic {
       ),
       MapAnimationOptions(duration: 800),
     );
+  }
+
+  /// Fit camera to show both pickup and dropoff markers (no route needed).
+  void fitBothMarkers() {
+    if (_map == null) return;
+    final sw = GeoPoint(
+      math.min(pickupPt.lat, dropoffPt.lat),
+      math.min(pickupPt.lon, dropoffPt.lon),
+    );
+    final ne = GeoPoint(
+      math.max(pickupPt.lat, dropoffPt.lat),
+      math.max(pickupPt.lon, dropoffPt.lon),
+    );
+    _map!
+        .cameraForCoordinateBounds(
+          CoordinateBounds(
+            southwest: Point(coordinates: Position(sw.lon, sw.lat)),
+            northeast: Point(coordinates: Position(ne.lon, ne.lat)),
+            infiniteBounds: false,
+          ),
+          MbxEdgeInsets(top: 120, left: 60, bottom: 300, right: 60),
+          null, null, null, null,
+        )
+        .then((c) => _map?.flyTo(c, MapAnimationOptions(duration: 1000)))
+        .catchError((_) {});
   }
 
   void fitBoundsDriverToPickup(GeoPoint driver) {

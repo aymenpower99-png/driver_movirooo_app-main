@@ -97,7 +97,10 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
     if (_isPrePickup || _isInTrip) {
       _mapLogic.animateToDriver(newPt, bearing: _driverBearing);
     }
-    if (_isPrePickup) _mapLogic.drawPhase1Route(newPt);
+    // Only draw route to pickup when driver is actively heading there (not in assigned state)
+    if (_status == RideStatus.onTheWay && !_isInTrip) {
+      _mapLogic.drawPhase1Route(newPt);
+    }
     _mapLogic.maybeRefreshEta(newPt, _isPrePickup, _isInTrip);
   }
 
@@ -117,7 +120,7 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
 
   Future<void> _onStyleLoaded() => _mapLogic.onStyleLoaded();
 
-  void _onStatusChanged(RideStatus newStatus) {
+  Future<void> _onStatusChanged(RideStatus newStatus) async {
     setState(() => _status = newStatus);
     switch (newStatus) {
       case RideStatus.onTheWay:
@@ -129,6 +132,8 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
         }
         break;
       case RideStatus.startRide:
+        // Clear the pickup route, then draw a new route to drop-off
+        await _mapLogic.clearRoute();
         _mapLogic.drawPhase2Route(_driverPosition);
         break;
       case RideStatus.completed:

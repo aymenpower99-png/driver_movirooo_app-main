@@ -38,8 +38,7 @@ extension RideStatusX on RideStatus {
   bool get showMeta =>
       this == RideStatus.assigned || this == RideStatus.onTheWay;
 
-  bool get showDropoffMarker =>
-      this == RideStatus.startRide || this == RideStatus.completed;
+  bool get showDropoffMarker => true; // always visible alongside pickup
 
   bool get isTerminal => this == RideStatus.completed;
 

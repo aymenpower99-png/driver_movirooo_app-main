@@ -132,6 +132,9 @@ class NotificationService {
   /// Called when a RIDE_OFFER push arrives while app is in foreground.
   void Function()? onRideOfferReceived;
 
+  /// Called when the backend forces the driver offline (stale heartbeat).
+  void Function()? onDriverForcedOffline;
+
   /// Called when user taps a notification — payload is the notification type.
   void Function(String? type)? onNotificationTap;
 
@@ -154,6 +157,9 @@ class NotificationService {
     final type = data['type'] as String?;
     if (type == 'RIDE_OFFER') {
       onRideOfferReceived?.call();
+    }
+    if (type == 'DRIVER_STATUS_OFFLINE') {
+      onDriverForcedOffline?.call();
     }
     if (tapped) {
       onNotificationTap?.call(type);
