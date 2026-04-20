@@ -20,13 +20,13 @@ import '../core/notifications/notification_service.dart';
 /// marking the driver offline during background periods.
 class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
   final DispatchService _dispatch = DispatchService();
-  final DriverService   _driver   = DriverService();
+  final DriverService _driver = DriverService();
 
-  bool         _isOnline    = false;
-  bool         _loading     = false;
-  String?      _error;
+  bool _isOnline = false;
+  bool _loading = false;
+  String? _error;
   DriverModel? _driverProfile;
-  bool         _initialized = false; // guard: loadDriverProfile runs only once
+  bool _initialized = false; // guard: loadDriverProfile runs only once
 
   /// Set to true when the user tried to go online but GPS is disabled.
   /// Dashboard should show a persistent "Enable GPS" dialog.
@@ -39,14 +39,25 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
   // ── Session tracking ──────────────────────────────────────────────────────
   DateTime? _lastOnlineAt; // when current online session started
 
-  // ── Persisted time counters (milliseconds) ────────────────────────────────
-  int    _todayOnlineMs   = 0;
-  int    _allTimeOnlineMs = 0;
-  String _storedDate      = ''; // 'YYYY-MM-DD'
+  // ── Monthly time: SOURCE OF TRUTH is the backend DB ──────────────────────
+  /// Accumulated ms from past sessions this month (loaded from backend).
+  int _backendMonthlyMs = 0;
+
+  // ── Persisted time counters (today + all-time only, milliseconds) ─────────
+  int _todayOnlineMs = 0;
+  int _allTimeOnlineMs = 0;
+  String _storedDate = ''; // 'YYYY-MM-DD'
+
+  // ── Legacy migration (old SharedPreferences monthly data) ─────────────────
+  int _legacyMonthMs = 0;
+  String _legacyMonth = '';
 
   static const _kTodayMs   = 'online_today_ms';
   static const _kAllTimeMs = 'online_alltime_ms';
   static const _kDate      = 'online_date';
+  // Legacy keys — read once for migration, then cleared
+  static const _kLegacyMonthMs = 'online_month_ms';
+  static const _kLegacyMonth   = 'online_month';
 
   // ── Timers ────────────────────────────────────────────────────────────────
   Timer? _heartbeatTimer;
@@ -59,11 +70,11 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
   static const _maxHeartbeatFails = 6; // 6 × 20 s = 120 s (sweep threshold)
 
   // ── Getters ───────────────────────────────────────────────────────────────
-  bool         get isOnline      => _isOnline;
-  bool         get loading       => _loading;
-  String?      get error         => _error;
+  bool get isOnline => _isOnline;
+  bool get loading => _loading;
+  String? get error => _error;
   DriverModel? get driverProfile => _driverProfile;
-  bool         get gpsRequired   => _gpsRequired;
+  bool get gpsRequired => _gpsRequired;
 
   /// Milliseconds elapsed in the current online session (0 if offline).
   int get _sessionMs {
@@ -72,7 +83,11 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   /// Today's total online time including current live session.
-  String get todayOnlineFormatted  => _fmtMs(_todayOnlineMs  + _sessionMs);
+  String get todayOnlineFormatted => _fmtMs(_todayOnlineMs + _sessionMs);
+
+  /// Monthly total online time including current live session.
+  /// Uses backend-persisted value as the base — survives reinstalls/cache clears.
+  String get monthOnlineFormatted => _fmtMs(_backendMonthlyMs + _sessionMs);
 
   /// All-time total online time including current live session.
   String get allTimeOnlineFormatted => _fmtMs(_allTimeOnlineMs + _sessionMs);
@@ -88,11 +103,11 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
     return '${m}m';
   }
 
-  // ── Persistence ───────────────────────────────────────────────────────────
+  // ── Persistence (today + all-time only; monthly lives in backend DB) ─────
   Future<void> _loadPersistedTime() async {
     final prefs = await SharedPreferences.getInstance();
     _allTimeOnlineMs = prefs.getInt(_kAllTimeMs) ?? 0;
-    _storedDate      = prefs.getString(_kDate)   ?? '';
+    _storedDate = prefs.getString(_kDate) ?? '';
 
     final today = _todayStr();
     if (_storedDate != today) {
@@ -103,18 +118,27 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
     } else {
       _todayOnlineMs = prefs.getInt(_kTodayMs) ?? 0;
     }
+
+    // Read legacy monthly keys for one-time migration
+    _legacyMonthMs = prefs.getInt(_kLegacyMonthMs) ?? 0;
+    _legacyMonth   = prefs.getString(_kLegacyMonth) ?? '';
   }
 
   Future<void> _persistTime() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_kTodayMs,   _todayOnlineMs);
+    await prefs.setInt(_kTodayMs, _todayOnlineMs);
     await prefs.setInt(_kAllTimeMs, _allTimeOnlineMs);
-    await prefs.setString(_kDate,   _todayStr());
+    await prefs.setString(_kDate, _todayStr());
   }
 
   String _todayStr() {
     final n = DateTime.now();
-    return '${n.year}-${n.month.toString().padLeft(2,'0')}-${n.day.toString().padLeft(2,'0')}';
+    return '${n.year}-${n.month.toString().padLeft(2, '0')}-${n.day.toString().padLeft(2, '0')}';
+  }
+
+  String _monthStr() {
+    final n = DateTime.now();
+    return '${n.year}-${n.month.toString().padLeft(2, '0')}';
   }
 
   // ── Load initial driver state (runs once) ─────────────────────────────────
@@ -130,8 +154,33 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
     try {
       _driverProfile = await _driver.getMe();
       _isOnline = _driverProfile!.isOnline;
+
+      // Seed monthly time from backend — this is the persistent source of truth.
+      _backendMonthlyMs = _driverProfile!.monthlyOnlineMs;
+
+      // ── One-time migration from legacy SharedPreferences ─────────────────
+      // If the backend has 0 for this month AND we have old prefs data, migrate it.
+      if (_backendMonthlyMs == 0 && _legacyMonthMs > 0) {
+        final currentMonth = _monthStr();
+        if (_legacyMonth == currentMonth) {
+          _backendMonthlyMs = _legacyMonthMs; // show immediately while we seed
+          _driver.seedMonthlyOnlineTime(_legacyMonthMs, currentMonth).then((_) async {
+            // Clear legacy keys so migration never runs again
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.remove(_kLegacyMonthMs);
+            await prefs.remove(_kLegacyMonth);
+            _legacyMonthMs = 0;
+            _legacyMonth   = '';
+          }).catchError((_) {
+            // Non-fatal — legacy value still displayed locally
+          });
+        }
+      }
+
       if (_isOnline) {
-        _lastOnlineAt = DateTime.now(); // approximate
+        // Use the backend's recorded session start so we don't under-count
+        // if the app was backgrounded for a while before this load.
+        _lastOnlineAt = _driverProfile!.onlineSince ?? DateTime.now();
         _startTimers();
       }
       notifyListeners();
@@ -161,21 +210,28 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
       final backendOnline = profile.isOnline;
 
       if (_isOnline && !backendOnline) {
-        // Backend marked us offline while we were backgrounded
+        // Backend marked us offline while we were backgrounded.
+        // The backend sweep already accumulated the session time — just clear local state.
         _forcedOffline = true;
         _isOnline = false;
-        if (_lastOnlineAt != null) {
-          final ms = DateTime.now().difference(_lastOnlineAt!).inMilliseconds;
-          _todayOnlineMs   += ms;
-          _allTimeOnlineMs += ms;
-          _lastOnlineAt = null;
-          await _persistTime();
-        }
+        _lastOnlineAt = null;
         _stopTimers();
-        _error = 'You went offline due to inactivity. Toggle online to reconnect.';
+
+        // Re-fetch to get the updated monthlyOnlineMs from backend.
+        try {
+          final updated = await _driver.getMe();
+          _backendMonthlyMs = updated.monthlyOnlineMs;
+          _driverProfile    = updated;
+        } catch (_) {
+          // keep last known value
+        }
+
+        _error =
+            'You went offline due to inactivity. Toggle online to reconnect.';
         NotificationService.instance.showLocalNotification(
           title: '⚠️ You went offline',
-          body: 'Your status was changed to offline due to inactivity. Tap to go back online.',
+          body:
+              'Your status was changed to offline due to inactivity. Tap to go back online.',
           payload: 'DRIVER_WENT_OFFLINE',
         );
         notifyListeners();
@@ -197,16 +253,18 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
     _forcedOffline = true;
     _isOnline = false;
     _heartbeatFailCount = 0;
-    if (_lastOnlineAt != null) {
-      final ms = DateTime.now().difference(_lastOnlineAt!).inMilliseconds;
-      _todayOnlineMs   += ms;
-      _allTimeOnlineMs += ms;
-      _lastOnlineAt = null;
-      _persistTime();
-    }
+    // The backend sweep already committed the session time — clear local state.
+    _lastOnlineAt = null;
     _stopTimers();
     _error = 'You went offline due to inactivity. Toggle online to reconnect.';
     notifyListeners();
+
+    // Async re-fetch to update the monthly counter from backend.
+    _driver.getMe().then((profile) {
+      _backendMonthlyMs = profile.monthlyOnlineMs;
+      _driverProfile    = profile;
+      notifyListeners();
+    }).catchError((_) {});
   }
 
   Future<void> _sendImmediateHeartbeat() async {
@@ -218,7 +276,9 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
         await _dispatch.heartbeat();
       }
     } catch (_) {
-      try { await _dispatch.heartbeat(); } catch (_) {}
+      try {
+        await _dispatch.heartbeat();
+      } catch (_) {}
     }
   }
 
@@ -252,13 +312,17 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
       // Step 2: low-accuracy fresh fix (faster satellite acquisition)
       try {
         return await Geolocator.getCurrentPosition(
-          locationSettings: const LocationSettings(accuracy: LocationAccuracy.low),
+          locationSettings: const LocationSettings(
+            accuracy: LocationAccuracy.low,
+          ),
         ).timeout(const Duration(seconds: 15));
       } catch (_) {}
 
       // Step 3: medium-accuracy with generous timeout
       return await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium),
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+        ),
       ).timeout(const Duration(seconds: 30));
     } catch (_) {
       return null; // GPS unavailable — still allow going online
@@ -275,7 +339,7 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> toggleOnline() async {
     if (_loading) return;
     _loading = true;
-    _error   = null;
+    _error = null;
     _gpsRequired = false;
     notifyListeners();
 
@@ -292,6 +356,14 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
         }
         _stopTimers();
         _isOnline = false;
+        // Backend accumulated the session into monthlyOnlineMs — re-fetch.
+        try {
+          final updated = await _driver.getMe();
+          _backendMonthlyMs = updated.monthlyOnlineMs;
+          _driverProfile    = updated;
+        } catch (_) {
+          // Non-fatal — display will be slightly stale until next getMe
+        }
       } else {
         // ── Going ONLINE ───────────────────────────────────────────────────
         // Check GPS service is on (UI should have shown modal already)
@@ -303,13 +375,20 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
           return;
         }
 
-        _forcedOffline = false; // clear forced-offline flag on explicit go-online
+        _forcedOffline =
+            false; // clear forced-offline flag on explicit go-online
         final pos = await _getLocation();
         await _dispatch.goOnline(lat: pos?.latitude, lng: pos?.longitude);
         _lastOnlineAt = DateTime.now();
         _heartbeatFailCount = 0;
         _startTimers(initialPosition: pos);
         _isOnline = true;
+        // Refresh profile so _backendMonthlyMs is up to date for the new session
+        try {
+          final updated = await _driver.getMe();
+          _backendMonthlyMs = updated.monthlyOnlineMs;
+          _driverProfile    = updated;
+        } catch (_) {}
       }
     } on Exception catch (e) {
       _error = 'Failed to update status. Try again.';
@@ -365,11 +444,18 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
           }
           _stopTimers();
           _error = 'Connection lost. Toggle online to reconnect.';
+          // Re-fetch backend monthly time (sweep already committed it).
+          _driver.getMe().then((p) {
+            _backendMonthlyMs = p.monthlyOnlineMs;
+            _driverProfile    = p;
+            notifyListeners();
+          }).catchError((_) {});
           // Show a local notification so the driver knows they went offline
           // even when the screen is off.
           NotificationService.instance.showLocalNotification(
             title: '⚠️ You went offline',
-            body:  'Your screen turned off and you disconnected. Tap to go back online.',
+            body:
+                'Your screen turned off and you disconnected. Tap to go back online.',
             payload: 'DRIVER_WENT_OFFLINE',
           );
           notifyListeners();

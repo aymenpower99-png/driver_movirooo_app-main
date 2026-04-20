@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import '../../../../core/models/earnings_model.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class EarningsChart extends StatelessWidget {
   final List<DailyRides> dailyRides;
   const EarningsChart({super.key, required this.dailyRides});
 
   static const double _chartH = 130.0;
-  static const _green = Color(0xFF22C55E);
-  static const _dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
   /// Aggregate dailyRides by ISO weekday (Mon=0 … Sun=6)
   List<int> _weekData() {
@@ -35,10 +34,10 @@ class EarningsChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final weekData = _weekData();
-    final rawMax   = weekData.reduce((a, b) => a > b ? a : b);
-    final yMax     = _niceMax(rawMax);
-    const steps    = 4; // divides chart into 4 equal sections
-    final yLabels  = List.generate(steps + 1, (i) => yMax - (yMax * i ~/ steps));
+    final rawMax = weekData.reduce((a, b) => a > b ? a : b);
+    final yMax = _niceMax(rawMax);
+    const steps = 4; // divides chart into 4 equal sections
+    final yLabels = List.generate(steps + 1, (i) => yMax - (yMax * i ~/ steps));
 
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 18, 16, 14),
@@ -58,15 +57,17 @@ class EarningsChart extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Weekly Rides',
-            style: AppTextStyles.bodyLarge(context)
-                .copyWith(fontWeight: FontWeight.w900, fontSize: 15),
+            AppLocalizations.of(context).translate('earnings_weekly_rides'),
+            style: AppTextStyles.bodyLarge(
+              context,
+            ).copyWith(fontWeight: FontWeight.w900, fontSize: 15),
           ),
           const SizedBox(height: 2),
           Text(
-            'Rides per day',
-            style: AppTextStyles.bodySmall(context)
-                .copyWith(color: AppColors.subtext(context), fontSize: 11),
+            AppLocalizations.of(context).translate('earnings_rides_per_day'),
+            style: AppTextStyles.bodySmall(
+              context,
+            ).copyWith(color: AppColors.subtext(context), fontSize: 11),
           ),
           const SizedBox(height: 18),
 
@@ -82,14 +83,16 @@ class EarningsChart extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: yLabels
-                      .map((v) => Text(
-                            '$v',
-                            style: TextStyle(
-                              fontSize: 9,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.subtext(context),
-                            ),
-                          ))
+                      .map(
+                        (v) => Text(
+                          '$v',
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.subtext(context),
+                          ),
+                        ),
+                      )
                       .toList(),
                 ),
               ),
@@ -110,8 +113,9 @@ class EarningsChart extends StatelessWidget {
                               steps + 1,
                               (_) => Container(
                                 height: 1,
-                                color: AppColors.border(context)
-                                    .withValues(alpha: 0.6),
+                                color: AppColors.border(
+                                  context,
+                                ).withValues(alpha: 0.6),
                               ),
                             ),
                           ),
@@ -138,12 +142,12 @@ class EarningsChart extends StatelessWidget {
                                         width: 20,
                                         decoration: BoxDecoration(
                                           color: rides > 0
-                                              ? _green
+                                              ? AppColors.primaryPurple
                                               : AppColors.border(context),
                                           borderRadius:
                                               const BorderRadius.vertical(
-                                            top: Radius.circular(5),
-                                          ),
+                                                top: Radius.circular(5),
+                                              ),
                                         ),
                                       ),
                                     ),
@@ -156,7 +160,7 @@ class EarningsChart extends StatelessWidget {
                                           style: TextStyle(
                                             fontSize: 9,
                                             fontWeight: FontWeight.w800,
-                                            color: _green,
+                                            color: AppColors.primaryPurple,
                                           ),
                                         ),
                                       ),
@@ -173,16 +177,27 @@ class EarningsChart extends StatelessWidget {
                     // X-axis labels
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: _dayNames
-                          .map((d) => Text(
-                                d,
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.w500,
-                                  color: AppColors.subtext(context),
+                      children:
+                          [
+                                'earnings_day_mon',
+                                'earnings_day_tue',
+                                'earnings_day_wed',
+                                'earnings_day_thu',
+                                'earnings_day_fri',
+                                'earnings_day_sat',
+                                'earnings_day_sun',
+                              ]
+                              .map(
+                                (key) => Text(
+                                  AppLocalizations.of(context).translate(key),
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppColors.subtext(context),
+                                  ),
                                 ),
-                              ))
-                          .toList(),
+                              )
+                              .toList(),
                     ),
                   ],
                 ),
@@ -194,4 +209,3 @@ class EarningsChart extends StatelessWidget {
     );
   }
 }
-

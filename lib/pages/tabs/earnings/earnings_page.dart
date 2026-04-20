@@ -6,6 +6,7 @@ import '../../../../core/models/earnings_model.dart';
 import '../widgets/tab_bar.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
+import '../../../../l10n/app_localizations.dart';
 import 'earnings_summary_card.dart';
 import 'earnings_chart.dart';
 
@@ -21,6 +22,8 @@ class _EarningsPageState extends State<EarningsPage> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // Ensure online time is loaded even if the driver opened this tab first
+      context.read<OnlineProvider>().loadDriverProfile();
       context.read<EarningsProvider>().loadEarnings();
     });
   }
@@ -28,8 +31,14 @@ class _EarningsPageState extends State<EarningsPage> {
   @override
   Widget build(BuildContext context) {
     final provider = context.watch<EarningsProvider>();
-    final online   = context.watch<OnlineProvider>();
+    final online = context.watch<OnlineProvider>();
     final earnings = provider.earnings;
+    final t = AppLocalizations.of(context).translate;
+
+    // Only show live online time when viewing the current month
+    final currentMonth =
+        '${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}';
+    final isCurrentMonth = provider.selectedMonth == currentMonth;
 
     return Scaffold(
       backgroundColor: AppColors.bg(context),
@@ -40,29 +49,41 @@ class _EarningsPageState extends State<EarningsPage> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                border: Border(bottom: BorderSide(color: AppColors.border(context))),
+                border: Border(
+                  bottom: BorderSide(color: AppColors.border(context)),
+                ),
               ),
               child: Row(
                 children: [
                   GestureDetector(
                     onTap: provider.previousMonth,
-                    child: Icon(Icons.chevron_left_rounded,
-                        color: AppColors.primaryPurple, size: 28),
+                    child: Icon(
+                      Icons.chevron_left_rounded,
+                      color: AppColors.primaryPurple,
+                      size: 28,
+                    ),
                   ),
                   const Spacer(),
-                  Icon(Icons.calendar_month_outlined,
-                      color: AppColors.primaryPurple, size: 20),
+                  Icon(
+                    Icons.calendar_month_outlined,
+                    color: AppColors.primaryPurple,
+                    size: 20,
+                  ),
                   const SizedBox(width: 8),
                   Text(
                     provider.displayMonth,
-                    style: AppTextStyles.bodyLarge(context)
-                        .copyWith(fontWeight: FontWeight.w700),
+                    style: AppTextStyles.bodyLarge(
+                      context,
+                    ).copyWith(fontWeight: FontWeight.w700),
                   ),
                   const Spacer(),
                   GestureDetector(
                     onTap: provider.nextMonth,
-                    child: Icon(Icons.chevron_right_rounded,
-                        color: AppColors.primaryPurple, size: 28),
+                    child: Icon(
+                      Icons.chevron_right_rounded,
+                      color: AppColors.primaryPurple,
+                      size: 28,
+                    ),
                   ),
                 ],
               ),
@@ -72,78 +93,88 @@ class _EarningsPageState extends State<EarningsPage> {
               child: provider.loading
                   ? const Center(child: CircularProgressIndicator())
                   : provider.error != null
-                      ? Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.error_outline,
-                                  size: 40, color: AppColors.subtext(context)),
-                              const SizedBox(height: 12),
-                              Text('Failed to load earnings',
-                                  style: AppTextStyles.settingsItem(context)),
-                              const SizedBox(height: 12),
-                              ElevatedButton(
-                                onPressed: provider.loadEarnings,
-                                child: const Text('Retry'),
-                              ),
-                            ],
+                  ? Center(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.error_outline,
+                            size: 40,
+                            color: AppColors.subtext(context),
                           ),
-                        )
-                      : earnings == null
-                          ? Center(
-                              child: Text('No earnings data',
-                                  style: AppTextStyles.settingsItem(context)))
-                          : RefreshIndicator(
-                              onRefresh: provider.loadEarnings,
-                              child: CustomScrollView(
-                                slivers: [
-                                  SliverPadding(
-                                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-                                    sliver: SliverList(
-                                      delegate: SliverChildListDelegate([
-                                        // 1. Salary card (full width)
-                                        _SalaryCard(salary: earnings.salary),
-                                        const SizedBox(height: 12),
+                          const SizedBox(height: 12),
+                          Text(
+                            t('earnings_load_error'),
+                            style: AppTextStyles.settingsItem(context),
+                          ),
+                          const SizedBox(height: 12),
+                          ElevatedButton(
+                            onPressed: provider.loadEarnings,
+                            child: Text(t('retry')),
+                          ),
+                        ],
+                      ),
+                    )
+                  : earnings == null
+                  ? Center(
+                      child: Text(
+                        t('earnings_no_data'),
+                        style: AppTextStyles.settingsItem(context),
+                      ),
+                    )
+                  : RefreshIndicator(
+                      onRefresh: provider.loadEarnings,
+                      child: CustomScrollView(
+                        slivers: [
+                          SliverPadding(
+                            padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                            sliver: SliverList(
+                              delegate: SliverChildListDelegate([
+                                // 1. Salary card (full width)
+                                _SalaryCard(salary: earnings.salary),
+                                const SizedBox(height: 12),
 
-                                        // 2. Total Rides + Online Time
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: _StatCard(
-                                                label: 'Total Rides',
-                                                value: '${earnings.ridesCompleted}',
-                                              ),
-                                            ),
-                                            const SizedBox(width: 12),
-                                            Expanded(
-                                              child: _StatCard(
-                                                label: 'Online Time',
-                                                value: online.allTimeOnlineFormatted,
-                                              ),
-                                            ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 12),
-
-                                        // 3. Tier progress
-                                        if (earnings.tiers.isNotEmpty)
-                                          _TierProgressWidget(earnings: earnings),
-                                        if (earnings.tiers.isNotEmpty)
-                                          const SizedBox(height: 12),
-
-                                        // 4. Weekly chart
-                                        EarningsChart(dailyRides: earnings.dailyRides),
-                                        const SizedBox(height: 12),
-
-                                        // 5. Summary
-                                        EarningsSummaryCard(earnings: earnings),
-                                        const SizedBox(height: 32),
-                                      ]),
+                                // 2. Total Rides + Online Time
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _StatCard(
+                                        label: t('earnings_total_rides'),
+                                        value: '${earnings.ridesCompleted}',
+                                      ),
                                     ),
-                                  ),
-                                ],
-                              ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: _StatCard(
+                                        label: t('earnings_online_time_label'),
+                                        value: isCurrentMonth
+                                            ? online.monthOnlineFormatted
+                                            : '—',
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+
+                                // 3. Tier progress
+                                if (earnings.tiers.isNotEmpty)
+                                  _TierProgressWidget(earnings: earnings),
+                                if (earnings.tiers.isNotEmpty)
+                                  const SizedBox(height: 12),
+
+                                // 4. Weekly chart
+                                EarningsChart(dailyRides: earnings.dailyRides),
+                                const SizedBox(height: 12),
+
+                                // 5. Summary
+                                EarningsSummaryCard(earnings: earnings),
+                                const SizedBox(height: 32),
+                              ]),
                             ),
+                          ),
+                        ],
+                      ),
+                    ),
             ),
           ],
         ),
@@ -177,9 +208,13 @@ class _SalaryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Fixed Salary',
-            style: TextStyle(color: Colors.white70, fontSize: 13, fontWeight: FontWeight.w600),
+          Text(
+            AppLocalizations.of(context).translate('earnings_fixed_salary'),
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           const SizedBox(height: 8),
           Text(
@@ -226,10 +261,9 @@ class _StatCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             label,
-            style: AppTextStyles.bodySmall(context).copyWith(
-              color: AppColors.subtext(context),
-              fontSize: 11,
-            ),
+            style: AppTextStyles.bodySmall(
+              context,
+            ).copyWith(color: AppColors.subtext(context), fontSize: 11),
           ),
         ],
       ),
@@ -257,8 +291,10 @@ class _TierProgressWidget extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Commission Tiers',
-            style: AppTextStyles.bodyMedium(context).copyWith(fontWeight: FontWeight.w700),
+            AppLocalizations.of(context).translate('earnings_commission_tiers'),
+            style: AppTextStyles.bodyMedium(
+              context,
+            ).copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 14),
           ...earnings.tiers.map((tier) {
@@ -304,9 +340,7 @@ class _TierProgressWidget extends StatelessWidget {
                       minHeight: 5,
                       backgroundColor: AppColors.border(context),
                       valueColor: AlwaysStoppedAnimation(
-                        tier.reached
-                            ? AppColors.primaryPurple
-                            : AppColors.primaryPurple.withValues(alpha: 0.45),
+                        AppColors.primaryPurple,
                       ),
                     ),
                   ),
@@ -316,15 +350,17 @@ class _TierProgressWidget extends StatelessWidget {
           }),
           if (earnings.nextTierName != null)
             Text(
-              '${earnings.nextTierRidesNeeded} more rides to reach ${earnings.nextTierName}',
-              style: AppTextStyles.bodySmall(context).copyWith(
-                color: AppColors.subtext(context),
-                fontSize: 11,
-              ),
+              AppLocalizations.of(context)
+                  .translate('earnings_rides_to_next_tier')
+                  .replaceAll('{count}', '${earnings.nextTierRidesNeeded}')
+                  .replaceAll('{tier}', '${earnings.nextTierName}'),
+              style: AppTextStyles.bodySmall(
+                context,
+              ).copyWith(color: AppColors.subtext(context), fontSize: 11),
             )
           else
             Text(
-              'All tiers reached! 🎉',
+              '${AppLocalizations.of(context).translate('earnings_all_tiers_reached')} 🎉',
               style: AppTextStyles.bodySmall(context).copyWith(
                 color: const Color(0xFF10b981),
                 fontWeight: FontWeight.w700,

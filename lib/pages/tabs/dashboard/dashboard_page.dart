@@ -5,6 +5,7 @@ import 'package:location/location.dart' as loc;
 import 'package:provider/provider.dart';
 
 import '../../../../theme/app_colors.dart';
+import '../../../../l10n/app_localizations.dart';
 import '../../../routing/router.dart';
 import '../../../providers/online_provider.dart';
 import '../../../core/widgets/app_toast.dart';
@@ -21,7 +22,6 @@ class DashboardPage extends StatefulWidget {
 
 class _DashboardPageState extends State<DashboardPage>
     with TickerProviderStateMixin {
-
   late AnimationController _bounceCtrl;
   late Animation<double> _bounceScale;
 
@@ -39,9 +39,10 @@ class _DashboardPageState extends State<DashboardPage>
       duration: const Duration(milliseconds: 130),
     );
 
-    _bounceScale = Tween<double>(begin: 1.0, end: 0.84).animate(
-      CurvedAnimation(parent: _bounceCtrl, curve: Curves.easeInOut),
-    );
+    _bounceScale = Tween<double>(
+      begin: 1.0,
+      end: 0.84,
+    ).animate(CurvedAnimation(parent: _bounceCtrl, curve: Curves.easeInOut));
 
     // Card animation (online activity panel)
     _cardCtrl = AnimationController(
@@ -49,17 +50,12 @@ class _DashboardPageState extends State<DashboardPage>
       duration: const Duration(milliseconds: 420),
     );
 
-    _cardFade = CurvedAnimation(
-      parent: _cardCtrl,
-      curve: Curves.easeOut,
-    );
+    _cardFade = CurvedAnimation(parent: _cardCtrl, curve: Curves.easeOut);
 
     _cardSlide = Tween<Offset>(
       begin: const Offset(0, 0.14),
       end: Offset.zero,
-    ).animate(
-      CurvedAnimation(parent: _cardCtrl, curve: Curves.easeOutCubic),
-    );
+    ).animate(CurvedAnimation(parent: _cardCtrl, curve: Curves.easeOutCubic));
 
     // Load driver profile after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -159,7 +155,9 @@ class _DashboardPageState extends State<DashboardPage>
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    'Enable Location',
+                    AppLocalizations.of(
+                      context,
+                    ).translate('dashboard_enable_location'),
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.w700,
@@ -170,7 +168,9 @@ class _DashboardPageState extends State<DashboardPage>
               ],
             ),
             content: Text(
-              'GPS must be enabled to go online. Please turn on your device location to start receiving ride requests.',
+              AppLocalizations.of(
+                context,
+              ).translate('dashboard_gps_required_message'),
               style: TextStyle(
                 fontSize: 14,
                 color: AppColors.subtext(context),
@@ -185,7 +185,7 @@ class _DashboardPageState extends State<DashboardPage>
                   Navigator.of(ctx).pop();
                 },
                 child: Text(
-                  'Cancel',
+                  AppLocalizations.of(context).translate('cancel'),
                   style: TextStyle(color: AppColors.subtext(context)),
                 ),
               ),
@@ -200,7 +200,11 @@ class _DashboardPageState extends State<DashboardPage>
                   }
                 },
                 icon: const Icon(Icons.gps_fixed, size: 18),
-                label: const Text('Turn On'),
+                label: Text(
+                  AppLocalizations.of(
+                    context,
+                  ).translate('dashboard_turn_on_gps'),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryPurple,
                   foregroundColor: Colors.white,
@@ -276,12 +280,12 @@ class _DashboardPageState extends State<DashboardPage>
                         child: SlideTransition(
                           position: _cardSlide,
                           child: ActivityCard(
-                            isOnline:       isOnline,
-                            onlineTime:     online.todayOnlineFormatted,
-                            vehicleName:    driver?.vehicle?.displayName ?? '—',
-                            vehicleClass:   driver?.vehicle?.className   ?? '—',
-                            acceptanceRate: driver?.acceptanceRate       ?? 100,
-                            cancellations:  driver?.cancellationCount    ?? 0,
+                            isOnline: isOnline,
+                            onlineTime: online.todayOnlineFormatted,
+                            vehicleName: driver?.vehicle?.displayName ?? '—',
+                            vehicleClass: driver?.vehicle?.className ?? '—',
+                            acceptanceRate: driver?.acceptanceRate ?? 100,
+                            cancellations: driver?.cancellationCount ?? 0,
                           ),
                         ),
                       ),
@@ -293,10 +297,7 @@ class _DashboardPageState extends State<DashboardPage>
         ),
       ),
 
-      bottomNavigationBar: DriverTabBar(
-        currentIndex: 0,
-        onTap: _handleTabTap,
-      ),
+      bottomNavigationBar: DriverTabBar(currentIndex: 0, onTap: _handleTabTap),
     );
   }
 }

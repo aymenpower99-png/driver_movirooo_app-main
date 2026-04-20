@@ -291,5 +291,29 @@
   "portuguese": "Portuguese",
   "russian": "Russian",
   "turkish": "Turkish",
-  "chinese": "Chinese"
+  "chinese": "Chinese",
+
+  "earnings_fixed_salary": "Fixed Salary",
+  "earnings_total_rides": "Total Rides",
+  "earnings_online_time_label": "Online Time",
+  "earnings_commission_tiers": "Commission Tiers",
+  "earnings_rides_to_next_tier": "{count} more rides to reach {tier}",
+  "earnings_all_tiers_reached": "All tiers reached!",
+  "earnings_commission_earned": "Commission earned",
+  "earnings_net_earnings": "Net earnings",
+  "earnings_weekly_rides": "Weekly Rides",
+  "earnings_rides_per_day": "Rides per day",
+  "earnings_day_mon": "Mon",
+  "earnings_day_tue": "Tue",
+  "earnings_day_wed": "Wed",
+  "earnings_day_thu": "Thu",
+  "earnings_day_fri": "Fri",
+  "earnings_day_sat": "Sat",
+  "earnings_day_sun": "Sun",
+  "dashboard_enable_location": "Enable Location",
+  "dashboard_gps_required_message": "GPS must be enabled to go online. Please turn on your device location to start receiving ride requests.",
+  "dashboard_turn_on_gps": "Turn On",
+
+  "notification_settings": "Notification Settings",
+  "email": "Email"
 }

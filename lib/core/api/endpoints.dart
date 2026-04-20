@@ -15,9 +15,10 @@ class Endpoints {
   static const String logout         = '/auth/logout';
 
   // ── Driver ────────────────────────────────────────────────────────────────
-  static const String driverMe           = '/drivers/me';
-  static const String driverAvailability = '/drivers/me/availability';
-  static const String notificationPrefs  = '/drivers/me/notifications';
+  static const String driverMe             = '/drivers/me';
+  static const String driverAvailability   = '/drivers/me/availability';
+  static const String notificationPrefs    = '/drivers/me/notifications';
+  static const String driverSeedMonthlyTime = '/drivers/me/seed-monthly-time';
 
   // ── Dispatch ──────────────────────────────────────────────────────────────
   static const String sendLocation  = '/dispatch/locations';

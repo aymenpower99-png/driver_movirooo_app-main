@@ -293,5 +293,29 @@
   "portuguese": "البرتغالية",
   "russian": "الروسية",
   "turkish": "التركية",
-  "chinese": "الصينية"
+  "chinese": "الصينية",
+
+  "earnings_fixed_salary": "الراتب الثابت",
+  "earnings_total_rides": "إجمالي الرحلات",
+  "earnings_online_time_label": "وقت الاتصال",
+  "earnings_commission_tiers": "مستويات العمولة",
+  "earnings_rides_to_next_tier": "{count} رحلة إضافية للوصول إلى {tier}",
+  "earnings_all_tiers_reached": "تم الوصول إلى جميع المستويات!",
+  "earnings_commission_earned": "العمولة المكتسبة",
+  "earnings_net_earnings": "صافي الأرباح",
+  "earnings_weekly_rides": "الرحلات الأسبوعية",
+  "earnings_rides_per_day": "الرحلات في اليوم",
+  "earnings_day_mon": "الإثنين",
+  "earnings_day_tue": "الثلاثاء",
+  "earnings_day_wed": "الأربعاء",
+  "earnings_day_thu": "الخميس",
+  "earnings_day_fri": "الجمعة",
+  "earnings_day_sat": "السبت",
+  "earnings_day_sun": "الأحد",
+  "dashboard_enable_location": "تفعيل الموقع",
+  "dashboard_gps_required_message": "يجب تفعيل نظام تحديد المواقع للاتصال. يرجى تشغيل موقع جهازك لبدء استقبال طلبات الرحلات.",
+  "dashboard_turn_on_gps": "تشغيل",
+
+  "notification_settings": "إعدادات الإشعارات",
+  "email": "البريد الإلكتروني"
 }

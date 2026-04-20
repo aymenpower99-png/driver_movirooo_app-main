@@ -291,5 +291,29 @@
   "portuguese": "Portugais",
   "russian": "Russe",
   "turkish": "Turc",
-  "chinese": "Chinois"
+  "chinese": "Chinois",
+
+  "earnings_fixed_salary": "Salaire fixe",
+  "earnings_total_rides": "Total des courses",
+  "earnings_online_time_label": "Temps en ligne",
+  "earnings_commission_tiers": "Niveaux de commission",
+  "earnings_rides_to_next_tier": "{count} courses de plus pour atteindre {tier}",
+  "earnings_all_tiers_reached": "Tous les niveaux atteints !",
+  "earnings_commission_earned": "Commission gagnée",
+  "earnings_net_earnings": "Gains nets",
+  "earnings_weekly_rides": "Courses hebdomadaires",
+  "earnings_rides_per_day": "Courses par jour",
+  "earnings_day_mon": "Lun",
+  "earnings_day_tue": "Mar",
+  "earnings_day_wed": "Mer",
+  "earnings_day_thu": "Jeu",
+  "earnings_day_fri": "Ven",
+  "earnings_day_sat": "Sam",
+  "earnings_day_sun": "Dim",
+  "dashboard_enable_location": "Activer la localisation",
+  "dashboard_gps_required_message": "Le GPS doit être activé pour passer en ligne. Veuillez activer la localisation de votre appareil pour commencer à recevoir des demandes de courses.",
+  "dashboard_turn_on_gps": "Activer",
+
+  "notification_settings": "Paramètres de notification",
+  "email": "E-mail"
 }

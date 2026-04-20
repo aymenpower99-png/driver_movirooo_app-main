@@ -14,7 +14,7 @@ class DriverNotificationsPage extends StatefulWidget {
 
 class _DriverNotificationsPageState extends State<DriverNotificationsPage> {
   // Default both ON until backend responds
-  bool _pushEnabled  = true;
+  bool _pushEnabled = true;
   bool _emailEnabled = true;
   bool _loading = true;
 
@@ -31,7 +31,7 @@ class _DriverNotificationsPageState extends State<DriverNotificationsPage> {
       final prefs = await _driverService.getNotificationPrefs();
       if (mounted) {
         setState(() {
-          _pushEnabled  = prefs['pushEnabled']  ?? true;
+          _pushEnabled = prefs['pushEnabled'] ?? true;
           _emailEnabled = prefs['emailEnabled'] ?? true;
           _loading = false;
         });
@@ -42,21 +42,36 @@ class _DriverNotificationsPageState extends State<DriverNotificationsPage> {
   }
 
   Future<void> _onPushChanged(bool value) async {
+    final previousValue = _pushEnabled;
     setState(() => _pushEnabled = value);
     try {
-      await _driverService.updateNotificationPrefs(pushEnabled: value);
+      final result = await _driverService.updateNotificationPrefs(pushEnabled: value);
+      if (mounted) {
+        // Only update push setting from response, keep email unchanged
+        setState(() {
+          _pushEnabled = result['pushEnabled'] ?? value;
+        });
+      }
     } catch (_) {
-      // revert on failure
-      if (mounted) setState(() => _pushEnabled = !value);
+      // Revert to previous value on error
+      if (mounted) setState(() => _pushEnabled = previousValue);
     }
   }
 
   Future<void> _onEmailChanged(bool value) async {
+    final previousValue = _emailEnabled;
     setState(() => _emailEnabled = value);
     try {
-      await _driverService.updateNotificationPrefs(emailEnabled: value);
+      final result = await _driverService.updateNotificationPrefs(emailEnabled: value);
+      if (mounted) {
+        // Only update email setting from response, keep push unchanged
+        setState(() {
+          _emailEnabled = result['emailEnabled'] ?? value;
+        });
+      }
     } catch (_) {
-      if (mounted) setState(() => _emailEnabled = !value);
+      // Revert to previous value on error
+      if (mounted) setState(() => _emailEnabled = previousValue);
     }
   }
 
@@ -84,13 +99,13 @@ class _DriverNotificationsPageState extends State<DriverNotificationsPage> {
       ),
       body: _loading
           ? const Center(
-              child: CircularProgressIndicator(color: AppColors.primaryPurple))
+              child: CircularProgressIndicator(color: AppColors.primaryPurple),
+            )
           : ListView(
               padding: const EdgeInsets.all(16),
               children: [
                 _NotificationCard(
-                  title: t('booking_updates'),
-                  description: t('booking_updates_description'),
+                  title: t('notifications'),
                   children: [
                     _SimpleToggleRow(
                       label: t('push_notifications'),
@@ -116,14 +131,9 @@ class _DriverNotificationsPageState extends State<DriverNotificationsPage> {
 
 class _NotificationCard extends StatelessWidget {
   final String title;
-  final String? description;
   final List<Widget> children;
 
-  const _NotificationCard({
-    required this.title,
-    this.description,
-    required this.children,
-  });
+  const _NotificationCard({required this.title, required this.children});
 
   @override
   Widget build(BuildContext context) {
@@ -138,24 +148,8 @@ class _NotificationCard extends StatelessWidget {
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AppTextStyles.sectionLabel(context),
-                ),
-                if (description != null) ...[
-                  const SizedBox(height: 6),
-                  Text(
-                    description!,
-                    style: AppTextStyles.settingsItemValue(context),
-                  ),
-                ],
-              ],
-            ),
+            child: Text(title, style: AppTextStyles.sectionLabel(context)),
           ),
-          _CardDivider(),
           ...children,
         ],
       ),

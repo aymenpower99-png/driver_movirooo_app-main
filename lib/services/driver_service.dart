@@ -30,13 +30,28 @@ class DriverService {
   }
 
   /// Persist notification preferences to backend.
-  Future<void> updateNotificationPrefs({
+  /// Returns the committed values `{pushEnabled, emailEnabled}`.
+  Future<Map<String, bool>> updateNotificationPrefs({
     bool? pushEnabled,
     bool? emailEnabled,
   }) async {
-    await _dio.patch(Endpoints.notificationPrefs, data: {
-      ?'pushEnabled':  pushEnabled,
-      ?'emailEnabled': emailEnabled,
+    final res = await _dio.patch(Endpoints.notificationPrefs, data: {
+      if (pushEnabled  != null) 'pushEnabled':  pushEnabled,
+      if (emailEnabled != null) 'emailEnabled': emailEnabled,
     });
+    final data = res.data as Map<String, dynamic>;
+    return {
+      'pushEnabled':  (data['pushEnabled']  as bool?) ?? true,
+      'emailEnabled': (data['emailEnabled'] as bool?) ?? true,
+    };
+  }
+
+  /// One-time migration: push legacy SharedPreferences monthly time to backend.
+  /// Idempotent — backend only writes if its counter is currently 0.
+  Future<void> seedMonthlyOnlineTime(int ms, String month) async {
+    await _dio.post(
+      Endpoints.driverSeedMonthlyTime,
+      data: {'monthlyOnlineMs': ms, 'month': month},
+    );
   }
 }

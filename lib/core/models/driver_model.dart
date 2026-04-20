@@ -9,6 +9,12 @@ class DriverModel {
   final VehicleInfo? vehicle;
   final WorkAreaInfo? workArea;
 
+  /// Accumulated online milliseconds for the current calendar month (from backend).
+  final int monthlyOnlineMs;
+
+  /// When the current online session started (null when offline).
+  final DateTime? onlineSince;
+
   const DriverModel({
     required this.id,
     required this.userId,
@@ -18,6 +24,8 @@ class DriverModel {
     this.cancellationCount = 0,
     this.vehicle,
     this.workArea,
+    this.monthlyOnlineMs = 0,
+    this.onlineSince,
   });
 
   bool get isOnline {
@@ -41,6 +49,10 @@ class DriverModel {
         ratingAverage:      _toDouble(j['ratingAverage']),
         totalTrips:         (j['totalTrips']        as num?)?.toInt() ?? 0,
         cancellationCount:  (j['cancellationCount'] as num?)?.toInt() ?? 0,
+        monthlyOnlineMs:    _toInt(j['monthlyOnlineMs']),
+        onlineSince: j['onlineSince'] != null
+            ? DateTime.tryParse(j['onlineSince'].toString())
+            : null,
         vehicle: j['vehicle'] != null
             ? VehicleInfo.fromJson(j['vehicle'] as Map<String, dynamic>)
             : null,
@@ -55,7 +67,14 @@ class DriverModel {
     return double.tryParse(v.toString()) ?? 5.0;
   }
 
-  DriverModel copyWith({String? availabilityStatus}) => DriverModel(
+  static int _toInt(dynamic v) {
+    if (v == null) return 0;
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    return int.tryParse(v.toString()) ?? 0;
+  }
+
+  DriverModel copyWith({String? availabilityStatus, int? monthlyOnlineMs, DateTime? onlineSince}) => DriverModel(
         id:                 id,
         userId:             userId,
         availabilityStatus: availabilityStatus ?? this.availabilityStatus,
@@ -64,6 +83,8 @@ class DriverModel {
         cancellationCount:  cancellationCount,
         vehicle:            vehicle,
         workArea:           workArea,
+        monthlyOnlineMs:    monthlyOnlineMs ?? this.monthlyOnlineMs,
+        onlineSince:        onlineSince,
       );
 }
 

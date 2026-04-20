@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/models/earnings_model.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
+import '../../../../l10n/app_localizations.dart';
 
 class EarningsSummaryCard extends StatelessWidget {
   final EarningsModel earnings;
@@ -21,13 +22,17 @@ class EarningsSummaryCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _Row(
-            label: 'Fixed salary',
+            label: AppLocalizations.of(
+              context,
+            ).translate('earnings_fixed_salary'),
             value: '${earnings.salary.toStringAsFixed(0)} DT',
             context: context,
           ),
           const SizedBox(height: 10),
           _Row(
-            label: 'Commission earned',
+            label: AppLocalizations.of(
+              context,
+            ).translate('earnings_commission_earned'),
             value: '+${earnings.commission.toStringAsFixed(0)} DT',
             context: context,
             valueColor: const Color(0xFF22C55E),
@@ -36,7 +41,9 @@ class EarningsSummaryCard extends StatelessWidget {
           Divider(color: AppColors.border(context), height: 1),
           const SizedBox(height: 14),
           _Row(
-            label: 'Net earnings',
+            label: AppLocalizations.of(
+              context,
+            ).translate('earnings_net_earnings'),
             value: '${earnings.netEarnings.toStringAsFixed(0)} DT',
             context: context,
             bold: true,
@@ -65,14 +72,12 @@ class _Row extends StatelessWidget {
   @override
   Widget build(BuildContext ctx) {
     final baseStyle = bold
-        ? AppTextStyles.bodyLarge(context).copyWith(
-            fontWeight: FontWeight.w900,
-            fontSize: 17,
-          )
-        : AppTextStyles.bodyMedium(context).copyWith(
-            fontSize: 14,
-            color: AppColors.subtext(context),
-          );
+        ? AppTextStyles.bodyLarge(
+            context,
+          ).copyWith(fontWeight: FontWeight.w900, fontSize: 17)
+        : AppTextStyles.bodyMedium(
+            context,
+          ).copyWith(fontSize: 14, color: AppColors.subtext(context));
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -88,4 +93,3 @@ class _Row extends StatelessWidget {
     );
   }
 }
-
