@@ -19,13 +19,26 @@ class DriverService {
     );
   }
 
+  /// Parse a dynamic value to bool safely
+  static bool _parseBool(dynamic value, {bool defaultValue = true}) {
+    if (value == null) return defaultValue;
+    if (value is bool) return value;
+    if (value is String) {
+      final lower = value.toLowerCase();
+      if (lower == 'true' || lower == '1') return true;
+      if (lower == 'false' || lower == '0') return false;
+    }
+    if (value is num) return value != 0;
+    return defaultValue;
+  }
+
   /// Fetch current notification preferences from backend.
   Future<Map<String, bool>> getNotificationPrefs() async {
     final res = await _dio.get(Endpoints.notificationPrefs);
     final data = res.data as Map<String, dynamic>;
     return {
-      'pushEnabled':  (data['pushEnabled']  as bool?) ?? true,
-      'emailEnabled': (data['emailEnabled'] as bool?) ?? true,
+      'pushEnabled':  _parseBool(data['pushEnabled'], defaultValue: true),
+      'emailEnabled': _parseBool(data['emailEnabled'], defaultValue: true),
     };
   }
 
@@ -41,8 +54,8 @@ class DriverService {
     });
     final data = res.data as Map<String, dynamic>;
     return {
-      'pushEnabled':  (data['pushEnabled']  as bool?) ?? true,
-      'emailEnabled': (data['emailEnabled'] as bool?) ?? true,
+      'pushEnabled':  _parseBool(data['pushEnabled'], defaultValue: pushEnabled ?? true),
+      'emailEnabled': _parseBool(data['emailEnabled'], defaultValue: emailEnabled ?? true),
     };
   }
 

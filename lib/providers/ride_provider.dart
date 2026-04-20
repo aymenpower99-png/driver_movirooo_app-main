@@ -9,34 +9,38 @@ import '../services/dispatch_service.dart';
 class RideProvider extends ChangeNotifier {
   final DispatchService _dispatch = DispatchService();
 
-  List<OfferModel> _pendingOffers  = [];
-  List<RideModel>  _allRides       = [];
-  bool             _loading        = false;
-  bool             _ridesLoading   = false;
-  String?          _error;
-  OfferModel?      _activeOffer;   // offer currently being reviewed by driver
+  List<OfferModel> _pendingOffers = [];
+  List<RideModel> _allRides = [];
+  bool _loading = false;
+  bool _ridesLoading = false;
+  String? _error;
+  OfferModel? _activeOffer; // offer currently being reviewed by driver
 
   Timer? _pollTimer;
 
   // ── Getters ───────────────────────────────────────────────────────────────
-  List<OfferModel> get pendingOffers  => _pendingOffers;
-  bool             get loading        => _loading;
-  bool             get ridesLoading   => _ridesLoading;
-  String?          get error          => _error;
-  OfferModel?      get activeOffer    => _activeOffer;
+  List<OfferModel> get pendingOffers => _pendingOffers;
+  bool get loading => _loading;
+  bool get ridesLoading => _ridesLoading;
+  String? get error => _error;
+  OfferModel? get activeOffer => _activeOffer;
 
   // Categorised ride lists derived from _allRides
-  List<RideModel> get upcomingRides => _allRides.where((r) =>
-      r.status == 'ASSIGNED' ||
-      r.status == 'EN_ROUTE_TO_PICKUP' ||
-      r.status == 'ARRIVED' ||
-      r.status == 'IN_TRIP').toList();
+  List<RideModel> get upcomingRides => _allRides
+      .where(
+        (r) =>
+            r.status == 'ASSIGNED' ||
+            r.status == 'EN_ROUTE_TO_PICKUP' ||
+            r.status == 'ARRIVED' ||
+            r.status == 'IN_TRIP',
+      )
+      .toList();
 
-  List<RideModel> get completedRides => _allRides.where((r) =>
-      r.status == 'COMPLETED').toList();
+  List<RideModel> get completedRides =>
+      _allRides.where((r) => r.status == 'COMPLETED').toList();
 
-  List<RideModel> get cancelledRides => _allRides.where((r) =>
-      r.status == 'CANCELLED').toList();
+  List<RideModel> get cancelledRides =>
+      _allRides.where((r) => r.status == 'CANCELLED').toList();
 
   // ── Polling ───────────────────────────────────────────────────────────────
   /// Start background polling for pending offers every [intervalSec] seconds.
@@ -62,7 +66,8 @@ class RideProvider extends ChangeNotifier {
     try {
       final offers = await _dispatch.getPendingOffers();
       // Only notify if something changed
-      final changed = offers.length != _pendingOffers.length ||
+      final changed =
+          offers.length != _pendingOffers.length ||
           offers.any((o) => !_pendingOffers.any((p) => p.id == o.id));
       if (changed) {
         _pendingOffers = offers;
@@ -97,12 +102,18 @@ class RideProvider extends ChangeNotifier {
     NotificationService.instance.onRideOfferReceived = () {
       _silentPollOffers();
     };
+
+    // When a ride update push arrives (cancel, status change), refresh rides
+    NotificationService.instance.onRideUpdate = (type, data) {
+      _silentPollOffers();
+      loadDriverRides();
+    };
   }
 
   // ── Fetch pending offers ──────────────────────────────────────────────────
   Future<void> loadPendingOffers() async {
     _loading = true;
-    _error   = null;
+    _error = null;
     notifyListeners();
     try {
       _pendingOffers = await _dispatch.getPendingOffers();
@@ -124,9 +135,10 @@ class RideProvider extends ChangeNotifier {
       _activeOffer = null;
       _loading = false;
       notifyListeners();
+      loadDriverRides(); // refresh so accepted ride shows in Upcoming
       return true;
     } on Exception catch (e) {
-      _error   = 'Could not accept offer. $e';
+      _error = 'Could not accept offer. $e';
       _loading = false;
       notifyListeners();
       return false;
@@ -145,7 +157,7 @@ class RideProvider extends ChangeNotifier {
       notifyListeners();
       return true;
     } on Exception catch (e) {
-      _error   = 'Could not reject offer. $e';
+      _error = 'Could not reject offer. $e';
       _loading = false;
       notifyListeners();
       return false;

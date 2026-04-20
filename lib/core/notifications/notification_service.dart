@@ -3,9 +3,18 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 // Channel must match what the backend sends (android.notification.channelId)
-const _kChannelId   = 'ride_offers';
+const _kChannelId = 'ride_offers';
 const _kChannelName = 'Ride Offers';
 const _kChannelDesc = 'New ride requests and trip updates';
+
+const _kRideUpdatesId = 'ride_updates';
+const _kRideUpdatesName = 'Ride Updates';
+const _kRideUpdatesDesc =
+    'Ride status changes, cancellations, and confirmations';
+
+const _kChatId = 'chat_messages';
+const _kChatName = 'Chat Messages';
+const _kChatDesc = 'Messages from passengers';
 
 class NotificationService {
   NotificationService._();
@@ -56,18 +65,41 @@ class NotificationService {
       playSound: true,
     );
 
+    // Ride updates channel (cancel, status changes)
+    const AndroidNotificationChannel rideUpdatesChannel =
+        AndroidNotificationChannel(
+          _kRideUpdatesId,
+          _kRideUpdatesName,
+          description: _kRideUpdatesDesc,
+          importance: Importance.high,
+          playSound: true,
+        );
+
+    // Chat messages channel
+    const AndroidNotificationChannel chatChannel = AndroidNotificationChannel(
+      _kChatId,
+      _kChatName,
+      description: _kChatDesc,
+      importance: Importance.high,
+      playSound: true,
+    );
+
     final androidPlugin = _localNotifications
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>();
+          AndroidFlutterLocalNotificationsPlugin
+        >();
 
     await androidPlugin?.createNotificationChannel(channel);
     await androidPlugin?.createNotificationChannel(statusChannel);
+    await androidPlugin?.createNotificationChannel(rideUpdatesChannel);
+    await androidPlugin?.createNotificationChannel(chatChannel);
 
     const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    const InitializationSettings initSettings =
-        InitializationSettings(android: androidSettings);
+    const InitializationSettings initSettings = InitializationSettings(
+      android: androidSettings,
+    );
 
     await _localNotifications.initialize(
       initSettings,
@@ -80,28 +112,32 @@ class NotificationService {
   Future<void> _setForegroundOptions() async {
     await FirebaseMessaging.instance
         .setForegroundNotificationPresentationOptions(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
+          alert: true,
+          badge: true,
+          sound: true,
+        );
   }
 
   // ─── Show Local Notification Popup ───────────────────────────────────────
 
   Future<void> _showNotification(RemoteMessage message) async {
+    final channelId = _channelForType(message.data['type']);
+    final channelInfo = _channelDetails(channelId);
+
     final AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
-      _kChannelId,
-      _kChannelName,
-      channelDescription: _kChannelDesc,
-      importance: Importance.max,
-      priority: Priority.max,
-      showWhen: true,
-      icon: '@mipmap/ic_launcher',
-    );
+          channelInfo.id,
+          channelInfo.name,
+          channelDescription: channelInfo.desc,
+          importance: Importance.max,
+          priority: Priority.max,
+          showWhen: true,
+          icon: '@mipmap/ic_launcher',
+        );
 
-    final NotificationDetails details =
-        NotificationDetails(android: androidDetails);
+    final NotificationDetails details = NotificationDetails(
+      android: androidDetails,
+    );
 
     await _localNotifications.show(
       DateTime.now().millisecondsSinceEpoch ~/ 1000,
@@ -114,9 +150,67 @@ class NotificationService {
 
   String _titleForType(String? type) {
     switch (type) {
-      case 'RIDE_OFFER':     return '🚗 New Ride Request';
-      case 'RIDE_CANCELLED': return '❌ Ride Cancelled';
-      default:               return 'Moviroo';
+      case 'RIDE_OFFER':
+        return 'New Ride Request';
+      case 'RIDE_CANCELLED':
+        return 'Ride Cancelled';
+      case 'RIDE_ACCEPTED':
+        return 'Ride Accepted';
+      case 'RIDE_CANCELLED_BY_DRIVER':
+        return 'Ride Cancelled';
+      case 'RIDE_CANCELLED_BY_PASSENGER':
+        return 'Ride Cancelled';
+      case 'RIDE_CANCELLED_BY_ADMIN':
+        return 'Ride Cancelled by Admin';
+      case 'RIDE_STATUS_CHANGED':
+        return 'Ride Update';
+      case 'CHAT_MESSAGE':
+        return 'New Message';
+      case 'DRIVER_STATUS_OFFLINE':
+        return 'You Went Offline';
+      default:
+        return 'Moviroo';
+    }
+  }
+
+  String _channelForType(String? type) {
+    switch (type) {
+      case 'RIDE_OFFER':
+        return _kChannelId;
+      case 'RIDE_CANCELLED':
+      case 'RIDE_ACCEPTED':
+      case 'RIDE_CANCELLED_BY_DRIVER':
+      case 'RIDE_CANCELLED_BY_PASSENGER':
+      case 'RIDE_CANCELLED_BY_ADMIN':
+      case 'RIDE_STATUS_CHANGED':
+        return _kRideUpdatesId;
+      case 'CHAT_MESSAGE':
+        return _kChatId;
+      case 'DRIVER_STATUS_OFFLINE':
+        return 'driver_status';
+      default:
+        return _kChannelId;
+    }
+  }
+
+  ({String id, String name, String desc}) _channelDetails(String channelId) {
+    switch (channelId) {
+      case _kRideUpdatesId:
+        return (
+          id: _kRideUpdatesId,
+          name: _kRideUpdatesName,
+          desc: _kRideUpdatesDesc,
+        );
+      case _kChatId:
+        return (id: _kChatId, name: _kChatName, desc: _kChatDesc);
+      case 'driver_status':
+        return (
+          id: 'driver_status',
+          name: 'Driver Status',
+          desc: 'Driver online/offline status alerts',
+        );
+      default:
+        return (id: _kChannelId, name: _kChannelName, desc: _kChannelDesc);
     }
   }
 
@@ -135,6 +229,12 @@ class NotificationService {
   /// Called when the backend forces the driver offline (stale heartbeat).
   void Function()? onDriverForcedOffline;
 
+  /// Called when a ride update push arrives (cancel, status change, etc.).
+  void Function(String? type, Map<String, dynamic> data)? onRideUpdate;
+
+  /// Called when a chat message push arrives.
+  void Function(Map<String, dynamic> data)? onChatMessage;
+
   /// Called when user taps a notification — payload is the notification type.
   void Function(String? type)? onNotificationTap;
 
@@ -148,18 +248,33 @@ class NotificationService {
 
     // App in background, user taps notification
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      debugPrint('🔔 Notification tapped (background): ${message.notification?.title}');
+      debugPrint(
+        '🔔 Notification tapped (background): ${message.notification?.title}',
+      );
       _handleData(message.data, tapped: true);
     });
   }
 
   void _handleData(Map<String, dynamic> data, {bool tapped = false}) {
     final type = data['type'] as String?;
-    if (type == 'RIDE_OFFER') {
-      onRideOfferReceived?.call();
-    }
-    if (type == 'DRIVER_STATUS_OFFLINE') {
-      onDriverForcedOffline?.call();
+    switch (type) {
+      case 'RIDE_OFFER':
+        onRideOfferReceived?.call();
+        break;
+      case 'DRIVER_STATUS_OFFLINE':
+        onDriverForcedOffline?.call();
+        break;
+      case 'RIDE_ACCEPTED':
+      case 'RIDE_CANCELLED':
+      case 'RIDE_CANCELLED_BY_DRIVER':
+      case 'RIDE_CANCELLED_BY_PASSENGER':
+      case 'RIDE_CANCELLED_BY_ADMIN':
+      case 'RIDE_STATUS_CHANGED':
+        onRideUpdate?.call(type, data);
+        break;
+      case 'CHAT_MESSAGE':
+        onChatMessage?.call(data);
+        break;
     }
     if (tapped) {
       onNotificationTap?.call(type);
@@ -169,10 +284,12 @@ class NotificationService {
   // ─── App Launched from Terminated via Notification ───────────────────────
 
   Future<void> _handleInitialMessage() async {
-    final RemoteMessage? initialMessage =
-        await FirebaseMessaging.instance.getInitialMessage();
+    final RemoteMessage? initialMessage = await FirebaseMessaging.instance
+        .getInitialMessage();
     if (initialMessage != null) {
-      debugPrint('🚀 App launched from notification: ${initialMessage.notification?.title}');
+      debugPrint(
+        '🚀 App launched from notification: ${initialMessage.notification?.title}',
+      );
       _handleData(initialMessage.data, tapped: true);
     }
   }

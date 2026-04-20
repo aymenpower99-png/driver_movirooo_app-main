@@ -18,7 +18,7 @@ import 'providers/earnings_provider.dart';
 import 'providers/online_provider.dart';
 import 'providers/ride_provider.dart';
 
-final themeProvider  = ThemeProvider();
+final themeProvider = ThemeProvider();
 final localeProvider = LocaleProvider();
 
 @pragma('vm:entry-point')
@@ -131,14 +131,6 @@ class _SmartWayAppState extends State<SmartWayApp> {
                 Locale('en'),
                 Locale('fr'),
                 Locale('ar'),
-                Locale('de'),
-                Locale('es'),
-                Locale('it'),
-                Locale('ja'),
-                Locale('pt'),
-                Locale('ru'),
-                Locale('tr'),
-                Locale('zh'),
               ],
               localizationsDelegates: const [
                 AppLocalizations.delegate,

@@ -481,6 +481,17 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
+  /// Refreshes driver profile stats from the backend without the init guard.
+  /// Call after trip events (cancel, complete) to update acceptanceRate/cancellationCount.
+  Future<void> refreshDriverProfile() async {
+    try {
+      _driverProfile = await _driver.getMe();
+      notifyListeners();
+    } catch (_) {
+      // Non-fatal — stale data until next natural refresh
+    }
+  }
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);

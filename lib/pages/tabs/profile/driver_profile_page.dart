@@ -20,18 +20,17 @@ class DriverProfilePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final t      = AppLocalizations.of(context).translate;
-    final auth   = context.watch<AuthProvider>();
+    final t = AppLocalizations.of(context).translate;
+    final auth = context.watch<AuthProvider>();
     final online = context.watch<OnlineProvider>();
-    final user   = auth.user;
+    final user = auth.user;
     final driver = online.driverProfile;
 
     final displayName = user != null
         ? '${user.firstName} ${user.lastName}'.trim()
         : 'Driver';
-    final initials    = user?.initials ?? '?';
-    final rating      = driver?.ratingAverage ?? 0.0;
-    final totalTrips  = driver?.totalTrips ?? 0;
+    final initials = user?.initials ?? '?';
+    final rating = driver?.ratingAverage ?? 0.0;
     return Scaffold(
       backgroundColor: AppColors.bg(context),
       bottomNavigationBar: const DriverTabBar(currentIndex: 3),
@@ -78,12 +77,17 @@ class DriverProfilePage extends StatelessWidget {
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   gradient: const LinearGradient(
-                                    colors: [Color(0xFFA855F7), Color(0xFF7C3AED)],
+                                    colors: [
+                                      Color(0xFFA855F7),
+                                      Color(0xFF7C3AED),
+                                    ],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
                                   border: Border.all(
-                                    color: AppColors.primaryPurple.withValues(alpha: 0.3),
+                                    color: AppColors.primaryPurple.withValues(
+                                      alpha: 0.3,
+                                    ),
                                     width: 2,
                                   ),
                                 ),
@@ -146,16 +150,6 @@ class DriverProfilePage extends StatelessWidget {
                                         color: AppColors.text(context),
                                       ),
                                     ),
-                                    const SizedBox(width: 4),
-                                    Text(
-                                      '($totalTrips ${t('profile_rides')})',
-                                      style: TextStyle(
-                                        fontFamily: 'Inter',
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w400,
-                                        color: AppColors.subtext(context),
-                                      ),
-                                    ),
                                   ],
                                 ),
                               ],
@@ -172,8 +166,8 @@ class DriverProfilePage extends StatelessWidget {
                               width: 36,
                               height: 36,
                               decoration: BoxDecoration(
-                                color: AppColors.primaryPurple.withValues(alpha:
-                                  0.08,
+                                color: AppColors.primaryPurple.withValues(
+                                  alpha: 0.08,
                                 ),
                                 borderRadius: BorderRadius.circular(10),
                               ),
@@ -331,6 +325,3 @@ class DriverProfilePage extends StatelessWidget {
 }
 
 // _SoloCard and _SectionHeader extracted to widgets/profile_widgets.dart
-
-
-

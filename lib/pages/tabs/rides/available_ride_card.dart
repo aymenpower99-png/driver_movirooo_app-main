@@ -7,7 +7,7 @@ import '../../../../../l10n/app_localizations.dart';
 import '../../../../../theme/app_colors.dart';
 import '../../../../../theme/app_text_styles.dart';
 import '../../../core/models/ride_model.dart';
-import 'ride_widgets.dart';  // includes formatRideDate, formatRideTime, tryParseDateTime
+import 'ride_widgets.dart'; // includes formatRideDate, formatRideTime, tryParseDateTime
 
 class RideCard extends StatelessWidget {
   final RideModel ride;
@@ -103,27 +103,48 @@ class RideCard extends StatelessWidget {
           if (ride.rideTime.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
-              child: Builder(builder: (_) {
-                final dt = tryParseDateTime(ride.rideTime);
-                if (dt == null) {
-                  return Row(children: [
-                    RideInfoChip(icon: Icons.schedule_outlined, label: ride.rideTime),
-                    if ((ride.distanceKm ?? 0) > 0) ...[
+              child: Builder(
+                builder: (_) {
+                  final dt = tryParseDateTime(ride.rideTime);
+                  if (dt == null) {
+                    return Row(
+                      children: [
+                        RideInfoChip(
+                          icon: Icons.schedule_outlined,
+                          label: ride.rideTime,
+                        ),
+                        if ((ride.distanceKm ?? 0) > 0) ...[
+                          const SizedBox(width: 14),
+                          RideInfoChip(
+                            icon: Icons.route_rounded,
+                            label: '${ride.distanceKm!.toStringAsFixed(1)} km',
+                          ),
+                        ],
+                      ],
+                    );
+                  }
+                  return Row(
+                    children: [
+                      RideInfoChip(
+                        icon: Icons.calendar_today_outlined,
+                        label: formatRideDate(dt),
+                      ),
                       const SizedBox(width: 14),
-                      RideInfoChip(icon: Icons.route_rounded, label: '${ride.distanceKm!.toStringAsFixed(1)} km'),
+                      RideInfoChip(
+                        icon: Icons.access_time_outlined,
+                        label: formatRideTime(dt),
+                      ),
+                      if ((ride.distanceKm ?? 0) > 0) ...[
+                        const SizedBox(width: 14),
+                        RideInfoChip(
+                          icon: Icons.route_rounded,
+                          label: '${ride.distanceKm!.toStringAsFixed(1)} km',
+                        ),
+                      ],
                     ],
-                  ]);
-                }
-                return Row(children: [
-                  RideInfoChip(icon: Icons.calendar_today_outlined, label: formatRideDate(dt)),
-                  const SizedBox(width: 14),
-                  RideInfoChip(icon: Icons.access_time_outlined, label: formatRideTime(dt)),
-                  if ((ride.distanceKm ?? 0) > 0) ...[
-                    const SizedBox(width: 14),
-                    RideInfoChip(icon: Icons.route_rounded, label: '${ride.distanceKm!.toStringAsFixed(1)} km'),
-                  ],
-                ]);
-              }),
+                  );
+                },
+              ),
             ),
 
           // ── Route ────────────────────────────────────────────────
@@ -139,13 +160,15 @@ class RideCard extends StatelessWidget {
                     textStyle: AppTextStyles.bodySmall(context),
                   ),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  '${ride.price.toStringAsFixed(1)} TND',
-                  style: AppTextStyles.priceMedium(
-                    context,
-                  ).copyWith(color: statusColor ?? AppColors.primaryPurple),
-                ),
+                if (_isUpcoming) ...[
+                  const SizedBox(width: 8),
+                  Text(
+                    '${ride.price.toStringAsFixed(1)} TND',
+                    style: AppTextStyles.priceMedium(
+                      context,
+                    ).copyWith(color: statusColor ?? AppColors.primaryPurple),
+                  ),
+                ],
               ],
             ),
           ),

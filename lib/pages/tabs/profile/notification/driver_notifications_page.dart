@@ -17,6 +17,7 @@ class _DriverNotificationsPageState extends State<DriverNotificationsPage> {
   bool _pushEnabled = true;
   bool _emailEnabled = true;
   bool _loading = true;
+  bool _updating = false; // Prevent multiple simultaneous updates
 
   final _driverService = DriverService();
 
@@ -42,36 +43,38 @@ class _DriverNotificationsPageState extends State<DriverNotificationsPage> {
   }
 
   Future<void> _onPushChanged(bool value) async {
+    if (_updating) return; // Prevent double-tap
     final previousValue = _pushEnabled;
-    setState(() => _pushEnabled = value);
+    setState(() {
+      _pushEnabled = value;
+      _updating = true;
+    });
     try {
-      final result = await _driverService.updateNotificationPrefs(pushEnabled: value);
-      if (mounted) {
-        // Only update push setting from response, keep email unchanged
-        setState(() {
-          _pushEnabled = result['pushEnabled'] ?? value;
-        });
-      }
+      await _driverService.updateNotificationPrefs(pushEnabled: value);
+      // Success - keep the optimistic value
     } catch (_) {
       // Revert to previous value on error
       if (mounted) setState(() => _pushEnabled = previousValue);
+    } finally {
+      if (mounted) setState(() => _updating = false);
     }
   }
 
   Future<void> _onEmailChanged(bool value) async {
+    if (_updating) return; // Prevent double-tap
     final previousValue = _emailEnabled;
-    setState(() => _emailEnabled = value);
+    setState(() {
+      _emailEnabled = value;
+      _updating = true;
+    });
     try {
-      final result = await _driverService.updateNotificationPrefs(emailEnabled: value);
-      if (mounted) {
-        // Only update email setting from response, keep push unchanged
-        setState(() {
-          _emailEnabled = result['emailEnabled'] ?? value;
-        });
-      }
+      await _driverService.updateNotificationPrefs(emailEnabled: value);
+      // Success - keep the optimistic value
     } catch (_) {
       // Revert to previous value on error
       if (mounted) setState(() => _emailEnabled = previousValue);
+    } finally {
+      if (mounted) setState(() => _updating = false);
     }
   }
 
@@ -110,13 +113,13 @@ class _DriverNotificationsPageState extends State<DriverNotificationsPage> {
                     _SimpleToggleRow(
                       label: t('push_notifications'),
                       value: _pushEnabled,
-                      onChanged: _onPushChanged,
+                      onChanged: _updating ? null : _onPushChanged,
                     ),
                     _CardDivider(),
                     _SimpleToggleRow(
                       label: t('email'),
                       value: _emailEnabled,
-                      onChanged: _onEmailChanged,
+                      onChanged: _updating ? null : _onEmailChanged,
                     ),
                   ],
                 ),
@@ -161,13 +164,13 @@ class _SimpleToggleRow extends StatelessWidget {
   final String label;
   final String? subtitle;
   final bool value;
-  final ValueChanged<bool> onChanged;
+  final ValueChanged<bool>? onChanged;
 
   const _SimpleToggleRow({
     required this.label,
     this.subtitle,
     required this.value,
-    required this.onChanged,
+    this.onChanged,
   });
 
   @override

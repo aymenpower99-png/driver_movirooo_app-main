@@ -6,6 +6,7 @@ import '../../../../../theme/app_text_styles.dart';
 import '../../../providers/ride_provider.dart';
 import '../../../core/models/offer_model.dart';
 import '../../../core/widgets/app_toast.dart';
+import 'package:moviroo_driver_app/core/notifications/notification_service.dart';
 import 'ride_widgets.dart';
 import '../../tracking/tracking_page.dart';
 import '../../tracking/ride_model.dart' as tracking;
@@ -123,27 +124,13 @@ class OfferCard extends StatelessWidget {
               }),
             ),
 
-          // ── Route timeline + price ─────────────────────────
+          // ── Route timeline ─────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 2, 16, 14),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: RideRouteTimeline(
-                    from: ride.from,
-                    to: ride.to,
-                    textStyle: AppTextStyles.bodySmall(context),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '${ride.price.toStringAsFixed(1)} TND',
-                  style: AppTextStyles.priceMedium(context).copyWith(
-                    color: AppColors.primaryPurple,
-                  ),
-                ),
-              ],
+            child: RideRouteTimeline(
+              from: ride.from,
+              to: ride.to,
+              textStyle: AppTextStyles.bodySmall(context),
             ),
           ),
 
@@ -160,6 +147,10 @@ class OfferCard extends StatelessWidget {
                       if (context.mounted) {
                         if (ok) {
                           AppToast.info(context, AppLocalizations.of(context).translate('ride_rejected_snack').replaceFirst('{id}', ''));
+                          NotificationService.instance.showLocalNotification(
+                            title: 'Offer Rejected',
+                            body: 'You have rejected this ride offer.',
+                          );
                         } else {
                           AppToast.error(context, context.read<RideProvider>().error ?? 'Error');
                         }
@@ -205,6 +196,10 @@ class OfferCard extends StatelessWidget {
                             dropoffLon: ride.dropoffLon,
                           );
                           AppToast.success(context, AppLocalizations.of(context).translate('ride_accepted_snack').replaceFirst('{id}', ''));
+                          NotificationService.instance.showLocalNotification(
+                            title: 'Ride Accepted',
+                            body: 'You are on the way to pick up ${ride.passengerName ?? 'the passenger'}.',
+                          );
                           Navigator.of(context).push(TrackPassengerPage.route(trackRide));
                         } else {
                           AppToast.error(context, context.read<RideProvider>().error ?? 'Error');

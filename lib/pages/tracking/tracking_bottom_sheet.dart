@@ -9,9 +9,12 @@ import 'package:moviroo_driver_app/pages/tracking/widgets/passenger_info_card.da
 import 'package:moviroo_driver_app/pages/tracking/widgets/confirm_action_modal.dart';
 import 'package:moviroo_driver_app/pages/tracking/completion/ride_completion_page.dart';
 import 'package:moviroo_driver_app/pages/tracking/completion/ride_cancellation_page.dart';
+import 'package:provider/provider.dart';
 import 'package:moviroo_driver_app/services/trip_service.dart';
 import 'package:moviroo_driver_app/core/widgets/app_toast.dart';
 import 'package:moviroo_driver_app/pages/tracking/widgets/cancel_reason_sheet.dart';
+import 'package:moviroo_driver_app/providers/ride_provider.dart';
+import 'package:moviroo_driver_app/providers/online_provider.dart';
 
 class TrackingBottomSheet extends StatefulWidget {
   final RideModel ride;
@@ -30,7 +33,7 @@ class TrackingBottomSheet extends StatefulWidget {
 class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
   RideStatus _status = RideStatus.assigned;
   bool _isCollapsed = false;
-  bool _apiLoading  = false;
+  bool _apiLoading = false;
 
   final TripService _tripService = TripService();
 
@@ -73,7 +76,7 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
           break;
       }
       setState(() {
-        _status     = next;
+        _status = next;
         _apiLoading = false;
       });
       widget.onStatusChanged?.call(_status);
@@ -243,6 +246,10 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
       if (mounted) setState(() => _apiLoading = false);
     }
     if (mounted) {
+      // Refresh rides list so cancelled ride appears in Cancelled tab
+      context.read<RideProvider>().loadDriverRides();
+      // Refresh driver profile stats (cancellationCount / acceptanceRate)
+      context.read<OnlineProvider>().refreshDriverProfile();
       if (success) {
         AppToast.success(context, 'Ride cancelled');
       } else {
@@ -272,10 +279,13 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
   }
 
   void _openChat() {
-    Navigator.of(context).pushNamed('/chat', arguments: {
-      'rideId': widget.ride.id,
-      'passengerName': widget.ride.passenger.name,
-    });
+    Navigator.of(context).pushNamed(
+      '/chat',
+      arguments: {
+        'rideId': widget.ride.id,
+        'passengerName': widget.ride.passenger.name,
+      },
+    );
   }
 }
 
@@ -284,7 +294,11 @@ class _PrimaryButton extends StatelessWidget {
   final String label;
   final VoidCallback onTap;
   final bool loading;
-  const _PrimaryButton({required this.label, required this.onTap, this.loading = false});
+  const _PrimaryButton({
+    required this.label,
+    required this.onTap,
+    this.loading = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -315,7 +329,10 @@ class _PrimaryButton extends StatelessWidget {
                 )
               : Text(
                   label,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
         ),
       ),
