@@ -15,8 +15,6 @@ class TrackingMapLogic {
   MapboxMap? _map;
   PointAnnotationManager? _pointMgr;
 
-  PointAnnotation? _pickupAnn;
-  PointAnnotation? _dropoffAnn;
   PointAnnotation? _driverAnn;
 
   bool _pickupRouteDrawn = false;
@@ -43,14 +41,14 @@ class TrackingMapLogic {
     _pointMgr = await _map!.annotations.createPointAnnotationManager();
 
     // Always show BOTH markers from the start
-    _pickupAnn = await _pointMgr!.create(PointAnnotationOptions(
+    await _pointMgr!.create(PointAnnotationOptions(
       geometry: Point(coordinates: Position(pickupPt.lon, pickupPt.lat)),
       image: await MapPainters.renderPickupBitmap(),
       iconSize: 1.0,
       iconAnchor: IconAnchor.CENTER,
     ));
 
-    _dropoffAnn = await _pointMgr!.create(PointAnnotationOptions(
+    await _pointMgr!.create(PointAnnotationOptions(
       geometry: Point(coordinates: Position(dropoffPt.lon, dropoffPt.lat)),
       image: await MapPainters.renderDropoffBitmap(),
       iconSize: 1.0,

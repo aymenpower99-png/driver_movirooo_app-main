@@ -4,6 +4,8 @@ import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../l10n/app_localizations.dart';
 import '../../providers/auth_provider.dart';
+import 'widgets/forgot_password_success_view.dart';
+import 'widgets/forgot_password_input_view.dart';
 
 class DriverForgotPasswordPage extends StatefulWidget {
   const DriverForgotPasswordPage({super.key});
@@ -71,37 +73,6 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
       _successCtrl.forward();
     }
     // error handled by auth.error snackbar in parent
-  }
-
-  InputDecoration _fieldDecoration(BuildContext context) {
-    final hint = AppLocalizations.of(context).translate('hint_email');
-    return InputDecoration(
-      hintText: hint,
-      hintStyle: AppTextStyles.bodyMedium(context).copyWith(
-        color: AppColors.text(context).withValues(alpha: 0.35),
-        fontSize: 14,
-      ),
-      prefixIcon: const Icon(
-        Icons.mail_outline_rounded,
-        color: Color(0xFFA855F7),
-        size: 19,
-      ),
-      filled: true,
-      fillColor: AppColors.surface(context),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.zero,
-        borderSide: BorderSide.none,
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.zero,
-        borderSide: BorderSide.none,
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.zero,
-        borderSide: const BorderSide(color: Color(0xFFA855F7), width: 1.8),
-      ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 17),
-    );
   }
 
   @override
@@ -226,121 +197,15 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
                   // SUCCESS STATE
                   // ══════════════════════════════════════════════════════
                   if (_sent) ...[
-                    FadeTransition(
-                      opacity: _successFade,
-                      child: ScaleTransition(
-                        scale: _successScale,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Big check circle
-                            Center(
-                              child: Container(
-                                width: 88,
-                                height: 88,
-                                decoration: BoxDecoration(
-                                  color: Colors.green.withValues(alpha: 0.10),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: Colors.green.withValues(alpha: 0.25),
-                                    width: 1.5,
-                                  ),
-                                ),
-                                child: Icon(
-                                  Icons.check_rounded,
-                                  color: Colors.green.shade500,
-                                  size: 40,
-                                ),
-                              ),
-                            ),
-
-                            const SizedBox(height: 32),
-
-                            // Tip card
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(18),
-                              decoration: BoxDecoration(
-                                color: AppColors.surface(context),
-                                borderRadius: BorderRadius.circular(16),
-                              ),
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Icon(
-                                    Icons.info_outline_rounded,
-                                    color: AppColors.text(
-                                      context,
-                                    ).withValues(alpha: 0.4),
-                                    size: 18,
-                                  ),
-                                  const SizedBox(width: 12),
-                                  Expanded(
-                                    child: Text(
-                                      t('forgot_spam_tip'),
-                                      style: AppTextStyles.bodySmall(context)
-                                          .copyWith(
-                                            color: AppColors.text(
-                                              context,
-                                            ).withValues(alpha: 0.6),
-                                            fontSize: 13,
-                                            height: 1.55,
-                                          ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            const SizedBox(height: 32),
-
-                            // Back to sign in button
-                            SizedBox(
-                              width: double.infinity,
-                              height: 54,
-                              child: ElevatedButton(
-                                onPressed: () => Navigator.of(context).pop(),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFFA855F7),
-                                  elevation: 0,
-                                  shadowColor: Colors.transparent,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(14),
-                                  ),
-                                ),
-                                child: Text(
-                                  t('back_to_sign_in'),
-                                  style: AppTextStyles.buttonPrimary.copyWith(
-                                    fontSize: 16,
-                                    letterSpacing: 0.3,
-                                  ),
-                                ),
-                              ),
-                            ),
-
-                            const SizedBox(height: 16),
-
-                            // Resend link
-                            Center(
-                              child: GestureDetector(
-                                onTap: () {
-                                  setState(() => _sent = false);
-                                  _successCtrl.reset();
-                                },
-                                child: Text(
-                                  t('resend_email'),
-                                  style: AppTextStyles.bodySmall(context)
-                                      .copyWith(
-                                        color: const Color(0xFFA855F7),
-                                        fontWeight: FontWeight.w700,
-                                        fontSize: 13,
-                                      ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+                    ForgotPasswordSuccessView(
+                      successFade: _successFade,
+                      successScale: _successScale,
+                      email: _emailController.text.trim(),
+                      onBackToSignIn: () => Navigator.of(context).pop(),
+                      onResend: () {
+                        setState(() => _sent = false);
+                        _successCtrl.reset();
+                      },
                     ),
                   ],
 
@@ -348,109 +213,12 @@ class _DriverForgotPasswordPageState extends State<DriverForgotPasswordPage>
                   // DEFAULT STATE
                   // ══════════════════════════════════════════════════════
                   if (!_sent) ...[
-                    // Email field
-                    FadeTransition(
-                      opacity: _fadeAnim,
-                      child: SlideTransition(
-                        position: _slideAnim,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              t('label_email'),
-                              style: AppTextStyles.bodySmall(context).copyWith(
-                                color: AppColors.text(
-                                  context,
-                                ).withValues(alpha: 0.55),
-                                fontWeight: FontWeight.w700,
-                                fontSize: 10.5,
-                                letterSpacing: 1.1,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            TextField(
-                              controller: _emailController,
-                              keyboardType: TextInputType.emailAddress,
-                              cursorColor: const Color(0xFFA855F7),
-                              style: AppTextStyles.bodyMedium(
-                                context,
-                              ).copyWith(fontSize: 15),
-                              decoration: _fieldDecoration(context),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 28),
-
-                    // Send button
-                    FadeTransition(
-                      opacity: _fadeAnim,
-                      child: SizedBox(
-                        width: double.infinity,
-                        height: 54,
-                        child: ElevatedButton(
-                          onPressed: loading ? null : _submit,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFFA855F7),
-                            disabledBackgroundColor: const Color(
-                              0xFFA855F7,
-                            ).withValues(alpha: 0.45),
-                            elevation: 0,
-                            shadowColor: Colors.transparent,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                          ),
-                          child: loading
-                              ? const SizedBox(
-                                  width: 22,
-                                  height: 22,
-                                  child: CircularProgressIndicator(
-                                    color: Colors.white,
-                                    strokeWidth: 2.4,
-                                  ),
-                                )
-                              : Text(
-                                  t('send_recovery_link'),
-                                  style: AppTextStyles.buttonPrimary.copyWith(
-                                    fontSize: 16,
-                                    letterSpacing: 0.3,
-                                  ),
-                                ),
-                        ),
-                      ),
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // Remembered it? sign in link
-                    FadeTransition(
-                      opacity: _fadeAnim,
-                      child: Center(
-                        child: GestureDetector(
-                          onTap: () => Navigator.of(context).pop(),
-                          child: RichText(
-                            text: TextSpan(
-                              style: AppTextStyles.bodySmall(context).copyWith(
-                                fontSize: 13,
-                                color: AppColors.text(context).withValues(alpha: 0.6),
-                              ),
-                              children: [
-                                TextSpan(text: t('remembered_password')),
-                                TextSpan(
-                                  text: t('sign_in'),
-                                  style: const TextStyle(
-                                    color: Color(0xFFA855F7),
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
+                    ForgotPasswordInputView(
+                      emailController: _emailController,
+                      fadeAnim: _fadeAnim,
+                      slideAnim: _slideAnim,
+                      loading: loading,
+                      onSubmit: _submit,
                     ),
                   ],
 

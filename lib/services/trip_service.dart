@@ -47,9 +47,9 @@ class TripService {
       'rideId': rideId,
       'issueType': issueType,
       'description': description,
-      if (pickupAddress  != null) 'pickupAddress':  pickupAddress,
-      if (dropOffAddress != null) 'dropOffAddress': dropOffAddress,
-      if (passengerName  != null) 'passengerName':  passengerName,
+      ?'pickupAddress':  pickupAddress,
+      ?'dropOffAddress': dropOffAddress,
+      ?'passengerName':  passengerName,
     });
   }
 

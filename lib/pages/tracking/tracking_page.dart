@@ -28,10 +28,6 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
     with TickerProviderStateMixin {
   RideStatus _status = RideStatus.assigned;
 
-  String _etaText = '';
-  String _distText = '';
-  String _etaLabel = 'To Pickup';
-
   GeoPoint? _driverPosition;
   double _driverBearing = 0;
   GeoPoint? _prevPosition;
@@ -62,15 +58,10 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
   void initState() {
     super.initState();
 
-    _etaText = '${widget.ride.etaMinutes} min';
-    _distText = '${widget.ride.distanceKm.toStringAsFixed(1)} km';
-
     _mapLogic = TrackingMapLogic(
       pickupPt: _pickupPt,
       dropoffPt: _dropoffPt,
-      onEtaUpdate: (eta, dist, label) {
-        if (mounted) setState(() { _etaText = eta; _distText = dist; _etaLabel = label; });
-      },
+      onEtaUpdate: (_, __, ___) {},
     );
 
     _moveAnim = AnimationController(

@@ -4,101 +4,190 @@ import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 
 class EarningsChart extends StatelessWidget {
-  final List<WeeklyData> weekly;
-  const EarningsChart({super.key, required this.weekly});
+  final List<DailyRides> dailyRides;
+  const EarningsChart({super.key, required this.dailyRides});
 
-  static const double _maxBarHeight = 120.0;
+  static const double _chartH = 130.0;
+  static const _green = Color(0xFF22C55E);
+  static const _dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+  /// Aggregate dailyRides by ISO weekday (Mon=0 … Sun=6)
+  List<int> _weekData() {
+    final data = List<int>.filled(7, 0);
+    for (final d in dailyRides) {
+      try {
+        final dt = DateTime.parse(d.day);
+        data[dt.weekday - 1] += d.rides;
+      } catch (_) {}
+    }
+    return data;
+  }
+
+  int _niceMax(int max) {
+    if (max <= 0) return 6;
+    if (max <= 4) return 4;
+    if (max <= 6) return 6;
+    if (max <= 8) return 8;
+    if (max <= 10) return 10;
+    return ((max / 5).ceil() * 5);
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (weekly.isEmpty) return const SizedBox.shrink();
-
-    final maxVal = weekly.fold<double>(
-        0, (prev, w) => w.salary + w.commission > prev ? w.salary + w.commission : prev);
+    final weekData = _weekData();
+    final rawMax   = weekData.reduce((a, b) => a > b ? a : b);
+    final yMax     = _niceMax(rawMax);
+    const steps    = 4; // divides chart into 4 equal sections
+    final yLabels  = List.generate(steps + 1, (i) => yMax - (yMax * i ~/ steps));
 
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(16, 18, 16, 14),
       decoration: BoxDecoration(
         color: AppColors.surface(context),
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.border(context)),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Text(
+            'Weekly Rides',
+            style: AppTextStyles.bodyLarge(context)
+                .copyWith(fontWeight: FontWeight.w900, fontSize: 15),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'Rides per day',
+            style: AppTextStyles.bodySmall(context)
+                .copyWith(color: AppColors.subtext(context), fontSize: 11),
+          ),
+          const SizedBox(height: 18),
+
+          // Chart body
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Text(
-                  'Weekly Earnings',
-                  style: AppTextStyles.bodyLarge(context).copyWith(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 16,
-                  ),
+              // Y-axis labels aligned with _chartH
+              SizedBox(
+                width: 22,
+                height: _chartH,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: yLabels
+                      .map((v) => Text(
+                            '$v',
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.subtext(context),
+                            ),
+                          ))
+                      .toList(),
                 ),
               ),
-              _LegendDot(color: AppColors.primaryPurple, label: 'Salary'),
-              const SizedBox(width: 14),
-              _LegendDot(
-                color: AppColors.primaryPurple.withValues(alpha: 0.30),
-                label: 'Commission',
+              const SizedBox(width: 6),
+
+              // Bars + grid
+              Expanded(
+                child: Column(
+                  children: [
+                    SizedBox(
+                      height: _chartH,
+                      child: Stack(
+                        children: [
+                          // Horizontal grid lines (spaceBetween = aligns with Y labels)
+                          Column(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: List.generate(
+                              steps + 1,
+                              (_) => Container(
+                                height: 1,
+                                color: AppColors.border(context)
+                                    .withValues(alpha: 0.6),
+                              ),
+                            ),
+                          ),
+
+                          // Bars
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceAround,
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: List.generate(7, (i) {
+                              final rides = weekData[i];
+                              final barH = yMax > 0
+                                  ? (rides / yMax) * _chartH
+                                  : 0.0;
+                              return SizedBox(
+                                height: _chartH,
+                                child: Stack(
+                                  alignment: Alignment.bottomCenter,
+                                  children: [
+                                    // Bar
+                                    Align(
+                                      alignment: Alignment.bottomCenter,
+                                      child: Container(
+                                        height: barH > 0 ? barH : 2,
+                                        width: 20,
+                                        decoration: BoxDecoration(
+                                          color: rides > 0
+                                              ? _green
+                                              : AppColors.border(context),
+                                          borderRadius:
+                                              const BorderRadius.vertical(
+                                            top: Radius.circular(5),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                    // Count label above bar
+                                    if (rides > 0)
+                                      Positioned(
+                                        bottom: barH + 3,
+                                        child: Text(
+                                          '$rides',
+                                          style: TextStyle(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w800,
+                                            color: _green,
+                                          ),
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              );
+                            }),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 7),
+
+                    // X-axis labels
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: _dayNames
+                          .map((d) => Text(
+                                d,
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w500,
+                                  color: AppColors.subtext(context),
+                                ),
+                              ))
+                          .toList(),
+                    ),
+                  ],
+                ),
               ),
             ],
-          ),
-          const SizedBox(height: 20),
-          SizedBox(
-            height: _maxBarHeight,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: weekly.map((w) {
-                final total = w.salary + w.commission;
-                final salaryH =
-                    maxVal > 0 ? (w.salary / maxVal) * _maxBarHeight : 0.0;
-                final totalH =
-                    maxVal > 0 ? (total / maxVal) * _maxBarHeight : 0.0;
-                return Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 4),
-                    child: Stack(
-                      alignment: Alignment.bottomCenter,
-                      children: [
-                        Container(
-                          height: totalH,
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryPurple.withValues(alpha: 0.25),
-                            borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(6)),
-                          ),
-                        ),
-                        Container(
-                          height: salaryH,
-                          decoration: BoxDecoration(
-                            color: AppColors.primaryPurple,
-                            borderRadius: const BorderRadius.vertical(
-                                top: Radius.circular(6)),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: weekly.map((w) {
-              return Expanded(
-                child: Text(
-                  'W${w.week}',
-                  textAlign: TextAlign.center,
-                  style: AppTextStyles.bodySmall(context).copyWith(
-                    color: AppColors.subtext(context),
-                    fontSize: 11,
-                  ),
-                ),
-              );
-            }).toList(),
           ),
         ],
       ),
@@ -106,35 +195,3 @@ class EarningsChart extends StatelessWidget {
   }
 }
 
-class _LegendDot extends StatelessWidget {
-  final Color color;
-  final String label;
-  const _LegendDot({required this.color, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 12,
-          height: 12,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(3),
-          ),
-        ),
-        const SizedBox(width: 5),
-        Text(
-          label,
-          style: TextStyle(
-            color: AppColors.subtext(context),
-            fontSize: 10,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.5,
-          ),
-        ),
-      ],
-    );
-  }
-}

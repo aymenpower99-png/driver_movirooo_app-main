@@ -9,6 +9,7 @@ import '../../../../providers/auth_provider.dart';
 import '../../../../providers/online_provider.dart';
 import '../widgets/tab_bar.dart';
 import 'edit_profile/driver_profile_edit_page.dart';
+import 'widgets/profile_widgets.dart';
 import 'notification/driver_notifications_page.dart';
 import 'driver_settings_page.dart';
 import 'preferences/driver_appearance_page.dart';
@@ -194,11 +195,11 @@ class DriverProfilePage extends StatelessWidget {
             const SizedBox(height: 24),
 
             // ── PERSONAL DETAILS ─────────────────────────────────
-            _SectionHeader(label: t('profile_section_personal')),
+            ProfileSectionHeader(label: t('profile_section_personal')),
             const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _SoloCard(
+              child: ProfileSoloCard(
                 icon: Icons.manage_accounts_outlined,
                 label: t('account_tile'),
                 onTap: () => Navigator.push(
@@ -213,7 +214,7 @@ class DriverProfilePage extends StatelessWidget {
             const SizedBox(height: 10),
 
             // ── PREFERENCES ──────────────────────────────────────
-            _SectionHeader(label: t('profile_section_preferences')),
+            ProfileSectionHeader(label: t('profile_section_preferences')),
             const SizedBox(height: 8),
             ListenableBuilder(
               listenable: themeProvider,
@@ -225,7 +226,7 @@ class DriverProfilePage extends StatelessWidget {
                 };
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _SoloCard(
+                  child: ProfileSoloCard(
                     icon: Icons.palette_outlined,
                     label: t('profile_appearance'),
                     subtitle: themeLabel,
@@ -253,7 +254,7 @@ class DriverProfilePage extends StatelessWidget {
                 );
                 return Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: _SoloCard(
+                  child: ProfileSoloCard(
                     icon: Icons.language_rounded,
                     label: t('profile_language'),
                     subtitle: langName,
@@ -271,11 +272,11 @@ class DriverProfilePage extends StatelessWidget {
             const SizedBox(height: 10),
 
             // ── SETTINGS ─────────────────────────────────────────
-            _SectionHeader(label: t('profile_section_settings')),
+            ProfileSectionHeader(label: t('profile_section_settings')),
             const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _SoloCard(
+              child: ProfileSoloCard(
                 icon: Icons.notifications_outlined,
                 label: t('push_notification_tile'),
                 onTap: () => Navigator.push(
@@ -289,7 +290,7 @@ class DriverProfilePage extends StatelessWidget {
             const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _SoloCard(
+              child: ProfileSoloCard(
                 icon: Icons.settings_outlined,
                 label: t('settings_title'),
                 onTap: () => Navigator.push(
@@ -304,7 +305,7 @@ class DriverProfilePage extends StatelessWidget {
             // ── Logout ──────────────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: _SoloCard(
+              child: ProfileSoloCard(
                 icon: Icons.logout_rounded,
                 label: t('profile_logout'),
                 iconColor: Colors.red,
@@ -329,93 +330,7 @@ class DriverProfilePage extends StatelessWidget {
   }
 }
 
-// ── Solo Card ─────────────────────────────────────────────────────────────────
+// _SoloCard and _SectionHeader extracted to widgets/profile_widgets.dart
 
-class _SoloCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String? subtitle;
-  final Color? iconColor;
-  final Color? labelColor;
-  final VoidCallback onTap;
-
-  const _SoloCard({
-    required this.icon,
-    required this.label,
-    this.subtitle,
-    this.iconColor,
-    this.labelColor,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Container(
-        height: 64, // ← increased from 48
-        decoration: BoxDecoration(
-          color: AppColors.surface(context),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.border(context)),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Row(
-          children: [
-            Icon(icon, color: iconColor ?? AppColors.primaryPurple, size: 20),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    label,
-                    style: AppTextStyles.settingsItem(
-                      context,
-                    ).copyWith(color: labelColor),
-                  ),
-                  if (subtitle != null) ...[
-                    const SizedBox(height: 2),
-                    Text(
-                      subtitle!,
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 12,
-                        fontWeight: FontWeight.w400,
-                        color: AppColors.subtext(context),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            Icon(
-              Icons.chevron_right_rounded,
-              color: labelColor ?? AppColors.subtext(context),
-              size: 18,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Section Header ────────────────────────────────────────────────────────────
-
-class _SectionHeader extends StatelessWidget {
-  final String label;
-  const _SectionHeader({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Text(label, style: AppTextStyles.sectionLabel(context)),
-    );
-  }
-}
 
 

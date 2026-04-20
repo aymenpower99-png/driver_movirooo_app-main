@@ -19,8 +19,8 @@ class SupportService {
       'subject':     subject,
       'description': description,
       'category':    category.apiValue,
-      if (rideId   != null) 'rideId':   rideId,
-      if (metadata != null) 'metadata': metadata,
+      ?'rideId':   rideId,
+      ?'metadata': metadata,
     });
     return TicketModel.fromJson(res.data as Map<String, dynamic>);
   }

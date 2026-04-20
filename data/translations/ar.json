@@ -115,6 +115,11 @@
   "earnings_online_time": "وقت الاتصال",
   "earnings_active_hours": "ساعات النشاط",
   "earnings_report_note": "يتم إصدار تقارير الأداء الشهرية في الأول من كل شهر.",
+  "earnings_load_error": "فشل تحميل الأرباح",
+  "earnings_no_data": "لا تتوفر بيانات أرباح",
+  "retry": "إعادة المحاولة",
+  "dashboard_vehicle": "المركبة",
+  "dashboard_vehicle_class": "فئة المركبة",
 
   "start_navigation": "بدء الملاحة",
 
@@ -216,6 +221,8 @@
   "settings_title": "الإعدادات",
   "settings_privacy_section": "الخصوصية والأمان",
   "settings_location_always": "مشاركة الموقع دائمًا",
+  "settings_work_area": "منطقة العمل",
+  "settings_my_tickets": "تذاكر الدعم",
   "settings_support_section": "الدعم",
   "settings_help_center": "مركز المساعدة",
   "settings_contact_support": "التواصل مع الدعم",
@@ -242,6 +249,7 @@
   "profile_appearance": "المظهر",
   "profile_language": "اللغة",
   "profile_logout": "تسجيل الخروج",
+  "profile": "الملف الشخصي",
 
   "appearance": "المظهر",
   "theme": "السمة",

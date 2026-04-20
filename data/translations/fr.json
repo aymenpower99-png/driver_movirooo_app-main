@@ -113,6 +113,11 @@
   "earnings_online_time": "Temps en ligne",
   "earnings_active_hours": "Heures actives",
   "earnings_report_note": "Les rapports de performance mensuels sont finalisés le 1er de chaque mois.",
+  "earnings_load_error": "Impossible de charger les gains",
+  "earnings_no_data": "Aucune donnée de gains disponible",
+  "retry": "Réessayer",
+  "dashboard_vehicle": "Véhicule",
+  "dashboard_vehicle_class": "Classe de véhicule",
 
   "start_navigation": "Démarrer la navigation",
 
@@ -214,6 +219,8 @@
   "settings_title": "Param\u00e8tres",
   "settings_privacy_section": "CONFIDENTIALIT\u00c9 & S\u00c9CURIT\u00c9",
   "settings_location_always": "Partager toujours la localisation",
+  "settings_work_area": "Zone de travail",
+  "settings_my_tickets": "Mes tickets de support",
   "settings_support_section": "SUPPORT",
   "settings_help_center": "Centre d'aide",
   "settings_contact_support": "Contacter le support",
@@ -240,6 +247,7 @@
   "profile_appearance": "Apparence",
   "profile_language": "Langue",
   "profile_logout": "Se d\u00e9connecter",
+  "profile": "Profil",
 
   "completion_loading": "Finalisation du trajet...",
   "completion_title": "Trajet termin\u00e9",

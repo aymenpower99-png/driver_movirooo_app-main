@@ -22,93 +22,57 @@ class TierProgress {
       );
 }
 
+class DailyRides {
+  final String day;
+  final int rides;
+
+  const DailyRides({required this.day, required this.rides});
+
+  factory DailyRides.fromJson(Map<String, dynamic> json) => DailyRides(
+        day: json['day'] as String? ?? '',
+        rides: (json['rides'] as num?)?.toInt() ?? 0,
+      );
+}
+
 class EarningsModel {
-  final double baseSalary;
+  final double salary;
   final double commission;
-  final int missedDays;
-  final double deductionAmount;
-  final double total;
-  final int expectedWorkDays;
-  final int attendance;
+  final double netEarnings;
   final int ridesCompleted;
-  final int ridesAccepted;
-  final int ridesCancelled;
-  final int ridesThreshold;
-  final int ridesLeftForCommission;
-  final List<WeeklyData> weekly;
   final List<TierProgress> tiers;
   final String? nextTierName;
   final int? nextTierRidesNeeded;
+  final List<DailyRides> dailyRides;
 
   const EarningsModel({
-    required this.baseSalary,
+    required this.salary,
     required this.commission,
-    required this.missedDays,
-    required this.deductionAmount,
-    required this.total,
-    required this.expectedWorkDays,
-    required this.attendance,
+    required this.netEarnings,
     required this.ridesCompleted,
-    required this.ridesAccepted,
-    required this.ridesCancelled,
-    required this.ridesThreshold,
-    required this.ridesLeftForCommission,
-    required this.weekly,
     this.tiers = const [],
     this.nextTierName,
     this.nextTierRidesNeeded,
+    this.dailyRides = const [],
   });
 
   factory EarningsModel.fromJson(Map<String, dynamic> json) {
-    final deductions = json['deductions'] as Map<String, dynamic>? ?? {};
-    final stats = json['stats'] as Map<String, dynamic>? ?? {};
-    final weeklyList = (json['weekly'] as List<dynamic>? ?? [])
-        .map((w) => WeeklyData.fromJson(w as Map<String, dynamic>))
-        .toList();
     final tiersList = (json['tiers'] as List<dynamic>? ?? [])
         .map((t) => TierProgress.fromJson(t as Map<String, dynamic>))
+        .toList();
+    final dailyList = (json['dailyRides'] as List<dynamic>? ?? [])
+        .map((d) => DailyRides.fromJson(d as Map<String, dynamic>))
         .toList();
     final nextTier = json['nextTier'] as Map<String, dynamic>?;
 
     return EarningsModel(
-      baseSalary: (json['baseSalary'] as num?)?.toDouble() ?? 0,
+      salary: (json['salary'] as num?)?.toDouble() ?? 0,
       commission: (json['commission'] as num?)?.toDouble() ?? 0,
-      missedDays: (deductions['missedDays'] as num?)?.toInt() ?? 0,
-      deductionAmount: (deductions['amount'] as num?)?.toDouble() ?? 0,
-      total: (json['total'] as num?)?.toDouble() ?? 0,
-      expectedWorkDays: (stats['expectedWorkDays'] as num?)?.toInt() ?? 22,
-      attendance: (stats['attendance'] as num?)?.toInt() ?? 0,
-      ridesCompleted: (stats['ridesCompleted'] as num?)?.toInt() ?? 0,
-      ridesAccepted: (stats['ridesAccepted'] as num?)?.toInt() ?? 0,
-      ridesCancelled: (stats['ridesCancelled'] as num?)?.toInt() ?? 0,
-      ridesThreshold: (stats['ridesThreshold'] as num?)?.toInt() ?? 100,
-      ridesLeftForCommission:
-          (stats['ridesLeftForCommission'] as num?)?.toInt() ?? 0,
-      weekly: weeklyList,
+      netEarnings: (json['netEarnings'] as num?)?.toDouble() ?? 0,
+      ridesCompleted: (json['ridesCompleted'] as num?)?.toInt() ?? 0,
       tiers: tiersList,
       nextTierName: nextTier?['name'] as String?,
       nextTierRidesNeeded: (nextTier?['ridesNeeded'] as num?)?.toInt(),
+      dailyRides: dailyList,
     );
   }
-}
-
-class WeeklyData {
-  final int week;
-  final double salary;
-  final double commission;
-  final int rides;
-
-  const WeeklyData({
-    required this.week,
-    required this.salary,
-    required this.commission,
-    required this.rides,
-  });
-
-  factory WeeklyData.fromJson(Map<String, dynamic> json) => WeeklyData(
-        week: (json['week'] as num?)?.toInt() ?? 0,
-        salary: (json['salary'] as num?)?.toDouble() ?? 0,
-        commission: (json['commission'] as num?)?.toDouble() ?? 0,
-        rides: (json['rides'] as num?)?.toInt() ?? 0,
-      );
 }

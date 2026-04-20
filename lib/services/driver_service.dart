@@ -35,8 +35,8 @@ class DriverService {
     bool? emailEnabled,
   }) async {
     await _dio.patch(Endpoints.notificationPrefs, data: {
-      if (pushEnabled  != null) 'pushEnabled':  pushEnabled,
-      if (emailEnabled != null) 'emailEnabled': emailEnabled,
+      ?'pushEnabled':  pushEnabled,
+      ?'emailEnabled': emailEnabled,
     });
   }
 }
