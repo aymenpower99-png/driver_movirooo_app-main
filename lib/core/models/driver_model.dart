@@ -6,6 +6,8 @@ class DriverModel {
   final double  ratingAverage;
   final int     totalTrips;
   final int     cancellationCount;
+  final int     rejectedOffersCount;
+  final int     acceptedOffersCount;
   final VehicleInfo? vehicle;
   final WorkAreaInfo? workArea;
 
@@ -22,6 +24,8 @@ class DriverModel {
     required this.ratingAverage,
     required this.totalTrips,
     this.cancellationCount = 0,
+    this.rejectedOffersCount = 0,
+    this.acceptedOffersCount = 0,
     this.vehicle,
     this.workArea,
     this.monthlyOnlineMs = 0,
@@ -34,12 +38,13 @@ class DriverModel {
   }
 
   /// Acceptance rate as percentage (0–100).
-  /// totalTrips = completed rides, cancellationCount = cancelled rides.
-  /// Rate = completed / (completed + cancelled).
+  /// accepted = offers explicitly accepted (incremented each time driver taps Accept).
+  /// rejected = offers explicitly rejected (incremented each time driver taps Reject).
+  /// Rate = accepted / (accepted + rejected), so accept → rate ↑, reject → rate ↓.
   int get acceptanceRate {
-    final total = totalTrips + cancellationCount;
+    final total = acceptedOffersCount + rejectedOffersCount;
     if (total == 0) return 100;
-    return ((totalTrips / total) * 100).round().clamp(0, 100);
+    return ((acceptedOffersCount / total) * 100).round().clamp(0, 100);
   }
 
   factory DriverModel.fromJson(Map<String, dynamic> j) => DriverModel(
@@ -48,7 +53,9 @@ class DriverModel {
         availabilityStatus: j['availabilityStatus'] as String? ?? 'OFFLINE',
         ratingAverage:      _toDouble(j['ratingAverage']),
         totalTrips:         (j['totalTrips']        as num?)?.toInt() ?? 0,
-        cancellationCount:  (j['cancellationCount'] as num?)?.toInt() ?? 0,
+        cancellationCount:   (j['cancellationCount']  as num?)?.toInt() ?? 0,
+        rejectedOffersCount: (j['rejectedOffersCount'] as num?)?.toInt() ?? 0,
+        acceptedOffersCount: (j['acceptedOffersCount'] as num?)?.toInt() ?? 0,
         monthlyOnlineMs:    _toInt(j['monthlyOnlineMs']),
         onlineSince: j['onlineSince'] != null
             ? DateTime.tryParse(j['onlineSince'].toString())
@@ -75,16 +82,18 @@ class DriverModel {
   }
 
   DriverModel copyWith({String? availabilityStatus, int? monthlyOnlineMs, DateTime? onlineSince}) => DriverModel(
-        id:                 id,
-        userId:             userId,
-        availabilityStatus: availabilityStatus ?? this.availabilityStatus,
-        ratingAverage:      ratingAverage,
-        totalTrips:         totalTrips,
-        cancellationCount:  cancellationCount,
-        vehicle:            vehicle,
-        workArea:           workArea,
-        monthlyOnlineMs:    monthlyOnlineMs ?? this.monthlyOnlineMs,
-        onlineSince:        onlineSince,
+        id:                  id,
+        userId:              userId,
+        availabilityStatus:  availabilityStatus ?? this.availabilityStatus,
+        ratingAverage:       ratingAverage,
+        totalTrips:          totalTrips,
+        cancellationCount:   cancellationCount,
+        rejectedOffersCount: rejectedOffersCount,
+        acceptedOffersCount: acceptedOffersCount,
+        vehicle:             vehicle,
+        workArea:            workArea,
+        monthlyOnlineMs:     monthlyOnlineMs ?? this.monthlyOnlineMs,
+        onlineSince:         onlineSince,
       );
 }
 

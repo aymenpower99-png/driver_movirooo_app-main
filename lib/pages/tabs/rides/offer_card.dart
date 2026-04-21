@@ -4,6 +4,7 @@ import '../../../../../l10n/app_localizations.dart';
 import '../../../../../theme/app_colors.dart';
 import '../../../../../theme/app_text_styles.dart';
 import '../../../providers/ride_provider.dart';
+import 'package:moviroo_driver_app/providers/online_provider.dart';
 import '../../../core/models/offer_model.dart';
 import '../../../core/widgets/app_toast.dart';
 import 'package:moviroo_driver_app/core/notifications/notification_service.dart';
@@ -143,17 +144,27 @@ class OfferCard extends StatelessWidget {
                 Expanded(
                   child: OutlinedButton(
                     onPressed: () async {
-                      final ok = await context.read<RideProvider>().rejectOffer(offer.id);
-                      if (context.mounted) {
-                        if (ok) {
-                          AppToast.info(context, AppLocalizations.of(context).translate('ride_rejected_snack').replaceFirst('{id}', ''));
-                          NotificationService.instance.showLocalNotification(
-                            title: 'Offer Rejected',
-                            body: 'You have rejected this ride offer.',
-                          );
-                        } else {
-                          AppToast.error(context, context.read<RideProvider>().error ?? 'Error');
-                        }
+                      // Capture context-dependent refs BEFORE the await: the widget
+                      // is removed from the tree once the offer is removed from the
+                      // list, so context.mounted will be false by then.
+                      final messenger = ScaffoldMessenger.of(context);
+                      final rideProvider = context.read<RideProvider>();
+                      final onlineProvider = context.read<OnlineProvider>();
+                      final rejectedText = AppLocalizations.of(context)
+                          .translate('ride_rejected_snack')
+                          .replaceFirst('{id}', '');
+
+                      final ok = await rideProvider.rejectOffer(offer.id);
+                      if (ok) {
+                        AppToast.infoMessenger(messenger, rejectedText);
+                        NotificationService.instance.showLocalNotification(
+                          title: 'Offer Rejected',
+                          body: 'You have rejected this ride offer.',
+                        );
+                        onlineProvider.refreshDriverProfile();
+                      } else {
+                        AppToast.errorMessenger(
+                            messenger, rideProvider.error ?? 'Error');
                       }
                     },
                     style: OutlinedButton.styleFrom(
@@ -169,41 +180,50 @@ class OfferCard extends StatelessWidget {
                 Expanded(
                   child: ElevatedButton(
                     onPressed: () async {
-                      final ok = await context.read<RideProvider>().acceptOffer(offer.id);
-                      if (context.mounted) {
-                        if (ok) {
-                          final ride = offer.ride;
-                          final initial = (ride.passengerName ?? '').trim().isNotEmpty
-                              ? ride.passengerName!.trim()[0].toUpperCase()
-                              : '?';
-                          final trackRide = tracking.RideModel(
-                            id: offer.rideId,
-                            passenger: tracking.PassengerModel(
-                              name: ride.passengerName ?? 'Passenger',
-                              rating: 4.8,
-                              avatarInitial: initial,
-                              phone: ride.passengerPhone,
-                            ),
-                            pickupAddress: ride.from,
-                            dropOffAddress: ride.to,
-                            distanceKm: ride.distanceKm ?? 0,
-                            etaMinutes: 0,
-                            earningsAmount: ride.price,
-                            currency: 'TND',
-                            pickupLat: ride.pickupLat,
-                            pickupLon: ride.pickupLon,
-                            dropoffLat: ride.dropoffLat,
-                            dropoffLon: ride.dropoffLon,
-                          );
-                          AppToast.success(context, AppLocalizations.of(context).translate('ride_accepted_snack').replaceFirst('{id}', ''));
-                          NotificationService.instance.showLocalNotification(
-                            title: 'Ride Accepted',
-                            body: 'You are on the way to pick up ${ride.passengerName ?? 'the passenger'}.',
-                          );
-                          Navigator.of(context).push(TrackPassengerPage.route(trackRide));
-                        } else {
-                          AppToast.error(context, context.read<RideProvider>().error ?? 'Error');
-                        }
+                      // Capture context-dependent refs BEFORE the await.
+                      final messenger = ScaffoldMessenger.of(context);
+                      final navigator = Navigator.of(context);
+                      final rideProvider = context.read<RideProvider>();
+                      final onlineProvider = context.read<OnlineProvider>();
+                      final acceptedText = AppLocalizations.of(context)
+                          .translate('ride_accepted_snack')
+                          .replaceFirst('{id}', '');
+
+                      final ok = await rideProvider.acceptOffer(offer.id);
+                      if (ok) {
+                        final rideData = offer.ride;
+                        final initial = (rideData.passengerName ?? '').trim().isNotEmpty
+                            ? rideData.passengerName!.trim()[0].toUpperCase()
+                            : '?';
+                        final trackRide = tracking.RideModel(
+                          id: offer.rideId,
+                          passenger: tracking.PassengerModel(
+                            name: rideData.passengerName ?? 'Passenger',
+                            rating: 4.8,
+                            avatarInitial: initial,
+                            phone: rideData.passengerPhone,
+                          ),
+                          pickupAddress: rideData.from,
+                          dropOffAddress: rideData.to,
+                          distanceKm: rideData.distanceKm ?? 0,
+                          etaMinutes: 0,
+                          earningsAmount: rideData.price,
+                          currency: 'TND',
+                          pickupLat: rideData.pickupLat,
+                          pickupLon: rideData.pickupLon,
+                          dropoffLat: rideData.dropoffLat,
+                          dropoffLon: rideData.dropoffLon,
+                        );
+                        AppToast.successMessenger(messenger, acceptedText);
+                        NotificationService.instance.showLocalNotification(
+                          title: 'Ride Accepted',
+                          body: 'You are on the way to pick up ${rideData.passengerName ?? 'the passenger'}.',
+                        );
+                        onlineProvider.refreshDriverProfile();
+                        navigator.push(TrackPassengerPage.route(trackRide));
+                      } else {
+                        AppToast.errorMessenger(
+                            messenger, rideProvider.error ?? 'Error');
                       }
                     },
                     style: ElevatedButton.styleFrom(
