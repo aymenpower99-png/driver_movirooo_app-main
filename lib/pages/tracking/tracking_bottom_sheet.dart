@@ -246,6 +246,8 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
       if (mounted) setState(() => _apiLoading = false);
     }
     if (mounted) {
+      // Small delay to ensure backend transaction commits before refresh
+      await Future.delayed(const Duration(milliseconds: 500));
       // Refresh rides list so cancelled ride appears in Cancelled tab
       context.read<RideProvider>().loadDriverRides();
       // Refresh driver profile stats (cancellationCount / acceptanceRate)
