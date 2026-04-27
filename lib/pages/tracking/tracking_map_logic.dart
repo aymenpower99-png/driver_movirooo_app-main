@@ -3,7 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:moviroo_driver_app/core/models/geo_point.dart';
-import 'package:moviroo_driver_app/services/osrm_route_service.dart';
+import 'package:moviroo_driver_app/services/mapbox/mapbox_service.dart';
 import 'map/map_painters.dart';
 
 /// Manages all Mapbox map logic: markers, route line, and camera.
@@ -41,33 +41,40 @@ class TrackingMapLogic {
     _pointMgr = await _map!.annotations.createPointAnnotationManager();
 
     // Always show BOTH markers from the start
-    await _pointMgr!.create(PointAnnotationOptions(
-      geometry: Point(coordinates: Position(pickupPt.lon, pickupPt.lat)),
-      image: await MapPainters.renderPickupBitmap(),
-      iconSize: 1.0,
-      iconAnchor: IconAnchor.CENTER,
-    ));
+    await _pointMgr!.create(
+      PointAnnotationOptions(
+        geometry: Point(coordinates: Position(pickupPt.lon, pickupPt.lat)),
+        image: await MapPainters.renderPickupBitmap(),
+        iconSize: 1.0,
+        iconAnchor: IconAnchor.CENTER,
+      ),
+    );
 
-    await _pointMgr!.create(PointAnnotationOptions(
-      geometry: Point(coordinates: Position(dropoffPt.lon, dropoffPt.lat)),
-      image: await MapPainters.renderDropoffBitmap(),
-      iconSize: 1.0,
-      iconAnchor: IconAnchor.BOTTOM,
-    ));
+    await _pointMgr!.create(
+      PointAnnotationOptions(
+        geometry: Point(coordinates: Position(dropoffPt.lon, dropoffPt.lat)),
+        image: await MapPainters.renderDropoffBitmap(),
+        iconSize: 1.0,
+        iconAnchor: IconAnchor.BOTTOM,
+      ),
+    );
 
     await _map!.style.addSource(
-        GeoJsonSource(id: 'route-src', data: _emptyGeoJson()));
+      GeoJsonSource(id: 'route-src', data: _emptyGeoJson()),
+    );
     _srcReady = true;
 
-    await _map!.style.addLayer(LineLayer(
-      id: 'route-layer',
-      sourceId: 'route-src',
-      lineColor: const Color(0xFFA855F7).toARGB32(),
-      lineWidth: 4.0,
-      lineOpacity: 1.0,
-      lineCap: LineCap.ROUND,
-      lineJoin: LineJoin.ROUND,
-    ));
+    await _map!.style.addLayer(
+      LineLayer(
+        id: 'route-layer',
+        sourceId: 'route-src',
+        lineColor: const Color(0xFFA855F7).toARGB32(),
+        lineWidth: 4.0,
+        lineOpacity: 1.0,
+        lineCap: LineCap.ROUND,
+        lineJoin: LineJoin.ROUND,
+      ),
+    );
 
     // Fit camera to show both pickup and drop-off markers
     fitBothMarkers();
@@ -79,13 +86,15 @@ class TrackingMapLogic {
     if (_pointMgr == null) return;
     final pt = Point(coordinates: Position(pos.lon, pos.lat));
     if (_driverAnn == null) {
-      _driverAnn = await _pointMgr!.create(PointAnnotationOptions(
-        geometry: pt,
-        image: await MapPainters.renderCarBitmap(),
-        iconSize: 0.9,
-        iconAnchor: IconAnchor.CENTER,
-        iconRotate: bearing,
-      ));
+      _driverAnn = await _pointMgr!.create(
+        PointAnnotationOptions(
+          geometry: pt,
+          image: await MapPainters.renderCarBitmap(),
+          iconSize: 0.9,
+          iconAnchor: IconAnchor.CENTER,
+          iconRotate: bearing,
+        ),
+      );
     } else {
       _driverAnn!.geometry = pt;
       _driverAnn!.iconRotate = bearing;
@@ -99,17 +108,29 @@ class TrackingMapLogic {
     if (!_srcReady || _pickupRouteDrawn) return;
     _pickupRouteDrawn = true;
 
-    final result = await OsrmRouteService.fetchRoute(driver, pickupPt);
-    final pts = (result != null && result.points.length >= 2)
-        ? result.points
-        : [driver, pickupPt];
+    final result = await MapboxService.getRoute(
+      driver.lat,
+      driver.lon,
+      pickupPt.lat,
+      pickupPt.lon,
+    );
 
     if (result != null) {
       onEtaUpdate(result.etaText, result.distanceText, 'To Pickup');
+      await _map!.style.setStyleSourceProperty(
+        'route-src',
+        'data',
+        _geometryToGeoJson(result.geometry),
+      );
+    } else {
+      // Fallback to straight line if Mapbox fails
+      final pts = [driver, pickupPt];
+      await _map!.style.setStyleSourceProperty(
+        'route-src',
+        'data',
+        _ptsToGeoJson(pts),
+      );
     }
-
-    await _map!.style.setStyleSourceProperty(
-        'route-src', 'data', _ptsToGeoJson(pts));
     fitBoundsDriverToPickup(driver);
   }
 
@@ -121,17 +142,29 @@ class TrackingMapLogic {
 
     // Dropoff marker already created in onStyleLoaded — no need to recreate
 
-    final result = await OsrmRouteService.fetchRoute(pickupPt, dropoffPt);
-    final pts = (result != null && result.points.length >= 2)
-        ? result.points
-        : [pickupPt, dropoffPt];
+    final result = await MapboxService.getRoute(
+      pickupPt.lat,
+      pickupPt.lon,
+      dropoffPt.lat,
+      dropoffPt.lon,
+    );
 
     if (result != null) {
       onEtaUpdate(result.etaText, result.distanceText, 'To Drop-off');
+      await _map!.style.setStyleSourceProperty(
+        'route-src',
+        'data',
+        _geometryToGeoJson(result.geometry),
+      );
+    } else {
+      // Fallback to straight line if Mapbox fails
+      final pts = [pickupPt, dropoffPt];
+      await _map!.style.setStyleSourceProperty(
+        'route-src',
+        'data',
+        _ptsToGeoJson(pts),
+      );
     }
-
-    await _map!.style.setStyleSourceProperty(
-        'route-src', 'data', _ptsToGeoJson(pts));
     fitToFullRoute();
   }
 
@@ -140,7 +173,10 @@ class TrackingMapLogic {
   Future<void> clearRoute() async {
     if (!_srcReady) return;
     await _map!.style.setStyleSourceProperty(
-        'route-src', 'data', _emptyGeoJson());
+      'route-src',
+      'data',
+      _emptyGeoJson(),
+    );
     _pickupRouteDrawn = false;
     _dropoffRouteDrawn = false;
   }
@@ -148,16 +184,31 @@ class TrackingMapLogic {
   // ── ETA refresh ───────────────────────────────────────────────────────────
 
   Future<void> maybeRefreshEta(
-      GeoPoint driver, bool isPrePickup, bool isInTrip) async {
+    GeoPoint driver,
+    bool isPrePickup,
+    bool isInTrip,
+  ) async {
     final now = DateTime.now();
     if (_lastEtaRefresh != null &&
-        now.difference(_lastEtaRefresh!).inSeconds < 30) { return; }
+        now.difference(_lastEtaRefresh!).inSeconds < 30) {
+      return;
+    }
     _lastEtaRefresh = now;
     if (isPrePickup) {
-      final r = await OsrmRouteService.fetchRoute(driver, pickupPt);
+      final r = await MapboxService.getRoute(
+        driver.lat,
+        driver.lon,
+        pickupPt.lat,
+        pickupPt.lon,
+      );
       if (r != null) onEtaUpdate(r.etaText, r.distanceText, 'To Pickup');
     } else if (isInTrip) {
-      final r = await OsrmRouteService.fetchRoute(driver, dropoffPt);
+      final r = await MapboxService.getRoute(
+        driver.lat,
+        driver.lon,
+        dropoffPt.lat,
+        dropoffPt.lon,
+      );
       if (r != null) onEtaUpdate(r.etaText, r.distanceText, 'To Drop-off');
     }
   }
@@ -193,7 +244,10 @@ class TrackingMapLogic {
             infiniteBounds: false,
           ),
           MbxEdgeInsets(top: 120, left: 60, bottom: 300, right: 60),
-          null, null, null, null,
+          null,
+          null,
+          null,
+          null,
         )
         .then((c) => _map?.flyTo(c, MapAnimationOptions(duration: 1000)))
         .catchError((_) {});
@@ -217,7 +271,10 @@ class TrackingMapLogic {
             infiniteBounds: false,
           ),
           MbxEdgeInsets(top: 120, left: 60, bottom: 300, right: 60),
-          null, null, null, null,
+          null,
+          null,
+          null,
+          null,
         )
         .then((c) => _map?.flyTo(c, MapAnimationOptions(duration: 1000)))
         .catchError((_) {});
@@ -241,7 +298,10 @@ class TrackingMapLogic {
             infiniteBounds: false,
           ),
           MbxEdgeInsets(top: 120, left: 60, bottom: 300, right: 60),
-          null, null, null, null,
+          null,
+          null,
+          null,
+          null,
         )
         .then((c) => _map?.flyTo(c, MapAnimationOptions(duration: 1000)))
         .catchError((_) {});
@@ -264,18 +324,39 @@ class TrackingMapLogic {
   // ── GeoJSON helpers ───────────────────────────────────────────────────────
 
   String _ptsToGeoJson(List<GeoPoint> pts) => jsonEncode({
-        'type': 'FeatureCollection',
-        'features': [
-          {
-            'type': 'Feature',
-            'geometry': {
-              'type': 'LineString',
-              'coordinates': pts.map((p) => [p.lon, p.lat]).toList(),
-            },
-            'properties': {},
-          }
-        ],
-      });
+    'type': 'FeatureCollection',
+    'features': [
+      {
+        'type': 'Feature',
+        'geometry': {
+          'type': 'LineString',
+          'coordinates': pts.map((p) => [p.lon, p.lat]).toList(),
+        },
+        'properties': {},
+      },
+    ],
+  });
+
+  /// Convert flattened geometry array [lon, lat, lon, lat, ...] to GeoJSON LineString
+  String _geometryToGeoJson(List<double> geometry) {
+    if (geometry.length < 4) return _emptyGeoJson();
+
+    final coordinates = <List<double>>[];
+    for (int i = 0; i < geometry.length; i += 2) {
+      coordinates.add([geometry[i], geometry[i + 1]]);
+    }
+
+    return jsonEncode({
+      'type': 'FeatureCollection',
+      'features': [
+        {
+          'type': 'Feature',
+          'geometry': {'type': 'LineString', 'coordinates': coordinates},
+          'properties': {},
+        },
+      ],
+    });
+  }
 
   String _emptyGeoJson() =>
       jsonEncode({'type': 'FeatureCollection', 'features': []});
@@ -284,4 +365,3 @@ class TrackingMapLogic {
 
   void dispose() {}
 }
-
