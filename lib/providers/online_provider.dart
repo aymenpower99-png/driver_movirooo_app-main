@@ -364,7 +364,7 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
         }
         _stopTimers();
         _isOnline = false;
-        await BackgroundTrackingService.stopTracking(); // Stop GPS tracking when going offline
+        BackgroundTrackingService.stopTracking(); // Stop GPS tracking when going offline
         await BackgroundTrackingService.stop(); // Stop background service
         // Backend accumulated the session into monthlyOnlineMs — re-fetch.
         try {

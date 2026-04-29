@@ -2,11 +2,10 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart' as geo;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:moviroo_driver_app/core/models/geo_point.dart';
 import 'package:moviroo_driver_app/theme/app_colors.dart';
-import 'package:moviroo_driver_app/services/location/location_tracking_service.dart';
+import 'package:moviroo_driver_app/services/background/background_tracking_service.dart';
 import 'ride_model.dart';
 import 'tracking_bottom_sheet.dart';
 import 'tracking_map_logic.dart';
@@ -38,8 +37,7 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
   GeoPoint? _animEnd;
 
   late TrackingMapLogic _mapLogic;
-  final LocationTrackingService _locationService = LocationTrackingService();
-  StreamSubscription<geo.Position>? _positionSubscription;
+  StreamSubscription<Map<String, dynamic>?>? _bgGpsSubscription;
 
   static const _defaultPt = GeoPoint(36.8189, 10.1658);
 
@@ -71,15 +69,23 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
       duration: const Duration(milliseconds: 1500),
     )..addListener(_onMoveAnimTick);
 
-    // Subscribe to the app-level service's position stream
-    // Tracking is controlled by OnlineProvider based on driver state
-    _positionSubscription = _locationService.positionStream.listen(
-      _onNewPosition,
-    );
+    // Start background service tracking (handles GPS + WebSocket in isolate)
+    BackgroundTrackingService.startTracking(widget.ride.id);
+
+    // Subscribe to background service GPS bridge (works when app backgrounded)
+    _bgGpsSubscription = BackgroundTrackingService.onGpsUpdate.listen((data) {
+      if (data == null) return;
+      final lat = data['latitude'] as double?;
+      final lng = data['longitude'] as double?;
+      if (lat != null && lng != null) {
+        _onNewPositionFromCoords(lat, lng);
+      }
+    });
   }
 
-  void _onNewPosition(geo.Position pos) {
-    final newPt = GeoPoint(pos.latitude, pos.longitude);
+  /// Handle GPS position from background service bridge (lat/lng only).
+  void _onNewPositionFromCoords(double lat, double lng) {
+    final newPt = GeoPoint(lat, lng);
     if (_driverPosition != null) {
       _driverBearing = GeoMath.calculateBearing(_driverPosition!, newPt);
     }
@@ -93,7 +99,6 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
     if (_isPrePickup || _isInTrip) {
       _mapLogic.animateToDriver(newPt, bearing: _driverBearing);
     }
-    // Only draw route to pickup when driver is actively heading there (not in assigned state)
     if (_status == RideStatus.onTheWay && !_isInTrip) {
       _mapLogic.drawPhase1Route(newPt);
     }
@@ -145,7 +150,7 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
   void dispose() {
     _moveAnim?.dispose();
     _mapLogic.dispose();
-    _positionSubscription?.cancel();
+    _bgGpsSubscription?.cancel();
     super.dispose();
   }
 

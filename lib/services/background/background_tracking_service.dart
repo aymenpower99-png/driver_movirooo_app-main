@@ -2,20 +2,23 @@ import 'dart:async';
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
-import 'package:geolocator/geolocator.dart';
-import 'package:socket_io_client/socket_io_client.dart' as io;
 import 'background_gps_handler.dart';
-import 'background_socket_handler.dart';
 
-/// Background service handler for GPS tracking.
-/// Runs in a separate isolate to keep tracking alive when app is backgrounded.
-/// This is the main coordinator that orchestrates the specialized handlers.
+/// Background service for GPS tracking.
+///
+/// Architecture:
+///   Main isolate  ──invoke('start_tracking')──▶  Background isolate
+///                  ◀──invoke('gps_update')──────  (sends GPS back to UI)
+///
+/// The background isolate owns the GPS stream and the WebSocket connection.
+/// GPS positions are both sent to the backend AND forwarded to the main
+/// isolate so the map UI can update even after the user leaves the screen.
 class BackgroundTrackingService {
-  static const String _channel = 'moviroo.tracking';
   static final FlutterBackgroundService _service = FlutterBackgroundService();
-  static const _maxReconnectAttempts = 10;
 
-  /// Initialize the background service
+  // ── Main-isolate API ──────────────────────────────────────────────────────
+
+  /// Initialize the background service. Call once at app start.
   static Future<void> initialize() async {
     await _service.configure(
       androidConfiguration: AndroidConfiguration(
@@ -35,132 +38,115 @@ class BackgroundTrackingService {
     );
   }
 
-  /// Start the background service
+  /// Start the background service (does NOT start GPS — call [startTracking]).
   static Future<void> start() async {
     if (await _service.isRunning()) {
-      debugPrint('🚗 [BackgroundTracking] Service already running');
+      debugPrint('🚗 [BgTrack] Service already running');
       return;
     }
     _service.startService();
-    debugPrint('🚗 [BackgroundTracking] Service started');
+    debugPrint('🚗 [BgTrack] Service started');
   }
 
-  /// Stop the background service
+  /// Stop the background service entirely.
   static Future<void> stop() async {
     _service.invoke('stop');
-    debugPrint('🚗 [BackgroundTracking] Sent stop command');
+    debugPrint('🚗 [BgTrack] Sent stop command');
   }
 
-  /// Send a command to start tracking for a specific ride
-  static Future<void> startTracking(String rideId) async {
+  /// Tell the background isolate to start GPS + WebSocket for [rideId].
+  static void startTracking(String rideId) {
     _service.invoke('start_tracking', {'rideId': rideId});
-    debugPrint(
-      '🚗 [BackgroundTracking] Sent start_tracking command for ride: $rideId',
-    );
+    debugPrint('🚗 [BgTrack] Sent start_tracking for ride=$rideId');
   }
 
-  /// Send a command to stop tracking
-  static Future<void> stopTracking() async {
+  /// Tell the background isolate to stop GPS + WebSocket.
+  static void stopTracking() {
     _service.invoke('stop_tracking');
-    debugPrint('🚗 [BackgroundTracking] Sent stop_tracking command');
+    debugPrint('🚗 [BgTrack] Sent stop_tracking');
   }
 
-  /// Called when the background service starts (Android and iOS foreground)
+  /// Stream of GPS updates forwarded from the background isolate.
+  /// Listen to this in the main isolate to update the map UI.
+  static Stream<Map<String, dynamic>?> get onGpsUpdate =>
+      _service.on('gps_update');
+
+  // ── Background isolate entry point ────────────────────────────────────────
+
   @pragma('vm:entry-point')
   static Future<void> _onStart(ServiceInstance service) async {
-    if (kDebugMode) {
-      DartPluginRegistrant.ensureInitialized();
-    }
+    DartPluginRegistrant.ensureInitialized();
 
-    io.Socket? _socket;
-    StreamSubscription<Position>? _gpsSubscription;
-    String? _currentRideId;
-    Timer? _reconnectTimer;
-    int _reconnectAttempts = 0;
+    GpsSessionHandle? session;
+    String? currentRideId;
 
-    // Handle incoming commands from the UI
-    service.on(_channel).listen((event) {
-      if (event == null) return;
-      final command = event['command'];
-      debugPrint('🚗 [BackgroundTracking] Received command: $command');
+    debugPrint('🚗 [BgTrack:isolate] Background isolate started');
 
-      switch (command) {
-        case 'start_tracking':
-          final rideId = event['rideId'];
-          if (rideId != null) {
-            _currentRideId = rideId;
-            _reconnectAttempts = 0; // Reset reconnect attempts on new ride
-            BackgroundGpsHandler.startGpsAndSocket(
-              rideId,
-              _socket,
-              _gpsSubscription,
-              (socket) {
-                _socket = socket;
-                BackgroundSocketHandler.setupSocketReconnect(
-                  socket,
-                  rideId,
-                  _reconnectTimer,
-                  _reconnectAttempts,
-                  (timer, newAttempts) {
-                    _reconnectAttempts = newAttempts;
-                    if (_reconnectAttempts <= _maxReconnectAttempts) {
-                      final delay = Duration(
-                        seconds: BackgroundSocketHandler.calculateBackoff(
-                          _reconnectAttempts,
-                        ),
-                      );
-                      debugPrint(
-                        '🚗 [BackgroundTracking] Reconnecting in ${delay.inSeconds}s (attempt $_reconnectAttempts)',
-                      );
-                      timer?.cancel();
-                      _reconnectTimer = Timer(delay, () {
-                        BackgroundSocketHandler.reconnectSocket(rideId, (
-                          newSocket,
-                        ) {
-                          _socket = newSocket;
-                          // Reset reconnect attempts on successful reconnection
-                          _reconnectAttempts = 0;
-                        });
-                      });
-                    } else {
-                      debugPrint(
-                        '🚗 [BackgroundTracking] Max reconnect attempts reached, giving up',
-                      );
-                    }
-                  },
-                );
-              },
-            );
-          }
-          break;
-        case 'stop_tracking':
-          _reconnectTimer?.cancel();
-          _reconnectAttempts = 0;
-          BackgroundGpsHandler.stopGpsAndSocket(_gpsSubscription, _socket);
-          _currentRideId = null;
-          break;
-        case 'stop':
-          _reconnectTimer?.cancel();
-          BackgroundGpsHandler.stopGpsAndSocket(_gpsSubscription, _socket);
-          _service.invoke('stop_service');
-          break;
+    // ── start_tracking command ──────────────────────────────────────────────
+    service.on('start_tracking').listen((event) async {
+      final rideId = event?['rideId'] as String?;
+      if (rideId == null) return;
+
+      debugPrint('🚗 [BgTrack:isolate] start_tracking ride=$rideId');
+
+      // Stop previous session if any
+      await BackgroundGpsHandler.stopSession(session);
+      session = null;
+      currentRideId = rideId;
+
+      session = await BackgroundGpsHandler.startGpsAndSocket(
+        rideId,
+        onGpsPosition: (pos) {
+          // Bridge GPS to main isolate so the map UI receives it
+          service.invoke('gps_update', {
+            'latitude': pos.latitude,
+            'longitude': pos.longitude,
+            'speed': pos.speed,
+            'heading': pos.heading,
+            'timestamp': pos.timestamp.millisecondsSinceEpoch,
+          });
+        },
+      );
+
+      if (session == null) {
+        debugPrint('🚗 [BgTrack:isolate] Failed to start GPS session');
       }
     });
 
-    // Set up periodic heartbeat to keep service alive
-    Timer.periodic(const Duration(seconds: 30), (timer) async {
-      service.invoke('set_notification', {
-        'title': 'Moviroo Driver',
-        'content': _currentRideId != null
-            ? 'Tracking active ride'
-            : 'Online - waiting for ride',
-      });
+    // ── stop_tracking command ───────────────────────────────────────────────
+    service.on('stop_tracking').listen((_) async {
+      debugPrint('🚗 [BgTrack:isolate] stop_tracking');
+      await BackgroundGpsHandler.stopSession(session);
+      session = null;
+      currentRideId = null;
+    });
+
+    // ── stop command (kill service) ─────────────────────────────────────────
+    service.on('stop').listen((_) async {
+      debugPrint('🚗 [BgTrack:isolate] stop — shutting down');
+      await BackgroundGpsHandler.stopSession(session);
+      session = null;
+      currentRideId = null;
+      await service.stopSelf();
+    });
+
+    // ── Keep-alive heartbeat (updates notification text) ────────────────────
+    Timer.periodic(const Duration(seconds: 30), (_) {
+      if (service is AndroidServiceInstance) {
+        service.setForegroundNotificationInfo(
+          title: 'Moviroo Driver',
+          content: currentRideId != null
+              ? 'Tracking active ride'
+              : 'Online — waiting for ride',
+        );
+      }
     });
   }
 
   /// iOS background callback
   @pragma('vm:entry-point')
   static Future<bool> _onIosBackground(ServiceInstance service) async {
+    DartPluginRegistrant.ensureInitialized();
     return true;
   }
 }

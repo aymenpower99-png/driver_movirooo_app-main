@@ -1,20 +1,16 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:socket_io_client/socket_io_client.dart' as io;
-import '../../core/config/app_config.dart';
-import '../../core/storage/token_storage.dart';
 
-/// Singleton service that manages GPS streaming and WebSocket broadcasting
-/// for driver location tracking. This service lives at the app level and is
-/// NOT tied to any specific widget lifecycle.
+/// Singleton service that manages GPS streaming for UI updates only.
+/// This service lives at the app level and is NOT tied to widget lifecycle.
+/// It does NOT emit GPS to the backend - the background isolate handles that.
 class LocationTrackingService {
   static final LocationTrackingService _instance =
       LocationTrackingService._internal();
   factory LocationTrackingService() => _instance;
   LocationTrackingService._internal();
 
-  io.Socket? _socket;
   String? _currentRideId;
   StreamSubscription<Position>? _gpsSubscription;
 
@@ -25,10 +21,10 @@ class LocationTrackingService {
   // External listener for incoming location updates (e.g. for passenger app)
   void Function(double lat, double lng)? onLocationUpdate;
 
-  /// Start GPS tracking for a specific ride
+  /// Start GPS tracking for a specific ride (UI only - no backend emission).
   Future<void> startTracking(String rideId) async {
     debugPrint(
-      '🚗 [LocationTrackingService] Starting GPS tracking for ride: $rideId',
+      '🚗 [LocationTrackingService] Starting GPS stream for ride: $rideId',
     );
 
     if (_gpsSubscription != null && _currentRideId == rideId) {
@@ -65,12 +61,7 @@ class LocationTrackingService {
     }
     debugPrint('🚗 [LocationTrackingService] Location permission granted ✓');
 
-    // Connect to WebSocket
-    debugPrint('🚗 [LocationTrackingService] Connecting to WebSocket...');
-    await _connectWebSocket(rideId);
-    debugPrint('🚗 [LocationTrackingService] WebSocket connected ✓');
-
-    // Start GPS stream
+    // Start GPS stream (UI only - background isolate emits to backend)
     debugPrint(
       '🚗 [LocationTrackingService] Starting GPS stream (accuracy: high, distanceFilter: 0)...',
     );
@@ -83,9 +74,8 @@ class LocationTrackingService {
         ).listen(
           (pos) {
             debugPrint(
-              '🚗 [LocationTrackingService] GPS update: lat=${pos.latitude}, lng=${pos.longitude}, speed=${pos.speed}',
+              '🚗 [LocationTrackingService] GPS update: lat=${pos.latitude}, lng=${pos.longitude}',
             );
-            _sendGpsToBackend(pos);
             _positionController.add(pos);
           },
           onError: (e) {
@@ -95,82 +85,15 @@ class LocationTrackingService {
     debugPrint('🚗 [LocationTrackingService] GPS stream started ✓');
   }
 
-  /// Stop GPS tracking and disconnect WebSocket
+  /// Stop GPS tracking
   Future<void> stopTracking() async {
     debugPrint('🚗 [LocationTrackingService] Stopping GPS tracking');
 
     await _gpsSubscription?.cancel();
     _gpsSubscription = null;
 
-    await _disconnectWebSocket();
-
     _currentRideId = null;
     debugPrint('🚗 [LocationTrackingService] Tracking stopped ✓');
-  }
-
-  /// Connect to WebSocket for tracking
-  Future<void> _connectWebSocket(String rideId) async {
-    if (_socket != null && _currentRideId == rideId) return;
-    await _disconnectWebSocket();
-
-    _currentRideId = rideId;
-    final token = await TokenStorage.getAccess();
-
-    _socket = io.io(
-      AppConfig.wsBaseUrl,
-      io.OptionBuilder()
-          .setTransports(['websocket'])
-          .setExtraHeaders({
-            'Authorization': 'Bearer $token',
-            'ngrok-skip-browser-warning': 'true',
-          })
-          .disableAutoConnect()
-          .build(),
-    );
-
-    _socket!.connect();
-
-    _socket!.onConnect((_) {
-      _socket!.emit('join', {'ride_id': rideId});
-    });
-
-    _socket!.on('trip:location_update', (data) {
-      if (data is Map && onLocationUpdate != null) {
-        final lat = (data['latitude'] as num?)?.toDouble();
-        final lng = (data['longitude'] as num?)?.toDouble();
-        if (lat != null && lng != null) onLocationUpdate!(lat, lng);
-      }
-    });
-  }
-
-  /// Send GPS data to backend
-  void _sendGpsToBackend(Position pos) {
-    if (_socket == null || !(_socket!.connected)) {
-      debugPrint(
-        '🚗 [LocationTrackingService] sendGps SKIPPED — socket null=${_socket == null}, connected=${_socket?.connected}',
-      );
-      return;
-    }
-    debugPrint(
-      '🚗 [LocationTrackingService] Emitting trip:gps → ride=$_currentRideId, lat=${pos.latitude}, lng=${pos.longitude}',
-    );
-    _socket!.emit('trip:gps', {
-      'ride_id': _currentRideId,
-      'latitude': pos.latitude,
-      'longitude': pos.longitude,
-      'speed_kmh': pos.speed * 3.6,
-      'recorded_at': DateTime.now().toIso8601String(),
-    });
-  }
-
-  /// Disconnect WebSocket
-  Future<void> _disconnectWebSocket() async {
-    if (_currentRideId != null && _socket != null) {
-      _socket!.emit('leave', {'ride_id': _currentRideId});
-    }
-    _socket?.disconnect();
-    _socket?.dispose();
-    _socket = null;
   }
 
   /// Cleanup resources
