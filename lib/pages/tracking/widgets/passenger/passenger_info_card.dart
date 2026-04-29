@@ -1,12 +1,14 @@
-// lib/pages/tracking/widgets/passenger_info_card.dart
+// lib/pages/tracking/widgets/passenger/passenger_info_card.dart
 
 import 'package:flutter/material.dart';
 import 'package:moviroo_driver_app/l10n/app_localizations.dart';
 import 'package:moviroo_driver_app/theme/app_colors.dart';
 import 'package:moviroo_driver_app/pages/tracking/ride_model.dart';
-import 'package:moviroo_driver_app/pages/tracking/widgets/contact_buttons.dart';
-import 'package:moviroo_driver_app/pages/tracking/widgets/ride_meta_row.dart';
-import 'package:moviroo_driver_app/pages/tracking/widgets/report_issue_sheet.dart';
+import 'package:moviroo_driver_app/pages/tracking/widgets/contact/contact_buttons.dart';
+import 'passenger_avatar.dart';
+import 'star_rating.dart';
+import 'package:moviroo_driver_app/pages/tracking/widgets/meta/ride_meta_row.dart';
+import 'package:moviroo_driver_app/pages/tracking/widgets/report/report_issue_page.dart';
 
 class PassengerInfoCard extends StatelessWidget {
   final PassengerModel passenger;
@@ -50,7 +52,7 @@ class PassengerInfoCard extends StatelessWidget {
           padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
           child: Row(
             children: [
-              _PassengerAvatar(passenger: passenger),
+              PassengerAvatar(passenger: passenger),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(
@@ -65,7 +67,7 @@ class PassengerInfoCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 3),
-                    _StarRating(rating: passenger.rating),
+                    StarRating(rating: passenger.rating),
                   ],
                 ),
               ),
@@ -287,80 +289,6 @@ class PassengerInfoCard extends StatelessWidget {
             ),
           ),
         ],
-      ],
-    );
-  }
-}
-
-// ── Avatar ────────────────────────────────────────────────────────────────────
-
-class _PassengerAvatar extends StatelessWidget {
-  final PassengerModel passenger;
-  const _PassengerAvatar({required this.passenger});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 50,
-      height: 50,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: passenger.avatarUrl == null ? AppColors.purpleGradient : null,
-        image: passenger.avatarUrl != null
-            ? DecorationImage(
-                image: NetworkImage(passenger.avatarUrl!),
-                fit: BoxFit.cover,
-              )
-            : null,
-      ),
-      child: passenger.avatarUrl == null
-          ? Center(
-              child: Text(
-                passenger.avatarInitial,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
-            )
-          : null,
-    );
-  }
-}
-
-// ── Star Rating ───────────────────────────────────────────────────────────────
-
-class _StarRating extends StatelessWidget {
-  final double rating;
-  const _StarRating({required this.rating});
-
-  @override
-  Widget build(BuildContext context) {
-    final full = rating.floor();
-    final half = (rating - full) >= 0.5;
-    return Row(
-      children: [
-        ...List.generate(5, (i) {
-          final IconData ico;
-          if (i < full) {
-            ico = Icons.star_rounded;
-          } else if (i == full && half) {
-            ico = Icons.star_half_rounded;
-          } else {
-            ico = Icons.star_outline_rounded;
-          }
-          return Icon(ico, size: 14, color: const Color(0xFFFFC107));
-        }),
-        const SizedBox(width: 4),
-        Text(
-          rating.toStringAsFixed(1),
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: AppColors.subtext(context),
-          ),
-        ),
       ],
     );
   }

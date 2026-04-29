@@ -7,17 +7,7 @@ import '../services/driver_service.dart';
 import '../core/models/driver_model.dart';
 import '../core/notifications/notification_service.dart';
 
-/// Manages driver online/offline status, GPS heartbeat, and persistent time tracking.
-///
-/// Time model:
-///   • todayOnlineMs  — accumulated this calendar day, resets at midnight
-///   • allTimeOnlineMs — never resets, accumulates across all days
-///
-/// Both are persisted in SharedPreferences and survive app restarts.
-///
-/// Also observes app lifecycle: when returning to foreground while online,
-/// an immediate heartbeat is sent to prevent the backend stale-sweep from
-/// marking the driver offline during background periods.
+
 class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
   final DispatchService _dispatch = DispatchService();
   final DriverService _driver = DriverService();

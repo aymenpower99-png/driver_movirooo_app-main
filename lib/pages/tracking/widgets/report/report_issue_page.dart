@@ -1,4 +1,4 @@
-// lib/pages/tracking/report_issue_page.dart
+// lib/pages/tracking/widgets/report/report_issue_page.dart
 
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -8,22 +8,11 @@ import 'package:moviroo_driver_app/theme/app_colors.dart';
 import 'package:moviroo_driver_app/services/support_service.dart';
 import 'package:moviroo_driver_app/core/models/ticket_model.dart';
 import 'package:moviroo_driver_app/core/widgets/app_toast.dart';
-import 'photo_grid.dart';
-
-// ── Issue categories ──────────────────────────────────────────────────────────
-
-enum RideIssue {
-  noShow('Passenger No-Show', Icons.person_off_outlined),
-  wrongLocation('Wrong Pickup Location', Icons.location_off_outlined),
-  badBehavior('Passenger Behavior Problem', Icons.warning_amber_rounded),
-  safetyConcern('Safety Concern', Icons.shield_outlined),
-  appIssue('App / Technical Issue', Icons.bug_report_outlined),
-  other('Other', Icons.more_horiz_rounded);
-
-  const RideIssue(this.label, this.icon);
-  final String label;
-  final IconData icon;
-}
+import 'package:moviroo_driver_app/pages/tracking/widgets/photo/photo_grid.dart';
+import 'ride_issue.dart';
+import 'section_label.dart';
+import 'issue_tile.dart';
+import 'trip_context_card.dart';
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
@@ -157,16 +146,16 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
     bool success = false;
     try {
       await SupportService().createTicket(
-        subject:     _selected!.label,
+        subject: _selected!.label,
         description: _noteController.text.trim().isEmpty
             ? _selected!.label
             : _noteController.text.trim(),
-        category:    _issueToCategory(_selected!),
-        rideId:      widget.rideId,
+        category: _issueToCategory(_selected!),
+        rideId: widget.rideId,
         metadata: {
-          'pickupAddress':  widget.pickupAddress,
+          'pickupAddress': widget.pickupAddress,
           'dropOffAddress': widget.dropOffAddress,
-          'passengerName':  widget.passengerName,
+          'passengerName': widget.passengerName,
         },
       );
       success = true;
@@ -251,7 +240,7 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
           children: [
             // ── Trip context card ─────────────────────────────
-            _TripContextCard(
+            TripContextCard(
               passengerName: widget.passengerName,
               pickupAddress: widget.pickupAddress,
               dropOffAddress: widget.dropOffAddress,
@@ -259,10 +248,10 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
             const SizedBox(height: 20),
 
             // ── Issue categories ──────────────────────────────────
-            _SectionLabel(label: t('tracking_report_subtitle')),
+            SectionLabel(label: t('tracking_report_subtitle')),
             const SizedBox(height: 10),
             ...RideIssue.values.map(
-              (issue) => _IssueTile(
+              (issue) => IssueTile(
                 issue: issue,
                 label: _issueLabel(issue, t),
                 selected: _selected == issue,
@@ -273,7 +262,7 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
 
             // ── Notes field ───────────────────────────────────────
             const SizedBox(height: 24),
-            _SectionLabel(label: t('report_additional_details')),
+            SectionLabel(label: t('report_additional_details')),
             const SizedBox(height: 10),
             TextField(
               controller: _noteController,
@@ -315,7 +304,7 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
 
             // ── Photo grid ────────────────────────────────────────
             const SizedBox(height: 24),
-            _SectionLabel(label: t('report_attach_photos')),
+            SectionLabel(label: t('report_attach_photos')),
             const SizedBox(height: 10),
             PhotoGrid(
               photos: _photos,
@@ -362,190 +351,6 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
           ],
         ),
       ),
-    );
-  }
-}
-
-// ── Section label ─────────────────────────────────────────────────────────────
-
-class _SectionLabel extends StatelessWidget {
-  final String label;
-  const _SectionLabel({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      label,
-      style: TextStyle(
-        fontSize: 13,
-        fontWeight: FontWeight.w600,
-        color: AppColors.subtext(context),
-        letterSpacing: 0.3,
-      ),
-    );
-  }
-}
-
-// ── Issue tile ────────────────────────────────────────────────────────────────
-
-class _IssueTile extends StatelessWidget {
-  final RideIssue issue;
-  final String label;
-  final bool selected;
-  final bool isDark;
-  final VoidCallback onTap;
-
-  const _IssueTile({
-    required this.issue,
-    required this.label,
-    required this.selected,
-    required this.isDark,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 13),
-        decoration: BoxDecoration(
-          color: selected
-              ? AppColors.primaryPurple.withValues(alpha: isDark ? 0.22 : 0.07)
-              : AppColors.surface(context),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: selected
-                ? AppColors.primaryPurple
-                : AppColors.border(context),
-            width: 1.5,
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              issue.icon,
-              size: 20,
-              color: selected
-                  ? AppColors.primaryPurple
-                  : AppColors.subtext(context),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                label,
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                  color: selected
-                      ? AppColors.text(context)
-                      : AppColors.subtext(context),
-                ),
-              ),
-            ),
-            AnimatedSwitcher(
-              duration: const Duration(milliseconds: 180),
-              child: selected
-                  ? const Icon(
-                      Icons.check_circle_rounded,
-                      key: ValueKey('check'),
-                      size: 18,
-                      color: AppColors.primaryPurple,
-                    )
-                  : const SizedBox(key: ValueKey('empty'), width: 18),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Photo grid — see photo_grid.dart ─────────────────────────────────────────
-
-// ── Trip context card ─────────────────────────────────────────────────────────
-
-class _TripContextCard extends StatelessWidget {
-  final String passengerName;
-  final String pickupAddress;
-  final String dropOffAddress;
-
-  const _TripContextCard({
-    required this.passengerName,
-    required this.pickupAddress,
-    required this.dropOffAddress,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.primaryPurple.withValues(alpha: 0.07),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: AppColors.primaryPurple.withValues(alpha: 0.2),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.person_outline_rounded,
-                  size: 14, color: AppColors.primaryPurple),
-              const SizedBox(width: 6),
-              Text(
-                passengerName,
-                style: const TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.primaryPurple,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          _TripRow(
-            icon: Icons.radio_button_unchecked_rounded,
-            label: pickupAddress,
-          ),
-          const SizedBox(height: 4),
-          _TripRow(
-            icon: Icons.circle,
-            label: dropOffAddress,
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _TripRow extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  const _TripRow({required this.icon, required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(icon, size: 10, color: AppColors.primaryPurple),
-        const SizedBox(width: 6),
-        Expanded(
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 12,
-              color: AppColors.subtext(context),
-            ),
-          ),
-        ),
-      ],
     );
   }
 }

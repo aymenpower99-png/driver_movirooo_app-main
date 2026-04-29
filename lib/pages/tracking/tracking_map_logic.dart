@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:math' as math;
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:moviroo_driver_app/core/models/geo_point.dart';
@@ -14,8 +15,10 @@ class TrackingMapLogic {
 
   MapboxMap? _map;
   PointAnnotationManager? _pointMgr;
+  PointAnnotationManager? _driverMgr;
 
   PointAnnotation? _driverAnn;
+  Uint8List? _cachedCarBitmap;
 
   bool _pickupRouteDrawn = false;
   bool _dropoffRouteDrawn = false;
@@ -39,6 +42,7 @@ class TrackingMapLogic {
     if (_map == null) return;
 
     _pointMgr = await _map!.annotations.createPointAnnotationManager();
+    _driverMgr = await _map!.annotations.createPointAnnotationManager();
 
     // Always show BOTH markers from the start
     await _pointMgr!.create(
@@ -83,22 +87,26 @@ class TrackingMapLogic {
   // ── Driver symbol ─────────────────────────────────────────────────────────
 
   Future<void> updateDriverSymbol(GeoPoint pos, double bearing) async {
-    if (_pointMgr == null) return;
+    if (_driverMgr == null) return;
     final pt = Point(coordinates: Position(pos.lon, pos.lat));
+
     if (_driverAnn == null) {
-      _driverAnn = await _pointMgr!.create(
+      // First call — create marker once
+      _cachedCarBitmap ??= await MapPainters.renderCarBitmap();
+      _driverAnn = await _driverMgr!.create(
         PointAnnotationOptions(
           geometry: pt,
-          image: await MapPainters.renderCarBitmap(),
+          image: _cachedCarBitmap!,
           iconSize: 0.9,
           iconAnchor: IconAnchor.CENTER,
           iconRotate: bearing,
         ),
       );
     } else {
+      // Subsequent calls — update position & rotation in-place (no flicker)
       _driverAnn!.geometry = pt;
       _driverAnn!.iconRotate = bearing;
-      await _pointMgr!.update(_driverAnn!);
+      await _driverMgr!.update(_driverAnn!);
     }
   }
 

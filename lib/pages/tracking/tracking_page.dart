@@ -9,8 +9,8 @@ import 'ride_model.dart';
 import 'tracking_bottom_sheet.dart';
 import 'tracking_gps_controller.dart';
 import 'tracking_map_logic.dart';
-import 'widgets/status_step_indicator.dart';
-import 'widgets/tracking_map_btn.dart';
+import 'widgets/status/status_step_indicator.dart';
+import 'widgets/map/tracking_map_btn.dart';
 import 'helpers/geo_math.dart';
 
 class TrackPassengerPage extends StatefulWidget {
@@ -115,7 +115,8 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
     setState(() => _status = newStatus);
     switch (newStatus) {
       case RideStatus.onTheWay:
-        if (_driverPosition != null) _mapLogic.drawPhase1Route(_driverPosition!);
+        if (_driverPosition != null)
+          _mapLogic.drawPhase1Route(_driverPosition!);
         break;
       case RideStatus.arrived:
         if (_driverPosition != null) {
@@ -154,8 +155,9 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
         children: [
           Positioned.fill(
             child: MapWidget(
-              styleUri:
-                  isDark ? MapboxStyles.DARK : MapboxStyles.MAPBOX_STREETS,
+              styleUri: isDark
+                  ? MapboxStyles.DARK
+                  : MapboxStyles.MAPBOX_STREETS,
               cameraOptions: CameraOptions(
                 center: Point(
                   coordinates: Position(
@@ -180,8 +182,10 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
                   icon: Icons.my_location_rounded,
                   onTap: () {
                     if (_driverPosition != null) {
-                      _mapLogic.animateToDriver(_driverPosition!,
-                          bearing: _driverBearing);
+                      _mapLogic.animateToDriver(
+                        _driverPosition!,
+                        bearing: _driverBearing,
+                      );
                     }
                   },
                 ),

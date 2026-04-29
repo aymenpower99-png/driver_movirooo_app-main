@@ -5,14 +5,14 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:moviroo_driver_app/l10n/app_localizations.dart';
 import 'package:moviroo_driver_app/theme/app_colors.dart';
 import 'package:moviroo_driver_app/pages/tracking/ride_model.dart';
-import 'package:moviroo_driver_app/pages/tracking/widgets/passenger_info_card.dart';
-import 'package:moviroo_driver_app/pages/tracking/widgets/confirm_action_modal.dart';
+import 'package:moviroo_driver_app/pages/tracking/widgets/passenger/passenger_info_card.dart';
+import 'package:moviroo_driver_app/pages/tracking/widgets/confirm/confirm_action_modal.dart';
 import 'package:moviroo_driver_app/pages/tracking/completion/ride_completion_page.dart';
 import 'package:moviroo_driver_app/pages/tracking/completion/ride_cancellation_page.dart';
 import 'package:provider/provider.dart';
 import 'package:moviroo_driver_app/services/trip_service.dart';
 import 'package:moviroo_driver_app/core/widgets/app_toast.dart';
-import 'package:moviroo_driver_app/pages/tracking/widgets/cancel_reason_sheet.dart';
+import 'package:moviroo_driver_app/pages/tracking/widgets/cancel/cancel_reason_sheet.dart';
 import 'package:moviroo_driver_app/providers/ride_provider.dart';
 import 'package:moviroo_driver_app/providers/online_provider.dart';
 
