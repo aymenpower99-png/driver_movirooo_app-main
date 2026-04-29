@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
-import '../core/api/api_client.dart';
-import '../core/api/endpoints.dart';
-import '../core/models/user_model.dart';
-import '../core/storage/token_storage.dart';
+import '../../core/api/api_client.dart';
+import '../../core/api/endpoints.dart';
+import '../../core/models/user_model.dart';
+import '../../core/storage/token_storage.dart';
 
 /// All HTTP calls related to authentication.
 class AuthService {
@@ -52,9 +52,9 @@ class AuthService {
   }) async {
     final data = <String, dynamic>{};
     if (firstName != null) data['firstName'] = firstName;
-    if (lastName  != null) data['lastName']  = lastName;
-    if (email     != null) data['email']     = email;
-    if (phone     != null) data['phone']     = phone;
+    if (lastName != null) data['lastName'] = lastName;
+    if (email != null) data['email'] = email;
+    if (phone != null) data['phone'] = phone;
 
     final res = await _dio.patch(Endpoints.me, data: data);
     return UserModel.fromJson(res.data as Map<String, dynamic>);

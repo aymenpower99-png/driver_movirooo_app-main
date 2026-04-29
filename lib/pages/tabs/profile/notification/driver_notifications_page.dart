@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../../l10n/app_localizations.dart';
-import '../../../../../services/driver_service.dart';
+import '../../../../../services/driver/driver_service.dart';
 import '../../../../../theme/app_colors.dart';
 import '../../../../../theme/app_text_styles.dart';
 

@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import '../../core/models/ticket_model.dart';
 import '../../core/widgets/app_toast.dart';
 import '../../providers/online_provider.dart';
-import '../../services/support_service.dart';
+import '../../services/support/support_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 
@@ -85,10 +85,16 @@ class _WorkAreaPageState extends State<WorkAreaPage> {
                       Container(
                         padding: const EdgeInsets.all(10),
                         decoration: BoxDecoration(
-                          color: AppColors.primaryPurple.withValues(alpha: 0.12),
+                          color: AppColors.primaryPurple.withValues(
+                            alpha: 0.12,
+                          ),
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: Icon(Icons.location_on_rounded, color: AppColors.primaryPurple, size: 24),
+                        child: Icon(
+                          Icons.location_on_rounded,
+                          color: AppColors.primaryPurple,
+                          size: 24,
+                        ),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -97,7 +103,10 @@ class _WorkAreaPageState extends State<WorkAreaPage> {
                           children: [
                             Text(
                               'Current Area',
-                              style: TextStyle(color: AppColors.subtext(context), fontSize: 13),
+                              style: TextStyle(
+                                color: AppColors.subtext(context),
+                                fontSize: 13,
+                              ),
                             ),
                             const SizedBox(height: 4),
                             Text(
@@ -117,9 +126,19 @@ class _WorkAreaPageState extends State<WorkAreaPage> {
                     const SizedBox(height: 16),
                     Divider(color: AppColors.border(context)),
                     const SizedBox(height: 12),
-                    _areaDetail(context, Icons.flag_outlined, 'Country', area.country),
+                    _areaDetail(
+                      context,
+                      Icons.flag_outlined,
+                      'Country',
+                      area.country,
+                    ),
                     const SizedBox(height: 8),
-                    _areaDetail(context, Icons.location_city_outlined, 'City', area.ville),
+                    _areaDetail(
+                      context,
+                      Icons.location_city_outlined,
+                      'City',
+                      area.ville,
+                    ),
                   ],
                 ],
               ),
@@ -130,20 +149,30 @@ class _WorkAreaPageState extends State<WorkAreaPage> {
             // ── Request Change Section ──
             Text(
               'Request Area Change',
-              style: AppTextStyles.settingsItem(context).copyWith(fontWeight: FontWeight.w600, fontSize: 16),
+              style: AppTextStyles.settingsItem(
+                context,
+              ).copyWith(fontWeight: FontWeight.w600, fontSize: 16),
             ),
             const SizedBox(height: 8),
             Text(
               'Submit a request to change your assigned work area. An admin will review and process your request.',
-              style: TextStyle(color: AppColors.subtext(context), fontSize: 13, height: 1.5),
+              style: TextStyle(
+                color: AppColors.subtext(context),
+                fontSize: 13,
+                height: 1.5,
+              ),
             ),
             const SizedBox(height: 16),
             TextField(
               controller: _reasonCtrl,
               maxLines: 4,
               decoration: InputDecoration(
-                hintText: 'Describe the area you want and the reason for change...',
-                hintStyle: TextStyle(color: AppColors.subtext(context), fontSize: 14),
+                hintText:
+                    'Describe the area you want and the reason for change...',
+                hintStyle: TextStyle(
+                  color: AppColors.subtext(context),
+                  fontSize: 14,
+                ),
                 filled: true,
                 fillColor: AppColors.surface(context),
                 contentPadding: const EdgeInsets.all(16),
@@ -157,7 +186,10 @@ class _WorkAreaPageState extends State<WorkAreaPage> {
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: AppColors.primaryPurple, width: 1.5),
+                  borderSide: const BorderSide(
+                    color: AppColors.primaryPurple,
+                    width: 1.5,
+                  ),
                 ),
               ),
               style: TextStyle(color: AppColors.text(context), fontSize: 14),
@@ -170,20 +202,30 @@ class _WorkAreaPageState extends State<WorkAreaPage> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryPurple,
                   foregroundColor: Colors.white,
-                  disabledBackgroundColor: AppColors.primaryPurple.withValues(alpha: 0.5),
+                  disabledBackgroundColor: AppColors.primaryPurple.withValues(
+                    alpha: 0.5,
+                  ),
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   elevation: 0,
                 ),
                 child: _sending
                     ? const SizedBox(
                         width: 22,
                         height: 22,
-                        child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
                       )
                     : const Text(
                         'Submit Request',
-                        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 15,
+                        ),
                       ),
               ),
             ),
@@ -194,14 +236,29 @@ class _WorkAreaPageState extends State<WorkAreaPage> {
     );
   }
 
-  Widget _areaDetail(BuildContext context, IconData icon, String label, String value) {
+  Widget _areaDetail(
+    BuildContext context,
+    IconData icon,
+    String label,
+    String value,
+  ) {
     return Row(
       children: [
         Icon(icon, color: AppColors.subtext(context), size: 18),
         const SizedBox(width: 10),
-        Text(label, style: TextStyle(color: AppColors.subtext(context), fontSize: 13)),
+        Text(
+          label,
+          style: TextStyle(color: AppColors.subtext(context), fontSize: 13),
+        ),
         const Spacer(),
-        Text(value, style: TextStyle(color: AppColors.text(context), fontSize: 14, fontWeight: FontWeight.w500)),
+        Text(
+          value,
+          style: TextStyle(
+            color: AppColors.text(context),
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
       ],
     );
   }
@@ -216,10 +273,18 @@ class _WorkAreaPageState extends State<WorkAreaPage> {
             color: AppColors.surface(context),
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 6, offset: const Offset(0, 2)),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
             ],
           ),
-          child: Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.text(context), size: 18),
+          child: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.text(context),
+            size: 18,
+          ),
         ),
       ),
     );

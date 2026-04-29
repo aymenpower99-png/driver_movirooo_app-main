@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
-import '../core/api/api_client.dart';
-import '../core/api/endpoints.dart';
+import '../../core/api/api_client.dart';
+import '../../core/api/endpoints.dart';
 
 /// HTTP calls for ride lifecycle transitions (driver controls).
 class TripService {
@@ -43,14 +43,17 @@ class TripService {
     String? dropOffAddress,
     String? passengerName,
   }) async {
-    await _dio.post(Endpoints.tickets, data: {
-      'rideId': rideId,
-      'issueType': issueType,
-      'description': description,
-      ?'pickupAddress':  pickupAddress,
-      ?'dropOffAddress': dropOffAddress,
-      ?'passengerName':  passengerName,
-    });
+    await _dio.post(
+      Endpoints.tickets,
+      data: {
+        'rideId': rideId,
+        'issueType': issueType,
+        'description': description,
+        ?'pickupAddress': pickupAddress,
+        ?'dropOffAddress': dropOffAddress,
+        ?'passengerName': passengerName,
+      },
+    );
   }
 
   /// Poll trip status (coordinates + lifecycle fields)

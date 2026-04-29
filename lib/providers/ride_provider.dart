@@ -3,11 +3,17 @@ import 'package:flutter/foundation.dart';
 import '../core/models/offer_model.dart';
 import '../core/models/ride_model.dart';
 import '../core/notifications/notification_service.dart';
-import '../services/dispatch_service.dart';
+import '../services/dispatch/dispatch_service.dart';
+import 'online_provider.dart';
 
 /// Manages pending offers and assigned/completed rides for the driver.
 class RideProvider extends ChangeNotifier {
   final DispatchService _dispatch = DispatchService();
+  OnlineProvider? _onlineProvider;
+
+  void setOnlineProvider(OnlineProvider? provider) {
+    _onlineProvider = provider;
+  }
 
   List<OfferModel> _pendingOffers = [];
   List<RideModel> _allRides = [];
@@ -181,6 +187,10 @@ class RideProvider extends ChangeNotifier {
     notifyListeners();
     try {
       _allRides = await _dispatch.getDriverRides();
+
+      // Update online provider with the active ride if any
+      final activeRide = upcomingRides.isNotEmpty ? upcomingRides.first : null;
+      _onlineProvider?.setActiveRide(activeRide?.id);
     } on Exception catch (e) {
       _error = 'Could not load rides. $e';
     } finally {

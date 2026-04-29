@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../l10n/app_localizations.dart';
-import '../../../../services/help_center_service.dart';
+import '../../../../services/help/help_center_service.dart';
 import 'article_detail_page.dart';
 import 'models/help_article.dart';
 import 'models/help_category.dart';
@@ -51,7 +51,10 @@ class _HelpCenterPageState extends State<HelpCenterPage> {
   }
 
   Future<void> _loadArticles() async {
-    setState(() { _loading = true; _error = null; });
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
     try {
       final lang = Localizations.localeOf(context).languageCode;
       final articles = await _service.getArticles(lang: lang);
@@ -72,18 +75,27 @@ class _HelpCenterPageState extends State<HelpCenterPage> {
         _loading = false;
       });
     } catch (e) {
-      setState(() { _error = e.toString(); _loading = false; });
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
     }
   }
 
   IconData _categoryIcon(String key) {
     switch (key) {
-      case 'account':  return Icons.person_outline_rounded;
-      case 'payments': return Icons.credit_card_outlined;
-      case 'trips':    return Icons.route_outlined;
-      case 'safety':   return Icons.shield_outlined;
-      case 'app':      return Icons.settings_outlined;
-      default:         return Icons.help_outline_rounded;
+      case 'account':
+        return Icons.person_outline_rounded;
+      case 'payments':
+        return Icons.credit_card_outlined;
+      case 'trips':
+        return Icons.route_outlined;
+      case 'safety':
+        return Icons.shield_outlined;
+      case 'app':
+        return Icons.settings_outlined;
+      default:
+        return Icons.help_outline_rounded;
     }
   }
 
@@ -159,95 +171,112 @@ class _HelpCenterPageState extends State<HelpCenterPage> {
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : _error != null
-              ? Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.error_outline, size: 40, color: AppColors.subtext(context)),
-                      const SizedBox(height: 12),
-                      Text('Failed to load articles', style: AppTextStyles.settingsItem(context)),
-                      const SizedBox(height: 12),
-                      ElevatedButton(onPressed: _loadArticles, child: const Text('Retry')),
-                    ],
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    size: 40,
+                    color: AppColors.subtext(context),
                   ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _loadArticles,
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 24),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Failed to load articles',
+                    style: AppTextStyles.settingsItem(context),
+                  ),
+                  const SizedBox(height: 12),
+                  ElevatedButton(
+                    onPressed: _loadArticles,
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            )
+          : RefreshIndicator(
+              onRefresh: _loadArticles,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 24),
 
-                        // ── SEARCH ───────────────────────────────────────────────
-                        SectionHeader(label: t('help_section_search')),
-                        const SizedBox(height: 12),
+                    // ── SEARCH ───────────────────────────────────────────────
+                    SectionHeader(label: t('help_section_search')),
+                    const SizedBox(height: 12),
 
-                        HelpSearchBar(
-                          controller: _searchController,
-                          onChanged: (v) => setState(() => _query = v),
-                        ),
-
-                        const SizedBox(height: 28),
-
-                        // ── CATEGORIES ────────────────────────────────────────────
-                        if (!_isSearching && _categories.isNotEmpty) ...[
-                          SectionHeader(label: t('help_section_categories')),
-                          const SizedBox(height: 12),
-
-                          CategoryChipRow(
-                            categories: _categories,
-                            selectedId: _selectedCategoryId,
-                            onSelected: (id) => setState(() => _selectedCategoryId = id),
-                          ),
-
-                          const SizedBox(height: 28),
-                        ],
-
-                        // ── ARTICLES ──────────────────────────────────────────────
-                        SectionHeader(
-                          label: _isSearching
-                              ? '${t('help_results_label')} (${articles.length})'
-                              : _selectedCategoryId == null
-                              ? t('help_section_all_articles')
-                              : _categories
-                                    .firstWhere(
-                                      (c) => c.id == _selectedCategoryId,
-                                      orElse: () => HelpCategory(id: '', title: '', icon: Icons.help),
-                                    )
-                                    .title
-                                    .toUpperCase(),
-                        ),
-                        const SizedBox(height: 12),
-
-                        if (articles.isEmpty)
-                          _EmptyState(query: _query)
-                        else
-                          ListView.separated(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: articles.length,
-                            separatorBuilder: (_, _) => const SizedBox(height: 10),
-                            itemBuilder: (_, i) => ArticleListTile(
-                              article: articles[i],
-                              onTap: () => _openArticle(articles[i]),
-                            ),
-                          ),
-
-                        const SizedBox(height: 28),
-
-                        // ── CONTACT SUPPORT BANNER ────────────────────────────────
-                        ContactSupportBanner(
-                          onTap: widget.onContactSupport ?? () => Navigator.pop(context),
-                        ),
-
-                        const SizedBox(height: 40),
-                      ],
+                    HelpSearchBar(
+                      controller: _searchController,
+                      onChanged: (v) => setState(() => _query = v),
                     ),
-                  ),
+
+                    const SizedBox(height: 28),
+
+                    // ── CATEGORIES ────────────────────────────────────────────
+                    if (!_isSearching && _categories.isNotEmpty) ...[
+                      SectionHeader(label: t('help_section_categories')),
+                      const SizedBox(height: 12),
+
+                      CategoryChipRow(
+                        categories: _categories,
+                        selectedId: _selectedCategoryId,
+                        onSelected: (id) =>
+                            setState(() => _selectedCategoryId = id),
+                      ),
+
+                      const SizedBox(height: 28),
+                    ],
+
+                    // ── ARTICLES ──────────────────────────────────────────────
+                    SectionHeader(
+                      label: _isSearching
+                          ? '${t('help_results_label')} (${articles.length})'
+                          : _selectedCategoryId == null
+                          ? t('help_section_all_articles')
+                          : _categories
+                                .firstWhere(
+                                  (c) => c.id == _selectedCategoryId,
+                                  orElse: () => HelpCategory(
+                                    id: '',
+                                    title: '',
+                                    icon: Icons.help,
+                                  ),
+                                )
+                                .title
+                                .toUpperCase(),
+                    ),
+                    const SizedBox(height: 12),
+
+                    if (articles.isEmpty)
+                      _EmptyState(query: _query)
+                    else
+                      ListView.separated(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        itemCount: articles.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 10),
+                        itemBuilder: (_, i) => ArticleListTile(
+                          article: articles[i],
+                          onTap: () => _openArticle(articles[i]),
+                        ),
+                      ),
+
+                    const SizedBox(height: 28),
+
+                    // ── CONTACT SUPPORT BANNER ────────────────────────────────
+                    ContactSupportBanner(
+                      onTap:
+                          widget.onContactSupport ??
+                          () => Navigator.pop(context),
+                    ),
+
+                    const SizedBox(height: 40),
+                  ],
                 ),
+              ),
+            ),
     );
   }
 }

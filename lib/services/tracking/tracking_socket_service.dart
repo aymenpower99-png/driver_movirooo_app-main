@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
-import '../core/config/app_config.dart';
-import '../core/storage/token_storage.dart';
+import '../../core/config/app_config.dart';
+import '../../core/storage/token_storage.dart';
 
 /// Manages WebSocket connection to backend /trips namespace.
 /// Driver joins ride room, streams GPS, and receives location_update events.

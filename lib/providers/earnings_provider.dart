@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/models/earnings_model.dart';
-import '../services/earnings_service.dart';
+import '../services/earnings/earnings_service.dart';
 
 class EarningsProvider extends ChangeNotifier {
   final _service = EarningsService();
@@ -25,8 +25,18 @@ class EarningsProvider extends ChangeNotifier {
     final parts = _selectedMonth.split('-');
     if (parts.length != 2) return _selectedMonth;
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     final m = int.tryParse(parts[1]) ?? 1;
     return '${months[m - 1]} ${parts[0]}';

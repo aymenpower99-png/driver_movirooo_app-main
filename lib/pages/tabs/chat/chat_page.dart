@@ -4,7 +4,7 @@ import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../providers/auth_provider.dart';
-import '../../../services/chat_service.dart';
+import '../../../services/chat/chat_service.dart';
 import 'chat_message.dart';
 import 'chat_input.dart';
 import 'translation_banner.dart';
@@ -203,9 +203,7 @@ class _ChatPageState extends State<ChatPage> {
               onToggle: (v) => setState(() => _autoTranslate = v),
             ),
             if (_loading)
-              const Expanded(
-                child: Center(child: CircularProgressIndicator()),
-              )
+              const Expanded(child: Center(child: CircularProgressIndicator()))
             else
               Expanded(
                 child: _messages.isEmpty
@@ -249,7 +247,11 @@ class _ChatTopBar extends StatelessWidget {
   const _ChatTopBar({required this.passengerName});
 
   String get _initials {
-    final parts = passengerName.trim().split(' ').where((p) => p.isNotEmpty).toList();
+    final parts = passengerName
+        .trim()
+        .split(' ')
+        .where((p) => p.isNotEmpty)
+        .toList();
     if (parts.isEmpty) return '?';
     if (parts.length == 1) return parts[0][0].toUpperCase();
     return '${parts.first[0]}${parts.last[0]}'.toUpperCase();

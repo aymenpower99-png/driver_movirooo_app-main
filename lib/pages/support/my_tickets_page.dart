@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../core/models/ticket_model.dart';
 import '../../routing/router.dart';
-import '../../services/support_service.dart';
+import '../../services/support/support_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 
@@ -107,8 +107,14 @@ class _MyTicketsPageState extends State<MyTicketsPage>
               ),
               labelColor: Colors.white,
               unselectedLabelColor: AppColors.subtext(context),
-              labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-              unselectedLabelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+              labelStyle: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
+              ),
               indicatorSize: TabBarIndicatorSize.tab,
               dividerColor: Colors.transparent,
               tabs: const [
@@ -122,30 +128,49 @@ class _MyTicketsPageState extends State<MyTicketsPage>
       body: TabBarView(
         controller: _tabCtrl,
         children: [
-          _buildTab(_reportIssues, emptyIcon: Icons.report_off_outlined, emptyLabel: 'No report issues'),
-          _buildTab(_otherTickets, emptyIcon: Icons.confirmation_num_outlined, emptyLabel: 'No tickets'),
+          _buildTab(
+            _reportIssues,
+            emptyIcon: Icons.report_off_outlined,
+            emptyLabel: 'No report issues',
+          ),
+          _buildTab(
+            _otherTickets,
+            emptyIcon: Icons.confirmation_num_outlined,
+            emptyLabel: 'No tickets',
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildTab(List<TicketModel> tickets,
-      {required IconData emptyIcon, required String emptyLabel}) {
+  Widget _buildTab(
+    List<TicketModel> tickets, {
+    required IconData emptyIcon,
+    required String emptyLabel,
+  }) {
     if (_loading && _tickets.isEmpty) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primaryPurple));
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primaryPurple),
+      );
     }
     if (_error != null && _tickets.isEmpty) {
       return Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline, size: 48, color: AppColors.subtext(context)),
+            Icon(
+              Icons.error_outline,
+              size: 48,
+              color: AppColors.subtext(context),
+            ),
             const SizedBox(height: 12),
             Text(_error!, style: TextStyle(color: AppColors.subtext(context))),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: _refresh,
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryPurple),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryPurple,
+              ),
               child: const Text('Retry', style: TextStyle(color: Colors.white)),
             ),
           ],
@@ -159,7 +184,10 @@ class _MyTicketsPageState extends State<MyTicketsPage>
           children: [
             Icon(emptyIcon, size: 56, color: AppColors.subtext(context)),
             const SizedBox(height: 12),
-            Text(emptyLabel, style: TextStyle(color: AppColors.subtext(context), fontSize: 16)),
+            Text(
+              emptyLabel,
+              style: TextStyle(color: AppColors.subtext(context), fontSize: 16),
+            ),
           ],
         ),
       );
@@ -183,7 +211,11 @@ class _MyTicketsPageState extends State<MyTicketsPage>
             return _TicketCard(
               ticket: tickets[i],
               onTap: () async {
-                await AppRouter.push(context, AppRouter.ticketDetail, args: tickets[i].id);
+                await AppRouter.push(
+                  context,
+                  AppRouter.ticketDetail,
+                  args: tickets[i].id,
+                );
                 _refresh();
               },
             );
@@ -203,10 +235,18 @@ class _MyTicketsPageState extends State<MyTicketsPage>
             color: AppColors.surface(context),
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 6, offset: const Offset(0, 2)),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
             ],
           ),
-          child: Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.text(context), size: 18),
+          child: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.text(context),
+            size: 18,
+          ),
         ),
       ),
     );
@@ -241,7 +281,9 @@ class _TicketCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     ticket.subject,
-                    style: AppTextStyles.settingsItem(context).copyWith(fontWeight: FontWeight.w600),
+                    style: AppTextStyles.settingsItem(
+                      context,
+                    ).copyWith(fontWeight: FontWeight.w600),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -257,16 +299,30 @@ class _TicketCard extends StatelessWidget {
               ticket.lastMessagePreview,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(color: AppColors.subtext(context), fontSize: 13, height: 1.4),
+              style: TextStyle(
+                color: AppColors.subtext(context),
+                fontSize: 13,
+                height: 1.4,
+              ),
             ),
             const SizedBox(height: 10),
 
             // ── Timestamp ──
             Row(
               children: [
-                Icon(Icons.access_time, size: 13, color: AppColors.subtext(context)),
+                Icon(
+                  Icons.access_time,
+                  size: 13,
+                  color: AppColors.subtext(context),
+                ),
                 const SizedBox(width: 4),
-                Text(ts, style: TextStyle(color: AppColors.subtext(context), fontSize: 11)),
+                Text(
+                  ts,
+                  style: TextStyle(
+                    color: AppColors.subtext(context),
+                    fontSize: 11,
+                  ),
+                ),
               ],
             ),
           ],
@@ -292,7 +348,11 @@ class _StatusBadge extends StatelessWidget {
       ),
       child: Text(
         status.label,
-        style: TextStyle(color: status.color, fontSize: 11, fontWeight: FontWeight.w600),
+        style: TextStyle(
+          color: status.color,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

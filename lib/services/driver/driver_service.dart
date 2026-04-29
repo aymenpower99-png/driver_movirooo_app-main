@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
-import '../core/api/api_client.dart';
-import '../core/api/endpoints.dart';
-import '../core/models/driver_model.dart';
+import '../../core/api/api_client.dart';
+import '../../core/api/endpoints.dart';
+import '../../core/models/driver_model.dart';
 
 /// HTTP calls related to the driver's own profile and availability.
 class DriverService {
@@ -13,10 +13,7 @@ class DriverService {
   }
 
   Future<void> setAvailability(String status) async {
-    await _dio.patch(
-      Endpoints.driverAvailability,
-      data: {'status': status},
-    );
+    await _dio.patch(Endpoints.driverAvailability, data: {'status': status});
   }
 
   /// Parse a dynamic value to bool safely
@@ -37,7 +34,7 @@ class DriverService {
     final res = await _dio.get(Endpoints.notificationPrefs);
     final data = res.data as Map<String, dynamic>;
     return {
-      'pushEnabled':  _parseBool(data['pushEnabled'], defaultValue: true),
+      'pushEnabled': _parseBool(data['pushEnabled'], defaultValue: true),
       'emailEnabled': _parseBool(data['emailEnabled'], defaultValue: true),
     };
   }
@@ -48,14 +45,23 @@ class DriverService {
     bool? pushEnabled,
     bool? emailEnabled,
   }) async {
-    final res = await _dio.patch(Endpoints.notificationPrefs, data: {
-      if (pushEnabled  != null) 'pushEnabled':  pushEnabled,
-      if (emailEnabled != null) 'emailEnabled': emailEnabled,
-    });
+    final res = await _dio.patch(
+      Endpoints.notificationPrefs,
+      data: {
+        if (pushEnabled != null) 'pushEnabled': pushEnabled,
+        if (emailEnabled != null) 'emailEnabled': emailEnabled,
+      },
+    );
     final data = res.data as Map<String, dynamic>;
     return {
-      'pushEnabled':  _parseBool(data['pushEnabled'], defaultValue: pushEnabled ?? true),
-      'emailEnabled': _parseBool(data['emailEnabled'], defaultValue: emailEnabled ?? true),
+      'pushEnabled': _parseBool(
+        data['pushEnabled'],
+        defaultValue: pushEnabled ?? true,
+      ),
+      'emailEnabled': _parseBool(
+        data['emailEnabled'],
+        defaultValue: emailEnabled ?? true,
+      ),
     };
   }
 

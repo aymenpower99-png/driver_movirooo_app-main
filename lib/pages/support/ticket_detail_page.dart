@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import '../../core/models/ticket_model.dart';
 import '../../core/widgets/app_toast.dart';
 import '../../providers/auth_provider.dart';
-import '../../services/support_service.dart';
+import '../../services/support/support_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
 
@@ -96,15 +96,18 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
       backgroundColor: AppColors.bg(context),
       appBar: _appBar(context),
       body: _loading
-          ? const Center(child: CircularProgressIndicator(color: AppColors.primaryPurple))
+          ? const Center(
+              child: CircularProgressIndicator(color: AppColors.primaryPurple),
+            )
           : _error != null
-              ? _errorWidget()
-              : Column(
-                  children: [
-                    Expanded(child: _messageList(context)),
-                    if (_ticket!.status != TicketStatus.resolved) _replyBar(context),
-                  ],
-                ),
+          ? _errorWidget()
+          : Column(
+              children: [
+                Expanded(child: _messageList(context)),
+                if (_ticket!.status != TicketStatus.resolved)
+                  _replyBar(context),
+              ],
+            ),
     );
   }
 
@@ -118,7 +121,9 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
               children: [
                 Text(
                   _ticket!.subject,
-                  style: AppTextStyles.pageTitle(context).copyWith(fontSize: 16),
+                  style: AppTextStyles.pageTitle(
+                    context,
+                  ).copyWith(fontSize: 16),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -137,13 +142,19 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.error_outline, size: 48, color: AppColors.subtext(context)),
+          Icon(
+            Icons.error_outline,
+            size: 48,
+            color: AppColors.subtext(context),
+          ),
           const SizedBox(height: 12),
           Text(_error!, style: TextStyle(color: AppColors.subtext(context))),
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: _loadTicket,
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryPurple),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primaryPurple,
+            ),
             child: const Text('Retry', style: TextStyle(color: Colors.white)),
           ),
         ],
@@ -162,7 +173,10 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
         controller: _scrollCtrl,
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         children: [
-          _DescriptionBubble(description: _ticket!.description, createdAt: _ticket!.createdAt),
+          _DescriptionBubble(
+            description: _ticket!.description,
+            createdAt: _ticket!.createdAt,
+          ),
         ],
       );
     }
@@ -204,10 +218,16 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
               onSubmitted: (_) => _sendReply(),
               decoration: InputDecoration(
                 hintText: 'Type your reply...',
-                hintStyle: TextStyle(color: AppColors.subtext(context), fontSize: 14),
+                hintStyle: TextStyle(
+                  color: AppColors.subtext(context),
+                  fontSize: 14,
+                ),
                 filled: true,
                 fillColor: AppColors.bg(context),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 10,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(24),
                   borderSide: BorderSide.none,
@@ -222,12 +242,18 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
                   child: SizedBox(
                     width: 22,
                     height: 22,
-                    child: CircularProgressIndicator(color: AppColors.primaryPurple, strokeWidth: 2),
+                    child: CircularProgressIndicator(
+                      color: AppColors.primaryPurple,
+                      strokeWidth: 2,
+                    ),
                   ),
                 )
               : IconButton(
                   onPressed: _sendReply,
-                  icon: const Icon(Icons.send_rounded, color: AppColors.primaryPurple),
+                  icon: const Icon(
+                    Icons.send_rounded,
+                    color: AppColors.primaryPurple,
+                  ),
                 ),
         ],
       ),
@@ -244,10 +270,18 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
             color: AppColors.surface(context),
             borderRadius: BorderRadius.circular(12),
             boxShadow: [
-              BoxShadow(color: Colors.black.withValues(alpha: 0.06), blurRadius: 6, offset: const Offset(0, 2)),
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
             ],
           ),
-          child: Icon(Icons.arrow_back_ios_new_rounded, color: AppColors.text(context), size: 18),
+          child: Icon(
+            Icons.arrow_back_ios_new_rounded,
+            color: AppColors.text(context),
+            size: 18,
+          ),
         ),
       ),
     );
@@ -267,14 +301,20 @@ class _MessageBubble extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
-        mainAxisAlignment: isMe ? MainAxisAlignment.end : MainAxisAlignment.start,
+        mainAxisAlignment: isMe
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           if (!isMe) ...[
             CircleAvatar(
               radius: 14,
               backgroundColor: AppColors.primaryPurple.withValues(alpha: 0.15),
-              child: const Icon(Icons.support_agent, size: 16, color: AppColors.primaryPurple),
+              child: const Icon(
+                Icons.support_agent,
+                size: 16,
+                color: AppColors.primaryPurple,
+              ),
             ),
             const SizedBox(width: 8),
           ],
@@ -284,16 +324,23 @@ class _MessageBubble extends StatelessWidget {
             ),
             child: IntrinsicWidth(
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
-                  color: isMe ? AppColors.primaryPurple : AppColors.surface(context),
+                  color: isMe
+                      ? AppColors.primaryPurple
+                      : AppColors.surface(context),
                   borderRadius: BorderRadius.only(
                     topLeft: const Radius.circular(16),
                     topRight: const Radius.circular(16),
                     bottomLeft: Radius.circular(isMe ? 16 : 4),
                     bottomRight: Radius.circular(isMe ? 4 : 16),
                   ),
-                  border: isMe ? null : Border.all(color: AppColors.border(context)),
+                  border: isMe
+                      ? null
+                      : Border.all(color: AppColors.border(context)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -316,7 +363,9 @@ class _MessageBubble extends StatelessWidget {
                         Text(
                           time,
                           style: TextStyle(
-                            color: isMe ? Colors.white70 : AppColors.subtext(context),
+                            color: isMe
+                                ? Colors.white70
+                                : AppColors.subtext(context),
                             fontSize: 10,
                           ),
                         ),
@@ -338,7 +387,10 @@ class _MessageBubble extends StatelessWidget {
 class _DescriptionBubble extends StatelessWidget {
   final String description;
   final DateTime createdAt;
-  const _DescriptionBubble({required this.description, required this.createdAt});
+  const _DescriptionBubble({
+    required this.description,
+    required this.createdAt,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -353,11 +405,28 @@ class _DescriptionBubble extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Initial Message', style: TextStyle(color: AppColors.subtext(context), fontSize: 12, fontWeight: FontWeight.w600)),
+          Text(
+            'Initial Message',
+            style: TextStyle(
+              color: AppColors.subtext(context),
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const SizedBox(height: 8),
-          Text(description, style: TextStyle(color: AppColors.text(context), fontSize: 14, height: 1.5)),
+          Text(
+            description,
+            style: TextStyle(
+              color: AppColors.text(context),
+              fontSize: 14,
+              height: 1.5,
+            ),
+          ),
           const SizedBox(height: 8),
-          Text(time, style: TextStyle(color: AppColors.subtext(context), fontSize: 11)),
+          Text(
+            time,
+            style: TextStyle(color: AppColors.subtext(context), fontSize: 11),
+          ),
         ],
       ),
     );
@@ -380,7 +449,11 @@ class _StatusBadge extends StatelessWidget {
       ),
       child: Text(
         status.label,
-        style: TextStyle(color: status.color, fontSize: 10, fontWeight: FontWeight.w600),
+        style: TextStyle(
+          color: status.color,
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

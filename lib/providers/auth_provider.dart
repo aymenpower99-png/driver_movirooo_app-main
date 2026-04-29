@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import '../core/models/user_model.dart';
 import '../core/storage/token_storage.dart';
-import '../services/auth_service.dart';
+import '../services/auth/auth_service.dart';
 
 enum AuthStatus { unknown, authenticated, unauthenticated }
 
@@ -10,19 +10,19 @@ enum AuthStatus { unknown, authenticated, unauthenticated }
 class AuthProvider extends ChangeNotifier {
   final AuthService _auth = AuthService();
 
-  AuthStatus _status    = AuthStatus.unknown;
+  AuthStatus _status = AuthStatus.unknown;
   UserModel? _user;
-  String?    _error;
-  bool       _loading   = false;
-  String?    _preAuthToken; // held between login step 1 & OTP step 2
+  String? _error;
+  bool _loading = false;
+  String? _preAuthToken; // held between login step 1 & OTP step 2
 
   // ── Getters ───────────────────────────────────────────────────────────────
-  AuthStatus get status       => _status;
-  UserModel? get user         => _user;
-  String?    get error        => _error;
-  bool       get loading      => _loading;
-  bool       get isAuth       => _status == AuthStatus.authenticated;
-  String?    get preAuthToken => _preAuthToken;
+  AuthStatus get status => _status;
+  UserModel? get user => _user;
+  String? get error => _error;
+  bool get loading => _loading;
+  bool get isAuth => _status == AuthStatus.authenticated;
+  String? get preAuthToken => _preAuthToken;
 
   // ── Init — check persisted session on app start ───────────────────────────
   Future<void> init() async {
@@ -30,16 +30,19 @@ class AuthProvider extends ChangeNotifier {
       // Instant auth from cached user — no network wait, no splash delay
       final cached = await TokenStorage.getUser();
       if (cached != null) {
-        _user   = UserModel.fromJsonString(cached);
+        _user = UserModel.fromJsonString(cached);
         _status = AuthStatus.authenticated;
         notifyListeners(); // splash disappears immediately
 
         // Refresh user from backend silently in background
-        _auth.getMe().then((freshUser) {
-          _user = freshUser;
-          TokenStorage.saveUser(freshUser.toJsonString());
-          notifyListeners();
-        }).catchError((_) {}); // ignore — cached user is good enough
+        _auth
+            .getMe()
+            .then((freshUser) {
+              _user = freshUser;
+              TokenStorage.saveUser(freshUser.toJsonString());
+              notifyListeners();
+            })
+            .catchError((_) {}); // ignore — cached user is good enough
         return;
       }
 
@@ -119,9 +122,9 @@ class AuthProvider extends ChangeNotifier {
     try {
       _user = await _auth.updateMe(
         firstName: firstName,
-        lastName:  lastName,
-        email:     email,
-        phone:     phone,
+        lastName: lastName,
+        email: email,
+        phone: phone,
       );
       await TokenStorage.saveUser(_user!.toJsonString());
       _setLoading(false);
@@ -141,7 +144,7 @@ class AuthProvider extends ChangeNotifier {
     try {
       await _auth.updatePassword(
         currentPassword: currentPassword,
-        newPassword:     newPassword,
+        newPassword: newPassword,
       );
       _setLoading(false);
       return true;
@@ -154,9 +157,9 @@ class AuthProvider extends ChangeNotifier {
   // ── Logout ────────────────────────────────────────────────────────────────
   Future<void> logout() async {
     await _auth.logout();
-    _user         = null;
+    _user = null;
     _preAuthToken = null;
-    _status       = AuthStatus.unauthenticated;
+    _status = AuthStatus.unauthenticated;
     notifyListeners();
   }
 
@@ -167,7 +170,7 @@ class AuthProvider extends ChangeNotifier {
 
   // ── Helpers ───────────────────────────────────────────────────────────────
   Future<void> _finalize(Map<String, dynamic> data) async {
-    final access  = data['accessToken']  as String;
+    final access = data['accessToken'] as String;
     final refresh = data['refreshToken'] as String;
     await TokenStorage.saveTokens(access: access, refresh: refresh);
 
@@ -179,27 +182,29 @@ class AuthProvider extends ChangeNotifier {
     await TokenStorage.saveUser(_user!.toJsonString());
 
     _preAuthToken = null;
-    _status       = AuthStatus.authenticated;
-    _loading      = false;
-    _error        = null;
+    _status = AuthStatus.authenticated;
+    _loading = false;
+    _error = null;
     notifyListeners();
   }
 
   void _setLoading(bool v) {
     _loading = v;
-    _error   = null;
+    _error = null;
     notifyListeners();
   }
 
   void _setError(String msg) {
-    _error   = msg;
+    _error = msg;
     _loading = false;
     notifyListeners();
   }
 
   String _friendlyError(Exception e) {
     final msg = e.toString().toLowerCase();
-    if (msg.contains('401') || msg.contains('unauthorized') || msg.contains('invalid')) {
+    if (msg.contains('401') ||
+        msg.contains('unauthorized') ||
+        msg.contains('invalid')) {
       return 'Email or password is incorrect.';
     }
     if (msg.contains('socketexception') || msg.contains('connection')) {

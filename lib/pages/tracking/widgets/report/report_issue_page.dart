@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:moviroo_driver_app/l10n/app_localizations.dart';
 import 'package:moviroo_driver_app/theme/app_colors.dart';
-import 'package:moviroo_driver_app/services/support_service.dart';
+import 'package:moviroo_driver_app/services/support/support_service.dart';
 import 'package:moviroo_driver_app/core/models/ticket_model.dart';
 import 'package:moviroo_driver_app/core/widgets/app_toast.dart';
 import 'package:moviroo_driver_app/pages/tracking/widgets/photo/photo_grid.dart';

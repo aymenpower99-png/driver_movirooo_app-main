@@ -10,7 +10,7 @@ import 'package:moviroo_driver_app/pages/tracking/widgets/confirm/confirm_action
 import 'package:moviroo_driver_app/pages/tracking/completion/ride_completion_page.dart';
 import 'package:moviroo_driver_app/pages/tracking/completion/ride_cancellation_page.dart';
 import 'package:provider/provider.dart';
-import 'package:moviroo_driver_app/services/trip_service.dart';
+import 'package:moviroo_driver_app/services/trip/trip_service.dart';
 import 'package:moviroo_driver_app/core/widgets/app_toast.dart';
 import 'package:moviroo_driver_app/pages/tracking/widgets/cancel/cancel_reason_sheet.dart';
 import 'package:moviroo_driver_app/providers/ride_provider.dart';

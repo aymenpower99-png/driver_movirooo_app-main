@@ -1,6 +1,6 @@
-import '../core/api/api_client.dart';
-import '../core/api/endpoints.dart';
-import '../pages/help_center/models/help_article.dart';
+import '../../core/api/api_client.dart';
+import '../../core/api/endpoints.dart';
+import '../../pages/help_center/models/help_article.dart';
 
 class HelpCenterService {
   final _dio = ApiClient.instance.dio;

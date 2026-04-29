@@ -1,13 +1,14 @@
 // lib/pages/tracking/tracking_page.dart
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:moviroo_driver_app/core/models/geo_point.dart';
 import 'package:moviroo_driver_app/theme/app_colors.dart';
+import 'package:moviroo_driver_app/services/location/location_tracking_service.dart';
 import 'ride_model.dart';
 import 'tracking_bottom_sheet.dart';
-import 'tracking_gps_controller.dart';
 import 'tracking_map_logic.dart';
 import 'widgets/status/status_step_indicator.dart';
 import 'widgets/map/tracking_map_btn.dart';
@@ -37,7 +38,8 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
   GeoPoint? _animEnd;
 
   late TrackingMapLogic _mapLogic;
-  late TrackingGpsController _gpsCtrl;
+  final LocationTrackingService _locationService = LocationTrackingService();
+  StreamSubscription<geo.Position>? _positionSubscription;
 
   static const _defaultPt = GeoPoint(36.8189, 10.1658);
 
@@ -69,8 +71,11 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
       duration: const Duration(milliseconds: 1500),
     )..addListener(_onMoveAnimTick);
 
-    _gpsCtrl = TrackingGpsController(widget.ride.id);
-    _gpsCtrl.start(_onNewPosition);
+    // Subscribe to the app-level service's position stream
+    // Tracking is controlled by OnlineProvider based on driver state
+    _positionSubscription = _locationService.positionStream.listen(
+      _onNewPosition,
+    );
   }
 
   void _onNewPosition(geo.Position pos) {
@@ -140,7 +145,7 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
   void dispose() {
     _moveAnim?.dispose();
     _mapLogic.dispose();
-    _gpsCtrl.dispose();
+    _positionSubscription?.cancel();
     super.dispose();
   }
 

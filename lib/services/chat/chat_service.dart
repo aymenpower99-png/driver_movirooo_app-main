@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:dio/dio.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
-import '../core/api/api_client.dart';
-import '../core/api/endpoints.dart';
-import '../core/config/app_config.dart';
-import '../core/storage/token_storage.dart';
+import '../../core/api/api_client.dart';
+import '../../core/api/endpoints.dart';
+import '../../core/config/app_config.dart';
+import '../../core/storage/token_storage.dart';
 
 /// Represents a chat message from the backend.
 class ChatMsg {
@@ -141,14 +141,8 @@ class ChatService {
   }
 
   /// Delete a message via WebSocket.
-  void deleteMessage({
-    required String rideId,
-    required String messageId,
-  }) {
-    _socket?.emit('chat:delete', {
-      'ride_id': rideId,
-      'message_id': messageId,
-    });
+  void deleteMessage({required String rideId, required String messageId}) {
+    _socket?.emit('chat:delete', {'ride_id': rideId, 'message_id': messageId});
   }
 
   /// Fetch message history via REST using the shared Dio client (handles auth automatically).

@@ -1,6 +1,6 @@
-import '../core/api/api_client.dart';
-import '../core/api/endpoints.dart';
-import '../core/models/earnings_model.dart';
+import '../../core/api/api_client.dart';
+import '../../core/api/endpoints.dart';
+import '../../core/models/earnings_model.dart';
 
 class EarningsService {
   final _dio = ApiClient.instance.dio;

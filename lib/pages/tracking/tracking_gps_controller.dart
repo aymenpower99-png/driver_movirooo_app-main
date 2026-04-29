@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:moviroo_driver_app/services/tracking_socket_service.dart';
+import 'package:moviroo_driver_app/services/tracking/tracking_socket_service.dart';
 
 /// Manages GPS streaming + WebSocket broadcasting for a single ride.
 class TrackingGpsController {

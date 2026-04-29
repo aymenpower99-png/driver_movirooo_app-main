@@ -6,7 +6,7 @@ import '../../../../theme/app_text_styles.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../core/models/ticket_model.dart';
 import '../../routing/router.dart';
-import '../../services/support_service.dart';
+import '../../services/support/support_service.dart';
 import '../../core/widgets/app_toast.dart';
 import 'widgets/labeled_dropdown_field.dart';
 import 'widgets/labeled_input_field.dart';
@@ -118,7 +118,8 @@ class _ContactSupportPageState extends State<ContactSupportPage> {
     // Map localized category string to backend enum
     final categories = _localizedCategories(context);
     final catIndex = categories.indexOf(_selectedCategory ?? '');
-    final backendCategory = (catIndex >= 0 && catIndex < kCategoryMapping.length)
+    final backendCategory =
+        (catIndex >= 0 && catIndex < kCategoryMapping.length)
         ? kCategoryMapping[catIndex]
         : TicketCategory.other;
 
@@ -263,7 +264,9 @@ class _ContactSupportPageState extends State<ContactSupportPage> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryPurple,
                     foregroundColor: Colors.white,
-                    disabledBackgroundColor: AppColors.primaryPurple.withValues(alpha: 0.5),
+                    disabledBackgroundColor: AppColors.primaryPurple.withValues(
+                      alpha: 0.5,
+                    ),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
@@ -274,7 +277,10 @@ class _ContactSupportPageState extends State<ContactSupportPage> {
                       ? const SizedBox(
                           width: 22,
                           height: 22,
-                          child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
                         )
                       : Text(
                           t('support_send'),

@@ -17,6 +17,7 @@ import 'providers/auth_provider.dart';
 import 'providers/earnings_provider.dart';
 import 'providers/online_provider.dart';
 import 'providers/ride_provider.dart';
+import 'services/background/background_tracking_service.dart';
 
 final themeProvider = ThemeProvider();
 final localeProvider = LocaleProvider();
@@ -35,6 +36,7 @@ void main() async {
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
   await NotificationService.instance.init();
+  await BackgroundTrackingService.initialize();
 
   // Navigate to Rides tab when driver taps a notification
   NotificationService.instance.onNotificationTap = (type) {

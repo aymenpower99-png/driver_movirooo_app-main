@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
-import '../core/api/api_client.dart';
-import '../core/api/endpoints.dart';
-import '../core/models/offer_model.dart';
-import '../core/models/ride_model.dart';
+import '../../core/api/api_client.dart';
+import '../../core/api/endpoints.dart';
+import '../../core/models/offer_model.dart';
+import '../../core/models/ride_model.dart';
 
 /// HTTP calls for dispatch: heartbeat, online/offline, offers, rides.
 class DispatchService {
@@ -29,7 +29,7 @@ class DispatchService {
 
   // ── Offers ────────────────────────────────────────────────────────────────
   Future<List<OfferModel>> getPendingOffers() async {
-    final res  = await _dio.get(Endpoints.pendingOffers);
+    final res = await _dio.get(Endpoints.pendingOffers);
     final list = res.data as List<dynamic>;
     return list
         .map((e) => OfferModel.fromJson(e as Map<String, dynamic>))
