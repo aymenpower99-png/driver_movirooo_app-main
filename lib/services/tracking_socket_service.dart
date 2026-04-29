@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import '../core/config/app_config.dart';
 import '../core/storage/token_storage.dart';
@@ -20,10 +21,13 @@ class TrackingSocketService {
     final token = await TokenStorage.getAccess();
 
     _socket = io.io(
-      '${AppConfig.baseUrl}/trips',
+      AppConfig.wsBaseUrl,
       io.OptionBuilder()
           .setTransports(['websocket'])
-          .setExtraHeaders({'Authorization': 'Bearer $token'})
+          .setExtraHeaders({
+            'Authorization': 'Bearer $token',
+            'ngrok-skip-browser-warning': 'true',
+          })
           .disableAutoConnect()
           .build(),
     );
@@ -50,7 +54,15 @@ class TrackingSocketService {
     required double longitude,
     double? speedKmh,
   }) {
-    if (_socket == null || !(_socket!.connected)) return;
+    if (_socket == null || !(_socket!.connected)) {
+      debugPrint(
+        '🔌 [Driver] sendGps SKIPPED — socket null=${_socket == null}, connected=${_socket?.connected}',
+      );
+      return;
+    }
+    debugPrint(
+      '🔌 [Driver] Emitting trip:gps → ride=$rideId, lat=$latitude, lng=$longitude',
+    );
     _socket!.emit('trip:gps', {
       'ride_id': rideId,
       'latitude': latitude,

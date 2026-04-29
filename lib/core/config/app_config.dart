@@ -12,6 +12,9 @@ class AppConfig {
 
   /// The full backend base URL including the /api prefix.
   /// ⚠️  Change ONLY this line when the ngrok URL changes.
-  static const String baseUrl = 'https://important-satisfy-sternness.ngrok-free.dev/api';
-                                
+  static const String baseUrl =
+      'https://important-satisfy-sternness.ngrok-free.dev/api';
+
+  /// WebSocket base URL (without /api — Socket.IO uses root).
+  static String get wsBaseUrl => baseUrl.replaceAll('/api', '');
 }
