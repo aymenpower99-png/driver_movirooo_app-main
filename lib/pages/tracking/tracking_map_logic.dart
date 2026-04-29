@@ -18,6 +18,7 @@ class TrackingMapLogic {
   PointAnnotationManager? _driverMgr;
 
   PointAnnotation? _driverAnn;
+  bool _driverCreating = false;
   Uint8List? _cachedCarBitmap;
 
   bool _pickupRouteDrawn = false;
@@ -91,17 +92,22 @@ class TrackingMapLogic {
     final pt = Point(coordinates: Position(pos.lon, pos.lat));
 
     if (_driverAnn == null) {
-      // First call — create marker once
-      _cachedCarBitmap ??= await MapPainters.renderCarBitmap();
-      _driverAnn = await _driverMgr!.create(
-        PointAnnotationOptions(
-          geometry: pt,
-          image: _cachedCarBitmap!,
-          iconSize: 0.9,
-          iconAnchor: IconAnchor.CENTER,
-          iconRotate: bearing,
-        ),
-      );
+      if (_driverCreating) return; // guard: create already in-flight
+      _driverCreating = true;
+      try {
+        _cachedCarBitmap ??= await MapPainters.renderCarBitmap();
+        _driverAnn = await _driverMgr!.create(
+          PointAnnotationOptions(
+            geometry: pt,
+            image: _cachedCarBitmap!,
+            iconSize: 0.9,
+            iconAnchor: IconAnchor.CENTER,
+            iconRotate: bearing,
+          ),
+        );
+      } finally {
+        _driverCreating = false;
+      }
     } else {
       // Subsequent calls — update position & rotation in-place (no flicker)
       _driverAnn!.geometry = pt;

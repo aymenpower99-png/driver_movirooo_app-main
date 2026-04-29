@@ -10,7 +10,6 @@ import '../pages/tabs/chat/chat_page.dart';
 import '../pages/tabs/profile/password/passwordrest.dart';
 import '../pages/tabs/profile/rate/rate.dart';
 import '../pages/tabs/active_ride/active_ride_page.dart';
-import '../pages/tabs/ride/map_preview_page.dart';
 import '../pages/tabs/dashboard/dashboard_page.dart';
 import '../pages/tabs/earnings/earnings_page.dart';
 import '../pages/tabs/rides/rides_page.dart';
@@ -57,7 +56,6 @@ rateApp: (_) => RatePage(),
     driverProfile: (_) => const DriverProfilePage(),
   activeRide: (_) => const ActiveRidePage(),
     chat: (_) => const ChatPage(),
-    mapPreview: (_) => const MapPreviewPage(),
     myTickets: (_) => const MyTicketsPage(),
     ticketDetail: (_) => const TicketDetailPage(),
     workArea: (_) => const WorkAreaPage(),
