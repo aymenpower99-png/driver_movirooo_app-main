@@ -25,6 +25,10 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
   /// Dashboard should show a persistent "Enable GPS" dialog.
   bool _gpsRequired = false;
 
+  /// Set to true when the user tried to go online but location permission
+  /// is missing. Dashboard should show a "Permission Required" dialog.
+  bool _permissionRequired = false;
+
   /// True when the backend forced the driver offline (stale heartbeat).
   /// Prevents heartbeat from auto-reconnecting; only explicit toggleOnline clears this.
   bool _forcedOffline = false;
@@ -68,6 +72,7 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
   String? get error => _error;
   DriverModel? get driverProfile => _driverProfile;
   bool get gpsRequired => _gpsRequired;
+  bool get permissionRequired => _permissionRequired;
 
   /// Check if background location permission is granted
   Future<bool> get hasBackgroundPermission async {
@@ -99,12 +104,23 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
   String get onlineTimeFormatted => todayOnlineFormatted;
 
   /// Set the active ride ID for tracking. Call this when a ride is assigned or status changes.
-  /// If driver is online, tracking will start/stop automatically based on ride ID.
-  void setActiveRide(String? rideId) {
+  /// Tracking starts/stops based on ride ID, independent of online status.
+  Future<void> setActiveRide(String? rideId) async {
     _activeRideId = rideId;
-    if (_isOnline && rideId != null) {
-      BackgroundTrackingService.startTracking(rideId);
-    } else if (rideId == null) {
+
+    if (rideId != null) {
+      // Check permission before starting tracking
+      final hasPermission = await PermissionStateStorage.isGranted();
+      if (hasPermission) {
+        BackgroundTrackingService.startTracking(rideId);
+      } else {
+        // Show warning but keep ride active
+        _error =
+            'Location permission required for tracking. Enable in settings to track ride.';
+        notifyListeners();
+      }
+    } else {
+      // Stop tracking when ride is completed/cancelled
       BackgroundTrackingService.stopTracking();
     }
   }
@@ -167,7 +183,8 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
     NotificationService.instance.onDriverForcedOffline = _onForcedOffline;
     try {
       _driverProfile = await _driver.getMe();
-      _isOnline = _driverProfile!.isOnline;
+      // Keep driver offline by default on app restart - do not auto-enable from backend
+      _isOnline = false;
 
       // Seed monthly time from backend — this is the persistent source of truth.
       _backendMonthlyMs = _driverProfile!.monthlyOnlineMs;
@@ -210,10 +227,17 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // Always re-sync status from backend on resume.
+      // Start heartbeat when app comes to foreground (device is alive)
+      _startHeartbeat();
+      // Re-sync status from backend on resume.
       // This catches the case where the backend sweep forced us offline while
       // we were backgrounded and the FCM background handler couldn't update state.
       _syncOnResume();
+    } else if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.inactive ||
+        state == AppLifecycleState.detached) {
+      // Stop heartbeat when app goes to background
+      _stopHeartbeat();
     }
   }
 
@@ -290,14 +314,30 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
   Future<void> _sendImmediateHeartbeat() async {
     try {
       final pos = await Geolocator.getLastKnownPosition();
+      final driverState = _isOnline ? 'online' : 'offline';
       if (pos != null) {
-        await _dispatch.heartbeat(lat: pos.latitude, lng: pos.longitude);
+        await _dispatch.heartbeat(
+          alive: true,
+          driverState: driverState,
+          rideId: _activeRideId,
+          lat: pos.latitude,
+          lng: pos.longitude,
+        );
       } else {
-        await _dispatch.heartbeat();
+        await _dispatch.heartbeat(
+          alive: true,
+          driverState: driverState,
+          rideId: _activeRideId,
+        );
       }
     } catch (_) {
       try {
-        await _dispatch.heartbeat();
+        final driverState = _isOnline ? 'online' : 'offline';
+        await _dispatch.heartbeat(
+          alive: true,
+          driverState: driverState,
+          rideId: _activeRideId,
+        );
       } catch (_) {}
     }
   }
@@ -355,12 +395,19 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
+  /// Called by dashboard after permission dialog is dismissed.
+  void clearPermissionRequired() {
+    _permissionRequired = false;
+    notifyListeners();
+  }
+
   // ── Toggle ────────────────────────────────────────────────────────────────
   Future<void> toggleOnline() async {
     if (_loading) return;
     _loading = true;
     _error = null;
     _gpsRequired = false;
+    _permissionRequired = false;
     notifyListeners();
 
     try {
@@ -374,10 +421,14 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
           _lastOnlineAt = null;
           await _persistTime();
         }
-        _stopTimers();
+        _stopUiTimer(); // Only stop UI timer, heartbeat continues based on app lifecycle
         _isOnline = false;
-        BackgroundTrackingService.stopTracking(); // Stop GPS tracking when going offline
-        await BackgroundTrackingService.stop(); // Stop background service
+
+        // Only stop tracking if no active ride - tracking continues during ride
+        if (_activeRideId == null) {
+          BackgroundTrackingService.stopTracking();
+          await BackgroundTrackingService.stop();
+        }
         // Backend accumulated the session into monthlyOnlineMs — re-fetch.
         try {
           final updated = await _driver.getMe();
@@ -397,94 +448,55 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
           return;
         }
 
+        // Check actual OS-level location permission BEFORE going online
+        debugPrint('🚗 [OnlineProvider] Checking OS-level permission...');
+        final hasPermission =
+            await BackgroundPermissionHandler.checkPermissionsOnly();
+        debugPrint('🚗 [OnlineProvider] OS permission granted: $hasPermission');
+
+        if (!hasPermission) {
+          // Try to request permission - shows OS dialog if not permanently denied
+          debugPrint(
+            '🚗 [OnlineProvider] Permission not granted - requesting now...',
+          );
+          final granted =
+              await BackgroundPermissionHandler.checkAndRequestPermissions();
+          await PermissionStateStorage.setState(
+            granted ? PermissionState.granted : PermissionState.denied,
+          );
+          if (!granted) {
+            debugPrint(
+              '🚗 [OnlineProvider] ⚠️ Permission denied - showing permission required dialog',
+            );
+            _permissionRequired = true;
+            _loading = false;
+            notifyListeners();
+            return;
+          }
+        }
+
+        // Permission granted - proceed to go online
         _forcedOffline =
             false; // clear forced-offline flag on explicit go-online
         final pos = await _getLocation();
         await _dispatch.goOnline(lat: pos?.latitude, lng: pos?.longitude);
         _lastOnlineAt = DateTime.now();
         _heartbeatFailCount = 0;
-        _startTimers(initialPosition: pos);
+        _startUiTimer(); // Only start UI timer, heartbeat managed by app lifecycle
         _isOnline = true;
 
-        // Handle background location permission with proper state management
-        debugPrint('🚗 [OnlineProvider] Checking permission state...');
-        final permissionState = await PermissionStateStorage.getState();
-        debugPrint('🚗 [OnlineProvider] Permission state: $permissionState');
+        // Start background service since permission is granted
+        debugPrint(
+          '🚗 [OnlineProvider] ✅ Background permission available - starting background service',
+        );
+        await BackgroundTrackingService.start(); // Start background service
 
-        bool hasBackgroundPermission = false;
-
-        switch (permissionState) {
-          case PermissionState.neverRequested:
-            debugPrint(
-              '🚗 [OnlineProvider] Permission never requested - requesting now...',
-            );
-            final granted =
-                await BackgroundPermissionHandler.checkAndRequestPermissions();
-            await PermissionStateStorage.setState(
-              granted ? PermissionState.granted : PermissionState.denied,
-            );
-            hasBackgroundPermission = granted;
-            if (!granted) {
-              debugPrint(
-                '🚗 [OnlineProvider] ⚠️ Permission denied - background tracking disabled',
-              );
-            }
-            break;
-
-          case PermissionState.granted:
-            debugPrint(
-              '🚗 [OnlineProvider] ✅ Permission already granted - skipping request',
-            );
-            hasBackgroundPermission = true;
-            break;
-
-          case PermissionState.denied:
-            debugPrint(
-              '🚗 [OnlineProvider] ⚠️ Permission previously denied - not requesting again',
-            );
-            // TODO: Show UI message with link to settings
-            hasBackgroundPermission = false;
-            break;
-
-          case PermissionState.permanentlyDenied:
-            debugPrint(
-              '🚗 [OnlineProvider] ⚠️ Permission permanently denied - user must enable in settings',
-            );
-            // TODO: Show UI message with link to settings
-            hasBackgroundPermission = false;
-            break;
-        }
-
-        if (hasBackgroundPermission) {
-          debugPrint(
-            '🚗 [OnlineProvider] ✅ Background permission available - starting background service',
-          );
-          await BackgroundTrackingService.start(); // Start background service
-
-          // Start GPS tracking if there's an active ride
-          if (_activeRideId != null) {
-            BackgroundTrackingService.startTracking(_activeRideId!);
-          }
-        } else {
-          debugPrint(
-            '🚗 [OnlineProvider] ⚠️ Background permission NOT available - background service NOT started',
-          );
-          debugPrint(
-            '🚗 [OnlineProvider] Driver can go online but background tracking will not work',
-          );
-        }
-
-        // Refresh profile so _backendMonthlyMs is up to date for the new session
-        try {
-          final updated = await _driver.getMe();
-          _backendMonthlyMs = updated.monthlyOnlineMs;
-          _driverProfile = updated;
-        } catch (_) {
-          // Non-fatal — keep last known value
+        // Start GPS tracking if there's an active ride
+        if (_activeRideId != null) {
+          BackgroundTrackingService.startTracking(_activeRideId!);
         }
       }
-    } on Exception catch (e) {
-      _error = 'Failed to update status. Try again.';
+    } catch (e) {
       debugPrint('OnlineProvider.toggleOnline: $e');
     } finally {
       _loading = false;
@@ -493,7 +505,9 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   // ── Timers ────────────────────────────────────────────────────────────────
-  void _startTimers({Position? initialPosition}) {
+
+  /// Start heartbeat - runs when app is alive (foreground), independent of online status
+  void _startHeartbeat() {
     _heartbeatTimer?.cancel();
     _heartbeatFailCount = 0;
     // Send heartbeat every 20s. Backend stale threshold is 120s, so this gives
@@ -503,16 +517,32 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
       try {
         // Use last-known position only — instant, never blocks the timer.
         final pos = await Geolocator.getLastKnownPosition();
+        final driverState = _isOnline ? 'online' : 'offline';
         if (pos != null) {
-          await _dispatch.heartbeat(lat: pos.latitude, lng: pos.longitude);
+          await _dispatch.heartbeat(
+            alive: true,
+            driverState: driverState,
+            rideId: _activeRideId,
+            lat: pos.latitude,
+            lng: pos.longitude,
+          );
         } else {
-          await _dispatch.heartbeat();
+          await _dispatch.heartbeat(
+            alive: true,
+            driverState: driverState,
+            rideId: _activeRideId,
+          );
         }
         success = true;
       } catch (_) {
         // Last-resort: bare heartbeat without coords
         try {
-          await _dispatch.heartbeat();
+          final driverState = _isOnline ? 'online' : 'offline';
+          await _dispatch.heartbeat(
+            alive: true,
+            driverState: driverState,
+            rideId: _activeRideId,
+          );
           success = true;
         } catch (_) {}
       }
@@ -520,56 +550,62 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
       if (success) {
         if (_heartbeatFailCount > 0) {
           _heartbeatFailCount = 0;
+          // Clear connection error when heartbeat succeeds
+          if (_error == 'Connection lost. Reconnecting...') {
+            _error = null;
+            notifyListeners();
+          }
         }
       } else {
         _heartbeatFailCount++;
         if (_heartbeatFailCount >= _maxHeartbeatFails) {
-          // 120s without a successful heartbeat — backend sweep has marked us
-          // offline. Sync local state so the UI matches the DB.
-          _isOnline = false;
-          _heartbeatFailCount = 0;
-          if (_lastOnlineAt != null) {
-            final ms = DateTime.now().difference(_lastOnlineAt!).inMilliseconds;
-            _todayOnlineMs += ms;
-            _allTimeOnlineMs += ms;
-            _lastOnlineAt = null;
-            await _persistTime();
-          }
-          _stopTimers();
-          _error = 'Connection lost. Toggle online to reconnect.';
-          // Re-fetch backend monthly time (sweep already committed it).
-          _driver
-              .getMe()
-              .then((p) {
-                _backendMonthlyMs = p.monthlyOnlineMs;
-                _driverProfile = p;
-                notifyListeners();
-              })
-              .catchError((_) {});
-          // Show a local notification so the driver knows they went offline
-          // even when the screen is off.
+          // 120s without a successful heartbeat — connection lost
+          // Don't change _isOnline (driver's choice), just show connection error
+          _heartbeatFailCount = 0; // Reset to allow retry
+          _error = 'Connection lost. Reconnecting...';
+
+          // Show connection lost notification (not "went offline")
           NotificationService.instance.showLocalNotification(
-            title: '⚠️ You went offline',
-            body:
-                'Your screen turned off and you disconnected. Tap to go back online.',
-            payload: 'DRIVER_WENT_OFFLINE',
+            title: '⚠️ Connection Lost',
+            body: 'Reconnecting to server...',
+            payload: 'CONNECTION_LOST',
           );
           notifyListeners();
         }
       }
     });
+  }
 
+  /// Stop heartbeat - called when app goes to background
+  void _stopHeartbeat() {
+    _heartbeatTimer?.cancel();
+    _heartbeatTimer = null;
+  }
+
+  /// Start UI timer for updating online time display - only when online
+  void _startUiTimer() {
     _uiTimer?.cancel();
     _uiTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       notifyListeners();
     });
   }
 
-  void _stopTimers() {
-    _heartbeatTimer?.cancel();
-    _heartbeatTimer = null;
+  /// Stop UI timer
+  void _stopUiTimer() {
     _uiTimer?.cancel();
     _uiTimer = null;
+  }
+
+  /// Legacy method - starts both heartbeat and UI timer (used for backward compatibility)
+  void _startTimers({Position? initialPosition}) {
+    _startHeartbeat();
+    _startUiTimer();
+  }
+
+  /// Legacy method - stops both heartbeat and UI timer (used for backward compatibility)
+  void _stopTimers() {
+    _stopHeartbeat();
+    _stopUiTimer();
   }
 
   void clearError() {

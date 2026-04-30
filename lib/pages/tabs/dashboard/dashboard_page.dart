@@ -103,11 +103,109 @@ class _DashboardPageState extends State<DashboardPage>
       return;
     }
 
+    // If permission was denied during go online, show permission dialog
+    if (online.permissionRequired) {
+      _showPermissionRequiredDialog(online);
+      return;
+    }
+
     if (wasOnline) {
       await _cardCtrl.reverse();
     } else if (online.isOnline) {
       _cardCtrl.forward();
     }
+  }
+
+  /// Shows a dialog explaining that location permission is required to go online.
+  void _showPermissionRequiredDialog(OnlineProvider online) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          backgroundColor: AppColors.surface(context),
+          title: Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.primaryPurple.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.location_off_rounded,
+                  color: AppColors.primaryPurple,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Permission Required',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.text(context),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'You must enable location permission to go online.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.subtext(context),
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Go to Settings > Apps > Moviroo Driver > Location > Allow all the time',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppColors.subtext(context),
+                  height: 1.5,
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                online.clearPermissionRequired();
+                Navigator.of(ctx).pop();
+              },
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: AppColors.subtext(context)),
+              ),
+            ),
+            ElevatedButton.icon(
+              onPressed: () async {
+                online.clearPermissionRequired();
+                Navigator.of(ctx).pop();
+                await Geolocator.openAppSettings();
+              },
+              icon: const Icon(Icons.settings, size: 18),
+              label: const Text('Open Settings'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primaryPurple,
+                foregroundColor: Colors.white,
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   /// Shows a non-dismissable dialog that waits for GPS to be enabled.

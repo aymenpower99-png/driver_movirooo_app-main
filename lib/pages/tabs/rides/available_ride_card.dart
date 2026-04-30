@@ -150,26 +150,10 @@ class RideCard extends StatelessWidget {
           // ── Route ────────────────────────────────────────────────
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 2, 16, 14),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: RideRouteTimeline(
-                    from: ride.from,
-                    to: ride.to,
-                    textStyle: AppTextStyles.bodySmall(context),
-                  ),
-                ),
-                if (_isUpcoming) ...[
-                  const SizedBox(width: 8),
-                  Text(
-                    '${ride.price.toStringAsFixed(1)} TND',
-                    style: AppTextStyles.priceMedium(
-                      context,
-                    ).copyWith(color: statusColor ?? AppColors.primaryPurple),
-                  ),
-                ],
-              ],
+            child: RideRouteTimeline(
+              from: ride.from,
+              to: ride.to,
+              textStyle: AppTextStyles.bodySmall(context),
             ),
           ),
 

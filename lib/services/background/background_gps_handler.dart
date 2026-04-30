@@ -5,7 +5,6 @@ import 'package:geolocator/geolocator.dart';
 import 'package:socket_io_client/socket_io_client.dart' as io;
 import '../../core/config/app_config.dart';
 import '../../core/storage/token_storage.dart';
-import 'background_permission_handler.dart';
 
 /// Result of [startGpsAndSocket] — holds the live references so the caller
 /// can later stop them.  This avoids the Dart pass-by-value pitfall that
@@ -13,7 +12,12 @@ import 'background_permission_handler.dart';
 class GpsSessionHandle {
   io.Socket socket;
   StreamSubscription<Position> gpsSubscription;
-  GpsSessionHandle({required this.socket, required this.gpsSubscription});
+  Timer? gpsTimeoutTimer;
+  GpsSessionHandle({
+    required this.socket,
+    required this.gpsSubscription,
+    this.gpsTimeoutTimer,
+  });
 }
 
 /// Handles GPS start/stop logic for background tracking.
@@ -30,20 +34,8 @@ class BackgroundGpsHandler {
     debugPrint('🚗 [BackgroundGps] === START GPS AND SOCKET ===');
     debugPrint('🚗 [BackgroundGps] Ride ID: $rideId');
 
-    // Check permissions ONLY (no requests - background isolate cannot request permissions)
-    debugPrint('🚗 [BackgroundGps] Checking permissions...');
-    final hasPermissions =
-        await BackgroundPermissionHandler.checkPermissionsOnly();
-    debugPrint('🚗 [BackgroundGps] Permissions granted: $hasPermissions');
-    if (!hasPermissions) {
-      debugPrint(
-        '🚗 [BackgroundGps] ❌ Required permissions not granted - ABORTING',
-      );
-      debugPrint(
-        '🚗 [BackgroundGps] NOTE: Permissions must be granted in the main isolate before starting background service',
-      );
-      return null;
-    }
+    // Note: Permissions are checked in the main isolate before starting background service
+    // Background isolate cannot reliably check permissions, so we assume granted here
 
     // Connect to WebSocket
     debugPrint('🚗 [BackgroundGps] Getting access token...');
@@ -127,12 +119,33 @@ class BackgroundGpsHandler {
     }
 
     debugPrint('🚗 [BackgroundGps] Starting Geolocator.getPositionStream...');
+
+    // GPS timeout detection - 30s without GPS position
+    Timer? gpsTimeoutTimer;
+
     final gpsSubscription =
         Geolocator.getPositionStream(locationSettings: locationSettings).listen(
           (pos) {
             debugPrint(
               '🚗 [BackgroundGps] 📍 GPS POSITION RECEIVED: lat=${pos.latitude}, lng=${pos.longitude}, speed=${pos.speed}',
             );
+
+            // Reset GPS timeout timer on each position
+            gpsTimeoutTimer?.cancel();
+            gpsTimeoutTimer = Timer(const Duration(seconds: 30), () {
+              debugPrint(
+                '🚗 [BackgroundGps] ⚠️ GPS TIMEOUT - No position for 30s',
+              );
+              if (socket.connected) {
+                debugPrint(
+                  '🚗 [BackgroundGps] Emitting gps_unavailable to backend...',
+                );
+                socket.emit('gps_unavailable', {'ride_id': rideId});
+                debugPrint(
+                  '🚗 [BackgroundGps] ✅ gps_unavailable EMITTED to backend',
+                );
+              }
+            });
 
             // Send to backend via WebSocket
             debugPrint(
@@ -167,7 +180,11 @@ class BackgroundGpsHandler {
     debugPrint('🚗 [BackgroundGps] ✅ GPS stream started successfully');
     debugPrint('🚗 [BackgroundGps] === GPS AND SOCKET START COMPLETE ===');
 
-    return GpsSessionHandle(socket: socket, gpsSubscription: gpsSubscription);
+    return GpsSessionHandle(
+      socket: socket,
+      gpsSubscription: gpsSubscription,
+      gpsTimeoutTimer: gpsTimeoutTimer,
+    );
   }
 
   /// Stop GPS and WebSocket connection.
@@ -177,6 +194,9 @@ class BackgroundGpsHandler {
       return;
     }
     debugPrint('🚗 [BackgroundGps] Stopping GPS tracking');
+
+    // Cancel GPS timeout timer
+    handle.gpsTimeoutTimer?.cancel();
 
     await handle.gpsSubscription.cancel();
 

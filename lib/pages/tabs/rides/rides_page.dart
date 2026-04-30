@@ -1,16 +1,12 @@
-// ════════════════════════════════════════════════════════════════════
-//  rides_page.dart
-// ════════════════════════════════════════════════════════════════════
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../../l10n/app_localizations.dart';
 import '../../../../../theme/app_colors.dart';
 import '../../../../../theme/app_text_styles.dart';
 import '../../../providers/ride_provider.dart';
-import '../../../core/models/offer_model.dart';
 import '../../../core/models/ride_model.dart';
-import '../../../core/widgets/app_toast.dart';
+import '../../../services/background/background_permission_handler.dart';
+import '../../../providers/online_provider.dart';
 import '../widgets/tab_bar.dart';
 import 'ride_widgets.dart';
 import 'available_ride_card.dart';
@@ -231,6 +227,57 @@ class _UpcomingTab extends StatelessWidget {
     );
   }
 
+  void _showTrackingDisabledDialog(
+    BuildContext context, {
+    required String message,
+    required String instructions,
+  }) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.location_off_outlined, size: 48, color: AppColors.error),
+            const SizedBox(height: 16),
+            Text('Tracking Disabled', style: AppTextStyles.bookingId(context)),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              style: AppTextStyles.bodyMedium(context),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              instructions,
+              style: AppTextStyles.bodySmall(
+                context,
+              ).copyWith(color: AppColors.subtext(context)),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryPurple,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                child: const Text('Go Back'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (rides.isEmpty) {
@@ -250,14 +297,49 @@ class _UpcomingTab extends StatelessWidget {
             context,
           ).translate('ride_status_scheduled'),
           statusColor: AppColors.primaryPurple,
-          onTrack: (ride) => Navigator.of(
-            context,
-          ).push(TrackPassengerPage.route(_toTrackingRide(ride))),
+          onTrack: (ride) async {
+            // 1. Check online status first
+            final isOnline = context.read<OnlineProvider>().isOnline;
+            if (!isOnline) {
+              _showTrackingDisabledDialog(
+                context,
+                message: 'You must go online to start tracking.',
+                instructions: 'Please go online before using tracking.',
+              );
+              return;
+            }
+
+            // 2. Check actual OS-level location permission before navigating
+            final hasPermission =
+                await BackgroundPermissionHandler.checkPermissionsOnly();
+
+            if (!context.mounted) return;
+
+            if (!hasPermission) {
+              _showTrackingDisabledDialog(
+                context,
+                message:
+                    'You must enable location permission to track this ride.',
+                instructions:
+                    'Go to Settings > Apps > Moviroo Driver > Location > Allow all the time',
+              );
+              return;
+            }
+
+            // Both conditions valid - navigate to tracking page
+            Navigator.of(
+              context,
+            ).push(TrackPassengerPage.route(_toTrackingRide(ride)));
+          },
           onChat: (ride) {
-            Navigator.pushNamed(context, '/chat', arguments: {
-              'rideId': ride.id,
-              'passengerName': ride.passengerName ?? 'Passenger',
-            });
+            Navigator.pushNamed(
+              context,
+              '/chat',
+              arguments: {
+                'rideId': ride.id,
+                'passengerName': ride.passengerName ?? 'Passenger',
+              },
+            );
           },
         ),
       ),

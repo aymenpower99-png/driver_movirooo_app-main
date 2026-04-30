@@ -9,11 +9,20 @@ class DispatchService {
   final Dio _dio = ApiClient.instance.dio;
 
   // ── Location + status ─────────────────────────────────────────────────────
-  Future<void> heartbeat({double? lat, double? lng}) async {
-    await _dio.patch(
-      Endpoints.heartbeat,
-      data: (lat != null && lng != null) ? {'lat': lat, 'lng': lng} : null,
-    );
+  Future<void> heartbeat({
+    required bool alive,
+    required String driverState,
+    String? rideId,
+    double? lat,
+    double? lng,
+  }) async {
+    final data = <String, dynamic>{'alive': alive, 'driverState': driverState};
+    if (rideId != null) data['rideId'] = rideId;
+    if (lat != null && lng != null) {
+      data['lat'] = lat;
+      data['lng'] = lng;
+    }
+    await _dio.patch(Endpoints.heartbeat, data: data);
   }
 
   Future<void> goOnline({double? lat, double? lng}) async {
