@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../services/dispatch/dispatch_service.dart';
 import '../services/driver/driver_service.dart';
 import '../services/background/background_tracking_service.dart';
+import '../services/background/background_permission_handler.dart';
+import '../services/background/permission_state_storage.dart';
 import '../core/models/driver_model.dart';
 import '../core/notifications/notification_service.dart';
 
@@ -66,6 +68,16 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
   String? get error => _error;
   DriverModel? get driverProfile => _driverProfile;
   bool get gpsRequired => _gpsRequired;
+
+  /// Check if background location permission is granted
+  Future<bool> get hasBackgroundPermission async {
+    return await PermissionStateStorage.isGranted();
+  }
+
+  /// Get current permission state
+  Future<PermissionState> get permissionState async {
+    return await PermissionStateStorage.getState();
+  }
 
   /// Milliseconds elapsed in the current online session (0 if offline).
   int get _sessionMs {
@@ -393,11 +405,73 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
         _heartbeatFailCount = 0;
         _startTimers(initialPosition: pos);
         _isOnline = true;
-        await BackgroundTrackingService.start(); // Start background service
 
-        // Start GPS tracking if there's an active ride
-        if (_activeRideId != null) {
-          BackgroundTrackingService.startTracking(_activeRideId!);
+        // Handle background location permission with proper state management
+        debugPrint('🚗 [OnlineProvider] Checking permission state...');
+        final permissionState = await PermissionStateStorage.getState();
+        debugPrint('🚗 [OnlineProvider] Permission state: $permissionState');
+
+        bool hasBackgroundPermission = false;
+
+        switch (permissionState) {
+          case PermissionState.neverRequested:
+            debugPrint(
+              '🚗 [OnlineProvider] Permission never requested - requesting now...',
+            );
+            final granted =
+                await BackgroundPermissionHandler.checkAndRequestPermissions();
+            await PermissionStateStorage.setState(
+              granted ? PermissionState.granted : PermissionState.denied,
+            );
+            hasBackgroundPermission = granted;
+            if (!granted) {
+              debugPrint(
+                '🚗 [OnlineProvider] ⚠️ Permission denied - background tracking disabled',
+              );
+            }
+            break;
+
+          case PermissionState.granted:
+            debugPrint(
+              '🚗 [OnlineProvider] ✅ Permission already granted - skipping request',
+            );
+            hasBackgroundPermission = true;
+            break;
+
+          case PermissionState.denied:
+            debugPrint(
+              '🚗 [OnlineProvider] ⚠️ Permission previously denied - not requesting again',
+            );
+            // TODO: Show UI message with link to settings
+            hasBackgroundPermission = false;
+            break;
+
+          case PermissionState.permanentlyDenied:
+            debugPrint(
+              '🚗 [OnlineProvider] ⚠️ Permission permanently denied - user must enable in settings',
+            );
+            // TODO: Show UI message with link to settings
+            hasBackgroundPermission = false;
+            break;
+        }
+
+        if (hasBackgroundPermission) {
+          debugPrint(
+            '🚗 [OnlineProvider] ✅ Background permission available - starting background service',
+          );
+          await BackgroundTrackingService.start(); // Start background service
+
+          // Start GPS tracking if there's an active ride
+          if (_activeRideId != null) {
+            BackgroundTrackingService.startTracking(_activeRideId!);
+          }
+        } else {
+          debugPrint(
+            '🚗 [OnlineProvider] ⚠️ Background permission NOT available - background service NOT started',
+          );
+          debugPrint(
+            '🚗 [OnlineProvider] Driver can go online but background tracking will not work',
+          );
         }
 
         // Refresh profile so _backendMonthlyMs is up to date for the new session
@@ -405,7 +479,9 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
           final updated = await _driver.getMe();
           _backendMonthlyMs = updated.monthlyOnlineMs;
           _driverProfile = updated;
-        } catch (_) {}
+        } catch (_) {
+          // Non-fatal — keep last known value
+        }
       }
     } on Exception catch (e) {
       _error = 'Failed to update status. Try again.';
