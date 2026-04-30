@@ -45,6 +45,7 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
   @override
   void initState() {
     super.initState();
+    debugPrint(' [TrackingPage] Page opened for ride: ${widget.ride.id}');
 
     _controller = TrackingPageController(
       rideId: widget.ride.id,
@@ -57,7 +58,9 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
     _controller.initialize(this);
 
     // Start background tracking service
+    debugPrint(' [TrackingPage] Starting background tracking service...');
     BackgroundTrackingService.startTracking(widget.ride.id);
+    debugPrint(' [TrackingPage] Background tracking service started');
 
     _controller.subscribeToGpsStreams();
 
@@ -70,15 +73,15 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
 
   void _onPositionUpdate(GeoPoint position, double bearing) {
     debugPrint(
-      ' [TrackingPage] Position update received: ${position.lat}, ${position.lon}',
+      '🗺️ [TrackingPage] Position update received: ${position.lat}, ${position.lon}',
     );
 
     // Update driver symbol immediately (not just during animation)
     _mapLogic.updateDriverSymbol(position, bearing);
 
-    if (_isPrePickup || _isInTrip) {
-      _mapLogic.animateToDriver(position, bearing: bearing);
-    }
+    // Always animate camera to driver position
+    _mapLogic.animateToDriver(position, bearing: bearing);
+
     if (_status == RideStatus.onTheWay && !_isInTrip) {
       _mapLogic.drawPhase1Route(position);
     }
@@ -102,6 +105,11 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
       _mapLogic.updateDriverSymbol(
         _controller.driverPosition!,
         _controller.driverBearing,
+      );
+      // Center camera on driver position
+      _mapLogic.animateToDriver(
+        _controller.driverPosition!,
+        bearing: _controller.driverBearing,
       );
     }
   }
@@ -132,6 +140,7 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
 
   @override
   void dispose() {
+    debugPrint('🗺️ [TrackingPage] Page closing, disposing resources');
     _controller.dispose();
     _mapLogic.dispose();
     super.dispose();

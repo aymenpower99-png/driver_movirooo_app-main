@@ -88,14 +88,24 @@ class TrackingMapLogic {
   // ── Driver symbol ─────────────────────────────────────────────────────────
 
   Future<void> updateDriverSymbol(GeoPoint pos, double bearing) async {
-    if (_driverMgr == null) return;
+    debugPrint(
+      '🗺️ [MapLogic] updateDriverSymbol called: ${pos.lat}, ${pos.lon}, bearing=$bearing',
+    );
+    if (_driverMgr == null) {
+      debugPrint('🗺️ [MapLogic] ⚠️ _driverMgr is null, cannot update marker');
+      return;
+    }
     final pt = Point(coordinates: Position(pos.lon, pos.lat));
 
     if (_driverAnn == null) {
       if (_driverCreating) return; // guard: create already in-flight
       _driverCreating = true;
       try {
+        debugPrint('🗺️ [MapLogic] Creating new driver marker...');
         _cachedCarBitmap ??= await MapPainters.renderCarBitmap();
+        debugPrint(
+          '🗺️ [MapLogic] Car bitmap rendered, creating annotation...',
+        );
         _driverAnn = await _driverMgr!.create(
           PointAnnotationOptions(
             geometry: pt,
@@ -105,14 +115,19 @@ class TrackingMapLogic {
             iconRotate: bearing,
           ),
         );
+        debugPrint('🗺️ [MapLogic] ✅ Driver marker created successfully');
+      } catch (e) {
+        debugPrint('🗺️ [MapLogic] ❌ Failed to create driver marker: $e');
       } finally {
         _driverCreating = false;
       }
     } else {
       // Subsequent calls — update position & rotation in-place (no flicker)
+      debugPrint('🗺️ [MapLogic] Updating existing driver marker...');
       _driverAnn!.geometry = pt;
       _driverAnn!.iconRotate = bearing;
       await _driverMgr!.update(_driverAnn!);
+      debugPrint('🗺️ [MapLogic] ✅ Driver marker updated');
     }
   }
 

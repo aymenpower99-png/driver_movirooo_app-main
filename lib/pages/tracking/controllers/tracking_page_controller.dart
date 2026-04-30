@@ -148,8 +148,10 @@ class TrackingPageController {
 
   /// Dispose of all resources.
   void dispose() {
+    debugPrint('🚗 [TrackingController] Disposing controller');
     _moveAnim?.dispose();
     _positionSubscription?.cancel();
     _bgGpsSubscription?.cancel();
+    debugPrint('🚗 [TrackingController] Controller disposed');
   }
 }
