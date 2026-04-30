@@ -1,19 +1,16 @@
 // lib/pages/tracking/tracking_page.dart
 
-import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart' as geo;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:moviroo_driver_app/core/models/geo_point.dart';
 import 'package:moviroo_driver_app/theme/app_colors.dart';
-import 'package:moviroo_driver_app/services/location/location_tracking_service.dart';
 import 'package:moviroo_driver_app/services/background/background_tracking_service.dart';
 import 'ride_model.dart';
 import 'tracking_bottom_sheet.dart';
 import 'tracking_map_logic.dart';
+import 'controllers/tracking_page_controller.dart';
 import 'widgets/status/status_step_indicator.dart';
 import 'widgets/map/tracking_map_btn.dart';
-import 'helpers/geo_math.dart';
 
 class TrackPassengerPage extends StatefulWidget {
   final RideModel ride;
@@ -28,30 +25,17 @@ class TrackPassengerPage extends StatefulWidget {
 
 class _TrackPassengerPageState extends State<TrackPassengerPage>
     with TickerProviderStateMixin {
-  RideStatus _status = RideStatus.assigned;
-
-  GeoPoint? _driverPosition;
-  double _driverBearing = 0;
-  GeoPoint? _prevPosition;
-
-  AnimationController? _moveAnim;
-  GeoPoint? _animStart;
-  GeoPoint? _animEnd;
-
+  late TrackingPageController _controller;
   late TrackingMapLogic _mapLogic;
-  final LocationTrackingService _locationService = LocationTrackingService();
-  StreamSubscription<geo.Position>? _positionSubscription;
-  StreamSubscription<Map<String, dynamic>?>? _bgGpsSubscription;
-
-  static const _defaultPt = GeoPoint(36.8189, 10.1658);
+  RideStatus _status = RideStatus.assigned;
 
   GeoPoint get _pickupPt => widget.ride.pickupLat != null
       ? GeoPoint(widget.ride.pickupLat!, widget.ride.pickupLon!)
-      : _defaultPt;
+      : throw Exception('Pickup coordinates required');
 
   GeoPoint get _dropoffPt => widget.ride.dropoffLat != null
       ? GeoPoint(widget.ride.dropoffLat!, widget.ride.dropoffLon!)
-      : _defaultPt;
+      : throw Exception('Dropoff coordinates required');
 
   bool get _isPrePickup =>
       _status == RideStatus.assigned || _status == RideStatus.onTheWay;
@@ -62,93 +46,47 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
   void initState() {
     super.initState();
 
+    _controller = TrackingPageController(
+      rideId: widget.ride.id,
+      pickupPt: _pickupPt,
+      dropoffPt: _dropoffPt,
+      onPositionUpdate: _onPositionUpdate,
+      onAnimationTick: _onAnimationTick,
+    );
+
+    _controller.initialize(this);
+
+    // Start background tracking service
+    BackgroundTrackingService.startTracking(widget.ride.id);
+
+    _controller.subscribeToGpsStreams();
+
     _mapLogic = TrackingMapLogic(
       pickupPt: _pickupPt,
       dropoffPt: _dropoffPt,
       onEtaUpdate: (_, __, ___) {},
     );
-
-    _moveAnim = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1500),
-    )..addListener(_onMoveAnimTick);
-
-    _startTracking();
   }
 
-  /// Start tracking services
-  void _startTracking() {
-    // Start foreground GPS stream for UI updates (no socket emission)
-    _locationService.startTracking(widget.ride.id);
-
-    // Start background service tracking (handles GPS + WebSocket in isolate)
-    BackgroundTrackingService.startTracking(widget.ride.id);
-
-    // Subscribe to foreground service's position stream
-    _positionSubscription = _locationService.positionStream.listen(
-      _onNewPosition,
+  void _onPositionUpdate(GeoPoint position, double bearing) {
+    debugPrint(
+      ' [TrackingPage] Position update received: ${position.lat}, ${position.lon}',
     );
 
-    // Subscribe to background service GPS bridge (works when app backgrounded)
-    _bgGpsSubscription = BackgroundTrackingService.onGpsUpdate.listen((data) {
-      if (data == null) return;
-      final lat = data['latitude'] as double?;
-      final lng = data['longitude'] as double?;
-      if (lat != null && lng != null) {
-        _onNewPositionFromCoords(lat, lng);
-      }
-    });
-  }
-
-  /// Handle GPS position from background service bridge (lat/lng only).
-  void _onNewPositionFromCoords(double lat, double lng) {
-    final newPt = GeoPoint(lat, lng);
-    if (_driverPosition != null) {
-      _driverBearing = GeoMath.calculateBearing(_driverPosition!, newPt);
-    }
-    _prevPosition = _driverPosition ?? newPt;
-    _driverPosition = newPt;
-
-    _animStart = _prevPosition;
-    _animEnd = newPt;
-    _moveAnim?.forward(from: 0.0);
+    // Update driver symbol immediately (not just during animation)
+    _mapLogic.updateDriverSymbol(position, bearing);
 
     if (_isPrePickup || _isInTrip) {
-      _mapLogic.animateToDriver(newPt, bearing: _driverBearing);
+      _mapLogic.animateToDriver(position, bearing: bearing);
     }
     if (_status == RideStatus.onTheWay && !_isInTrip) {
-      _mapLogic.drawPhase1Route(newPt);
+      _mapLogic.drawPhase1Route(position);
     }
-    _mapLogic.maybeRefreshEta(newPt, _isPrePickup, _isInTrip);
+    _mapLogic.maybeRefreshEta(position, _isPrePickup, _isInTrip);
   }
 
-  void _onNewPosition(geo.Position pos) {
-    final newPt = GeoPoint(pos.latitude, pos.longitude);
-    if (_driverPosition != null) {
-      _driverBearing = GeoMath.calculateBearing(_driverPosition!, newPt);
-    }
-    _prevPosition = _driverPosition ?? newPt;
-    _driverPosition = newPt;
-
-    _animStart = _prevPosition;
-    _animEnd = newPt;
-    _moveAnim?.forward(from: 0.0);
-
-    if (_isPrePickup || _isInTrip) {
-      _mapLogic.animateToDriver(newPt, bearing: _driverBearing);
-    }
-    if (_status == RideStatus.onTheWay && !_isInTrip) {
-      _mapLogic.drawPhase1Route(_driverPosition!);
-    }
-    _mapLogic.maybeRefreshEta(newPt, _isPrePickup, _isInTrip);
-  }
-
-  void _onMoveAnimTick() {
-    if (_animStart == null || _animEnd == null) return;
-    final t = Curves.easeInOut.transform(_moveAnim!.value);
-    final lat = GeoMath.lerpDouble(_animStart!.lat, _animEnd!.lat, t);
-    final lon = GeoMath.lerpDouble(_animStart!.lon, _animEnd!.lon, t);
-    _mapLogic.updateDriverSymbol(GeoPoint(lat, lon), _driverBearing);
+  void _onAnimationTick(GeoPoint position) {
+    _mapLogic.updateDriverSymbol(position, _controller.driverBearing);
   }
 
   void _onMapCreated(MapboxMap map) {
@@ -157,24 +95,32 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
     map.scaleBar.updateSettings(ScaleBarSettings(enabled: false));
   }
 
-  Future<void> _onStyleLoaded() => _mapLogic.onStyleLoaded();
+  Future<void> _onStyleLoaded() async {
+    await _mapLogic.onStyleLoaded();
+    // If we already have a driver position, update the marker immediately
+    if (_controller.driverPosition != null) {
+      _mapLogic.updateDriverSymbol(
+        _controller.driverPosition!,
+        _controller.driverBearing,
+      );
+    }
+  }
 
   Future<void> _onStatusChanged(RideStatus newStatus) async {
     setState(() => _status = newStatus);
     switch (newStatus) {
       case RideStatus.onTheWay:
-        if (_driverPosition != null)
-          _mapLogic.drawPhase1Route(_driverPosition!);
+        if (_controller.driverPosition != null)
+          _mapLogic.drawPhase1Route(_controller.driverPosition!);
         break;
       case RideStatus.arrived:
-        if (_driverPosition != null) {
-          _mapLogic.fitBoundsDriverToPickup(_driverPosition!);
+        if (_controller.driverPosition != null) {
+          _mapLogic.fitBoundsDriverToPickup(_controller.driverPosition!);
         }
         break;
       case RideStatus.startRide:
-        // Clear the pickup route, then draw a new route to drop-off
         await _mapLogic.clearRoute();
-        _mapLogic.drawPhase2Route(_driverPosition);
+        _mapLogic.drawPhase2Route(_controller.driverPosition);
         break;
       case RideStatus.completed:
         _mapLogic.stopAnimations();
@@ -186,12 +132,8 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
 
   @override
   void dispose() {
-    _moveAnim?.dispose();
+    _controller.dispose();
     _mapLogic.dispose();
-    _positionSubscription?.cancel();
-    _bgGpsSubscription?.cancel();
-    _locationService.stopTracking();
-    BackgroundTrackingService.stopTracking();
     super.dispose();
   }
 
@@ -212,8 +154,8 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
               cameraOptions: CameraOptions(
                 center: Point(
                   coordinates: Position(
-                    (_driverPosition ?? _pickupPt).lon,
-                    (_driverPosition ?? _pickupPt).lat,
+                    (_controller.driverPosition ?? _pickupPt).lon,
+                    (_controller.driverPosition ?? _pickupPt).lat,
                   ),
                 ),
                 zoom: 14.0,
@@ -232,10 +174,10 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
                 TrackingMapBtn(
                   icon: Icons.my_location_rounded,
                   onTap: () {
-                    if (_driverPosition != null) {
+                    if (_controller.driverPosition != null) {
                       _mapLogic.animateToDriver(
-                        _driverPosition!,
-                        bearing: _driverBearing,
+                        _controller.driverPosition!,
+                        bearing: _controller.driverBearing,
                       );
                     }
                   },
@@ -244,13 +186,7 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
                 TrackingMapBtn(
                   icon: Icons.zoom_out_map_rounded,
                   onTap: () {
-                    if (_isPrePickup || _status == RideStatus.arrived) {
-                      _driverPosition != null
-                          ? _mapLogic.fitBoundsDriverToPickup(_driverPosition!)
-                          : _mapLogic.fitToPickup();
-                    } else {
-                      _mapLogic.fitToFullRoute();
-                    }
+                    _mapLogic.fitBothMarkers();
                   },
                 ),
               ],

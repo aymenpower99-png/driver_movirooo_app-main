@@ -119,6 +119,9 @@ class BackgroundTrackingService {
   /// Listen to this in the main isolate to update the map UI.
   static Stream<Map<String, dynamic>?> get onGpsUpdate =>
       _service.on('gps_update');
+
+  /// Whether the background service is currently running (debug/UI use).
+  static Future<bool> isRunning() => _service.isRunning();
 }
 
 // ── Background isolate entry point (must be top-level function) ────────────────

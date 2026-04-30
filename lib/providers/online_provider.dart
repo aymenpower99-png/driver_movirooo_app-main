@@ -109,18 +109,28 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
     _activeRideId = rideId;
 
     if (rideId != null) {
-      // Check permission before starting tracking
-      final hasPermission = await PermissionStateStorage.isGranted();
+      // Check REAL OS permission before starting tracking (not stored state)
+      final hasPermission =
+          await BackgroundPermissionHandler.checkPermissionsOnly();
       if (hasPermission) {
+        debugPrint(
+          '🚗 [OnlineProvider] Starting background tracking for ride: $rideId',
+        );
         BackgroundTrackingService.startTracking(rideId);
       } else {
         // Show warning but keep ride active
+        debugPrint(
+          '🚗 [OnlineProvider] Permission denied, not starting tracking for ride: $rideId',
+        );
         _error =
             'Location permission required for tracking. Enable in settings to track ride.';
         notifyListeners();
       }
     } else {
       // Stop tracking when ride is completed/cancelled
+      debugPrint(
+        '🚗 [OnlineProvider] Stopping background tracking (no active ride)',
+      );
       BackgroundTrackingService.stopTracking();
     }
   }

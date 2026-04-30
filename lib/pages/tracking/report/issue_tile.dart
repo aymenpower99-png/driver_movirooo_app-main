@@ -1,8 +1,8 @@
-// lib/pages/tracking/widgets/report/issue_tile.dart
+// lib/pages/tracking/report/widgets/issue_tile.dart
 
 import 'package:flutter/material.dart';
 import 'package:moviroo_driver_app/theme/app_colors.dart';
-import 'ride_issue.dart';
+import '../models/ride_issue.dart';
 
 class IssueTile extends StatelessWidget {
   final RideIssue issue;

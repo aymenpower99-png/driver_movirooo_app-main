@@ -8,7 +8,7 @@ import 'package:moviroo_driver_app/pages/tracking/widgets/contact/contact_button
 import 'passenger_avatar.dart';
 import 'star_rating.dart';
 import 'package:moviroo_driver_app/pages/tracking/widgets/meta/ride_meta_row.dart';
-import 'package:moviroo_driver_app/pages/tracking/widgets/report/report_issue_page.dart';
+import 'package:moviroo_driver_app/pages/tracking/report/report_issue_page.dart';
 
 class PassengerInfoCard extends StatelessWidget {
   final PassengerModel passenger;

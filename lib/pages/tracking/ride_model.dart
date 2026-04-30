@@ -1,39 +1,41 @@
 // lib/pages/tracking/ride_model.dart
 
-enum RideStatus {
-  assigned,
-  onTheWay,
-  arrived,
-  startRide,
-  completed,
-}
+enum RideStatus { assigned, onTheWay, arrived, startRide, completed }
 
 extension RideStatusX on RideStatus {
   String get stepLabel {
     switch (this) {
-      case RideStatus.assigned:  return 'Assigned';
-      case RideStatus.onTheWay:  return 'On the Way';
-      case RideStatus.arrived:   return 'Arrived';
-      case RideStatus.startRide: return 'Start Ride';
-      case RideStatus.completed: return 'Complete';
+      case RideStatus.assigned:
+        return 'Assigned';
+      case RideStatus.onTheWay:
+        return 'On the Way';
+      case RideStatus.arrived:
+        return 'Arrived';
+      case RideStatus.startRide:
+        return 'Start Ride';
+      case RideStatus.completed:
+        return 'Complete';
     }
   }
 
   String get primaryButtonLabel {
     switch (this) {
-      case RideStatus.assigned:  return 'Go to Pickup';
-      case RideStatus.onTheWay:  return "I've Arrived";
-      case RideStatus.arrived:   return 'Start Ride';
-      case RideStatus.startRide: return 'Complete Ride';
-      case RideStatus.completed: return 'Done';
+      case RideStatus.assigned:
+        return 'Go to Pickup';
+      case RideStatus.onTheWay:
+        return "I've Arrived";
+      case RideStatus.arrived:
+        return 'Start Ride';
+      case RideStatus.startRide:
+        return 'Complete Ride';
+      case RideStatus.completed:
+        return 'Done';
     }
   }
 
-  bool get showContactButtons =>
-      this != RideStatus.assigned;
+  bool get showContactButtons => this != RideStatus.assigned;
 
-  bool get showBadge =>
-      this != RideStatus.assigned;
+  bool get showBadge => this != RideStatus.assigned;
 
   bool get showMeta =>
       this == RideStatus.assigned || this == RideStatus.onTheWay;
@@ -44,11 +46,16 @@ extension RideStatusX on RideStatus {
 
   RideStatus? get next {
     switch (this) {
-      case RideStatus.assigned:  return RideStatus.onTheWay;
-      case RideStatus.onTheWay:  return RideStatus.arrived;
-      case RideStatus.arrived:   return RideStatus.startRide;
-      case RideStatus.startRide: return RideStatus.completed;
-      case RideStatus.completed: return null;
+      case RideStatus.assigned:
+        return RideStatus.onTheWay;
+      case RideStatus.onTheWay:
+        return RideStatus.arrived;
+      case RideStatus.arrived:
+        return RideStatus.startRide;
+      case RideStatus.startRide:
+        return RideStatus.completed;
+      case RideStatus.completed:
+        return null;
     }
   }
 }
@@ -98,18 +105,3 @@ class RideModel {
     this.dropoffLon,
   });
 }
-
-const kSampleRide = RideModel(
-  id: 'ride_001',
-  passenger: PassengerModel(
-    name: 'Amira Ben Salah',
-    rating: 4.8,
-    avatarInitial: 'A',
-  ),
-  pickupAddress: '42 Avenue Habib Bourguiba, Tunis 1000',
-  dropOffAddress: 'Carthage Byrsa, Tunis',
-  distanceKm: 2.3,
-  etaMinutes: 5,
-  earningsAmount: 8.50,
-  currency: 'TND',
-);

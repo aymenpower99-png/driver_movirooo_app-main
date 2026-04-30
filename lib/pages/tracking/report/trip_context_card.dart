@@ -1,8 +1,8 @@
-// lib/pages/tracking/widgets/report/trip_context_card.dart
+// lib/pages/tracking/report/widgets/trip_context_card.dart
 
 import 'package:flutter/material.dart';
 import 'package:moviroo_driver_app/theme/app_colors.dart';
-import 'trip_row.dart';
+import '../widgets/shared/trip_row.dart';
 
 class TripContextCard extends StatelessWidget {
   final String passengerName;
@@ -31,8 +31,11 @@ class TripContextCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.person_outline_rounded,
-                  size: 14, color: AppColors.primaryPurple),
+              const Icon(
+                Icons.person_outline_rounded,
+                size: 14,
+                color: AppColors.primaryPurple,
+              ),
               const SizedBox(width: 6),
               Text(
                 passengerName,
@@ -50,10 +53,7 @@ class TripContextCard extends StatelessWidget {
             label: pickupAddress,
           ),
           const SizedBox(height: 4),
-          TripRow(
-            icon: Icons.circle,
-            label: dropOffAddress,
-          ),
+          TripRow(icon: Icons.circle, label: dropOffAddress),
         ],
       ),
     );

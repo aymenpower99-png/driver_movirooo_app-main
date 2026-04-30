@@ -190,6 +190,9 @@ class RideProvider extends ChangeNotifier {
 
       // Update online provider with the active ride if any
       final activeRide = upcomingRides.isNotEmpty ? upcomingRides.first : null;
+      debugPrint('🚗 [RideProvider] Loaded rides: ${_allRides.length} total');
+      debugPrint('🚗 [RideProvider] Upcoming rides: ${upcomingRides.length}');
+      debugPrint('🚗 [RideProvider] Active ride: ${activeRide?.id}');
       _onlineProvider?.setActiveRide(activeRide?.id);
     } on Exception catch (e) {
       _error = 'Could not load rides. $e';

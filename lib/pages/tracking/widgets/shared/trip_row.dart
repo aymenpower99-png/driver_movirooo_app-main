@@ -1,4 +1,4 @@
-// lib/pages/tracking/widgets/report/trip_row.dart
+// lib/pages/tracking/widgets/shared/trip_row.dart
 
 import 'package:flutter/material.dart';
 import 'package:moviroo_driver_app/theme/app_colors.dart';
@@ -19,10 +19,7 @@ class TripRow extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontSize: 12,
-              color: AppColors.subtext(context),
-            ),
+            style: TextStyle(fontSize: 12, color: AppColors.subtext(context)),
           ),
         ),
       ],

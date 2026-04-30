@@ -1,4 +1,4 @@
-// lib/pages/tracking/widgets/report/report_issue_page.dart
+// lib/pages/tracking/report/report_issue_page.dart
 
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -9,8 +9,8 @@ import 'package:moviroo_driver_app/services/support/support_service.dart';
 import 'package:moviroo_driver_app/core/models/ticket_model.dart';
 import 'package:moviroo_driver_app/core/widgets/app_toast.dart';
 import 'package:moviroo_driver_app/pages/tracking/widgets/photo/photo_grid.dart';
-import 'ride_issue.dart';
-import 'section_label.dart';
+import '../models/ride_issue.dart';
+import '../widgets/shared/section_label.dart';
 import 'issue_tile.dart';
 import 'trip_context_card.dart';
 
