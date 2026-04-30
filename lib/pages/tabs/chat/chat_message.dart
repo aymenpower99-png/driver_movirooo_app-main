@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../l10n/app_localizations.dart';
-import 'voice_message_bubble.dart';
 
 class ChatMessage {
   final String id;
@@ -12,11 +11,7 @@ class ChatMessage {
   final bool isMe;
   final String time;
   final bool isArabic;
-  final bool isVoice;
   final bool isEdited;
-
-  /// For voice messages: the local file path returned by the recorder.
-  final String? audioPath;
 
   const ChatMessage({
     required this.id,
@@ -25,9 +20,7 @@ class ChatMessage {
     required this.isMe,
     required this.time,
     this.isArabic = false,
-    this.isVoice = false,
     this.isEdited = false,
-    this.audioPath,
   });
 
   ChatMessage copyWith({String? text, String? translatedText, bool? isEdited}) {
@@ -38,9 +31,7 @@ class ChatMessage {
       isMe: isMe,
       time: time,
       isArabic: isArabic,
-      isVoice: isVoice,
       isEdited: isEdited ?? this.isEdited,
-      audioPath: audioPath,
     );
   }
 }
@@ -77,19 +68,6 @@ class ChatBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ── Voice bubble ───────────────────────────────────────
-    if (message.isVoice) {
-      return GestureDetector(
-        onLongPress: () => _showActionSheet(context),
-        child: VoiceMessageBubble(
-          isMe: message.isMe,
-          time: message.time,
-          audioPath: message.audioPath,
-        ),
-      );
-    }
-
-    // ── Text bubble ────────────────────────────────────────
     final isMe = message.isMe;
     final bubbleColor = isMe
         ? AppColors.primaryPurple
@@ -219,7 +197,7 @@ class _MessageActionsSheet extends StatelessWidget {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          if (message.isMe && !message.isVoice) ...[
+          if (message.isMe) ...[
             _ActionTile(
               icon: Icons.edit_rounded,
               label: t('chat_edit_action'),

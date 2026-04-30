@@ -17,6 +17,7 @@ import 'providers/auth_provider.dart';
 import 'providers/earnings_provider.dart';
 import 'providers/online_provider.dart';
 import 'providers/ride_provider.dart';
+import 'providers/chat_provider.dart';
 import 'services/background/background_tracking_service.dart';
 
 final themeProvider = ThemeProvider();
@@ -102,6 +103,7 @@ class _SmartWayAppState extends State<SmartWayApp> {
           ChangeNotifierProvider(create: (_) => AuthProvider()..init()),
           ChangeNotifierProvider(create: (_) => EarningsProvider()),
           ChangeNotifierProvider(create: (_) => OnlineProvider()),
+          ChangeNotifierProvider(create: (_) => ChatProvider()),
           ChangeNotifierProxyProvider<OnlineProvider, RideProvider>(
             create: (_) => RideProvider(),
             update: (_, onlineProvider, rideProvider) {

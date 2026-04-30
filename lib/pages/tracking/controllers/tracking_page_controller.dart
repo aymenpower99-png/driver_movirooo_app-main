@@ -16,7 +16,7 @@ class TrackingPageController {
   final GeoPoint pickupPt;
   final GeoPoint dropoffPt;
   final void Function(GeoPoint position, double bearing) onPositionUpdate;
-  final void Function(GeoPoint position) onAnimationTick;
+  final void Function(GeoPoint position, double bearing) onAnimationTick;
 
   // GPS streams
   final LocationTrackingService _locationService = LocationTrackingService();
@@ -31,6 +31,7 @@ class TrackingPageController {
   // Driver position state
   GeoPoint? _driverPosition;
   double _driverBearing = 0;
+  double _prevBearing = 0;
   GeoPoint? _prevPosition;
 
   TrackingPageController({
@@ -49,7 +50,7 @@ class TrackingPageController {
   void initialize(TickerProvider vsync) {
     _moveAnim = AnimationController(
       vsync: vsync,
-      duration: const Duration(milliseconds: 1500),
+      duration: const Duration(milliseconds: 1000),
     )..addListener(_onMoveAnimTick);
   }
 
@@ -107,25 +108,23 @@ class TrackingPageController {
 
   /// Handle GPS position from background service (lat/lng only).
   void _onNewPositionFromCoords(double lat, double lng) {
-    final newPt = GeoPoint(lat, lng);
-    if (_driverPosition != null) {
-      _driverBearing = GeoMath.calculateBearing(_driverPosition!, newPt);
-    }
-    _prevPosition = _driverPosition ?? newPt;
-    _driverPosition = newPt;
-
-    _animStart = _prevPosition;
-    _animEnd = newPt;
-    _moveAnim?.forward(from: 0.0);
-
-    onPositionUpdate(newPt, _driverBearing);
+    _processNewPosition(GeoPoint(lat, lng));
   }
 
   /// Handle GPS position from foreground stream.
   void _onNewPosition(geo.Position pos) {
-    final newPt = GeoPoint(pos.latitude, pos.longitude);
+    _processNewPosition(GeoPoint(pos.latitude, pos.longitude));
+  }
+
+  /// Common processing for a new GPS position - sets up smooth animation.
+  void _processNewPosition(GeoPoint newPt) {
+    _prevBearing = _driverBearing;
     if (_driverPosition != null) {
-      _driverBearing = GeoMath.calculateBearing(_driverPosition!, newPt);
+      // Only update bearing if moved enough to avoid jitter when stationary
+      final dist = GeoMath.distanceMeters(_driverPosition!, newPt);
+      if (dist > 1.5) {
+        _driverBearing = GeoMath.calculateBearing(_driverPosition!, newPt);
+      }
     }
     _prevPosition = _driverPosition ?? newPt;
     _driverPosition = newPt;
@@ -137,13 +136,21 @@ class TrackingPageController {
     onPositionUpdate(newPt, _driverBearing);
   }
 
-  /// Animation tick callback.
+  /// Animation tick callback - smoothly interpolates position and bearing.
   void _onMoveAnimTick() {
     if (_animStart == null || _animEnd == null) return;
     final t = Curves.easeInOut.transform(_moveAnim!.value);
     final lat = GeoMath.lerpDouble(_animStart!.lat, _animEnd!.lat, t);
     final lon = GeoMath.lerpDouble(_animStart!.lon, _animEnd!.lon, t);
-    onAnimationTick(GeoPoint(lat, lon));
+    // Interpolate bearing using shortest angular path
+    final bearing = _lerpBearing(_prevBearing, _driverBearing, t);
+    onAnimationTick(GeoPoint(lat, lon), bearing);
+  }
+
+  /// Linear interpolation for bearings (handles 0/360 wrap-around).
+  double _lerpBearing(double a, double b, double t) {
+    double diff = ((b - a + 540) % 360) - 180;
+    return (a + diff * t + 360) % 360;
   }
 
   /// Dispose of all resources.

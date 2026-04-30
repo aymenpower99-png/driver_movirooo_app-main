@@ -4,6 +4,7 @@ import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../l10n/app_localizations.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../providers/chat_provider.dart';
 import '../../../services/chat/chat_service.dart';
 import 'chat_message.dart';
 import 'chat_input.dart';
@@ -22,8 +23,6 @@ class _ChatPageState extends State<ChatPage> {
   final ChatService _chatService = ChatService();
   bool _autoTranslate = true;
   bool _loading = true;
-
-  final List<ChatMessage> _messages = [];
 
   String? _rideId;
   String? _myUserId;
@@ -44,6 +43,8 @@ class _ChatPageState extends State<ChatPage> {
   }
 
   Future<void> _initChat() async {
+    final chatProvider = context.read<ChatProvider>();
+
     // Wire socket callbacks
     _chatService.onMessage = _onNewMessage;
     _chatService.onEdited = _onMessageEdited;
@@ -52,17 +53,12 @@ class _ChatPageState extends State<ChatPage> {
     // Connect WebSocket
     await _chatService.connect(_rideId!);
 
-    // Load history
+    // Load history (only if not cached)
+    setState(() => _loading = true);
     try {
-      final history = await _chatService.fetchHistory(_rideId!);
+      await chatProvider.fetchMessages(_rideId!);
       if (mounted) {
-        setState(() {
-          _messages.clear();
-          for (final m in history) {
-            _messages.add(_chatMsgToUI(m));
-          }
-          _loading = false;
-        });
+        setState(() => _loading = false);
         _scrollToBottom();
       }
     } catch (_) {
@@ -70,65 +66,50 @@ class _ChatPageState extends State<ChatPage> {
     }
   }
 
-  ChatMessage _chatMsgToUI(ChatMsg m) {
-    return ChatMessage(
-      id: m.id,
-      text: m.text,
-      isMe: m.senderId == _myUserId,
-      time: _formatTime(m.createdAt),
-      isVoice: m.isVoice,
-      isEdited: m.isEdited,
-    );
-  }
-
   void _onNewMessage(ChatMsg msg) {
-    // Avoid duplicates (we already added optimistic local messages)
-    if (_messages.any((m) => m.id == msg.id)) return;
+    final chatProvider = context.read<ChatProvider>();
+    final messages = chatProvider.getMessages(_rideId!);
+
+    // Avoid duplicates
+    if (messages.any((m) => m.id == msg.id)) return;
+
     // Remove optimistic placeholder if this is our own message
-    if (msg.senderId == _myUserId) {
-      _messages.removeWhere(
-        (m) => m.id.startsWith('local_') && m.text == msg.text,
-      );
+    if (msg.senderRole == 'driver') {
+      chatProvider.deleteMessage(_rideId!, 'local_${msg.text}');
     }
-    if (mounted) {
-      setState(() => _messages.add(_chatMsgToUI(msg)));
-      _scrollToBottom();
-    }
+
+    // Add new message to provider
+    final uiMsg = ChatMessage(
+      id: msg.id,
+      text: msg.text,
+      isMe: msg.senderRole == 'driver',
+      time: _formatTime(msg.createdAt),
+      isEdited: msg.isEdited,
+    );
+    chatProvider.addMessage(_rideId!, uiMsg);
+    _scrollToBottom();
   }
 
   void _onMessageEdited(String messageId, String text) {
-    if (!mounted) return;
-    setState(() {
-      final idx = _messages.indexWhere((m) => m.id == messageId);
-      if (idx != -1) {
-        _messages[idx] = _messages[idx].copyWith(text: text, isEdited: true);
-      }
-    });
+    final chatProvider = context.read<ChatProvider>();
+    chatProvider.updateMessage(_rideId!, messageId, text);
   }
 
   void _onMessageDeleted(String messageId) {
-    if (!mounted) return;
-    setState(() => _messages.removeWhere((m) => m.id == messageId));
+    final chatProvider = context.read<ChatProvider>();
+    chatProvider.deleteMessage(_rideId!, messageId);
   }
 
   // ── Delete ──────────────────────────────────────────────
   void _deleteMessage(String id) {
     _chatService.deleteMessage(rideId: _rideId!, messageId: id);
-    setState(() => _messages.removeWhere((m) => m.id == id));
+    context.read<ChatProvider>().deleteMessage(_rideId!, id);
   }
 
   // ── Edit ────────────────────────────────────────────────
   void _editMessage(String id, String newText) {
     _chatService.editMessage(rideId: _rideId!, messageId: id, text: newText);
-    setState(() {
-      final index = _messages.indexWhere((m) => m.id == id);
-      if (index != -1) {
-        _messages[index] = _messages[index].copyWith(
-          text: newText,
-          isEdited: true,
-        );
-      }
-    });
+    context.read<ChatProvider>().updateMessage(_rideId!, id, newText);
   }
 
   // ── Send text ───────────────────────────────────────────
@@ -143,21 +124,6 @@ class _ChatPageState extends State<ChatPage> {
     );
 
     _input.clear();
-    _scrollToBottom();
-  }
-
-  // ── Send voice ──────────────────────────────────────────
-  void _sendVoice(String audioPath) {
-    if (_rideId == null || _myUserId == null) return;
-
-    _chatService.sendMessage(
-      rideId: _rideId!,
-      senderId: _myUserId!,
-      senderRole: 'driver',
-      text: '🎤 Voice message',
-      isVoice: true,
-    );
-
     _scrollToBottom();
   }
 
@@ -206,35 +172,37 @@ class _ChatPageState extends State<ChatPage> {
               const Expanded(child: Center(child: CircularProgressIndicator()))
             else
               Expanded(
-                child: _messages.isEmpty
-                    ? Center(
-                        child: Text(
-                          t('chat_no_messages'),
-                          style: AppTextStyles.bodySmall(
-                            context,
-                          ).copyWith(color: AppColors.subtext(context)),
-                        ),
-                      )
-                    : ListView.builder(
-                        controller: _scroll,
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: _messages.length,
-                        itemBuilder: (context, i) {
-                          final msg = _messages[i];
-                          return ChatBubble(
-                            message: msg,
-                            showTranslation: _autoTranslate,
-                            onDelete: () => _deleteMessage(msg.id),
-                            onEdit: (newText) => _editMessage(msg.id, newText),
+                child: Consumer<ChatProvider>(
+                  builder: (context, chatProvider, _) {
+                    final messages = chatProvider.getMessages(_rideId!);
+                    return messages.isEmpty
+                        ? Center(
+                            child: Text(
+                              t('chat_no_messages'),
+                              style: AppTextStyles.bodySmall(
+                                context,
+                              ).copyWith(color: AppColors.subtext(context)),
+                            ),
+                          )
+                        : ListView.builder(
+                            controller: _scroll,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            itemCount: messages.length,
+                            itemBuilder: (context, i) {
+                              final msg = messages[i];
+                              return ChatBubble(
+                                message: msg,
+                                showTranslation: _autoTranslate,
+                                onDelete: () => _deleteMessage(msg.id),
+                                onEdit: (newText) =>
+                                    _editMessage(msg.id, newText),
+                              );
+                            },
                           );
-                        },
-                      ),
+                  },
+                ),
               ),
-            ChatInputBar(
-              controller: _input,
-              onSend: _sendMessage,
-              onVoiceSend: _sendVoice,
-            ),
+            ChatInputBar(controller: _input, onSend: _sendMessage),
           ],
         ),
       ),

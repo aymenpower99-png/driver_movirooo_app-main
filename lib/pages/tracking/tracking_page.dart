@@ -76,10 +76,8 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
       '🗺️ [TrackingPage] Position update received: ${position.lat}, ${position.lon}',
     );
 
-    // Update driver symbol immediately (not just during animation)
-    _mapLogic.updateDriverSymbol(position, bearing);
-
-    // Always animate camera to driver position
+    // Note: marker movement & rotation are handled smoothly via _onAnimationTick.
+    // We only handle camera + route + ETA refresh here.
     _mapLogic.animateToDriver(position, bearing: bearing);
 
     if (_status == RideStatus.onTheWay && !_isInTrip) {
@@ -88,8 +86,9 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
     _mapLogic.maybeRefreshEta(position, _isPrePickup, _isInTrip);
   }
 
-  void _onAnimationTick(GeoPoint position) {
-    _mapLogic.updateDriverSymbol(position, _controller.driverBearing);
+  void _onAnimationTick(GeoPoint position, double bearing) {
+    // Smoothly move and rotate the driver marker on every animation frame.
+    _mapLogic.updateDriverSymbol(position, bearing);
   }
 
   void _onMapCreated(MapboxMap map) {
