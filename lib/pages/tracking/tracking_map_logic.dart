@@ -6,6 +6,7 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:moviroo_driver_app/core/models/geo_point.dart';
 import 'package:moviroo_driver_app/services/mapbox/mapbox_service.dart';
 import 'map/map_painters.dart';
+import 'route_deviation_detector.dart';
 
 /// Manages all Mapbox map logic: markers, route line, and camera.
 class TrackingMapLogic {
@@ -19,6 +20,7 @@ class TrackingMapLogic {
 
   PointAnnotation? _driverAnn;
   bool _driverCreating = false;
+  bool _driverUpdating = false;
   Uint8List? _cachedCarBitmap;
 
   bool _pickupRouteDrawn = false;
@@ -26,6 +28,18 @@ class TrackingMapLogic {
   bool _srcReady = false;
 
   DateTime? _lastEtaRefresh;
+  DateTime? _lastManualZoom;
+
+  /// Default zoom used when user explicitly taps GPS button or on first center.
+  static const double _defaultFollowZoom = 17.0;
+
+  /// Whether the camera should follow the driver (pans without resetting zoom).
+  bool _followMode = true;
+
+  /// Whether we've centered on the driver at least once (to set initial zoom).
+  bool _initialCenterDone = false;
+
+  final RouteDeviationDetector _deviationDetector = RouteDeviationDetector();
 
   TrackingMapLogic({
     required this.pickupPt,
@@ -74,7 +88,7 @@ class TrackingMapLogic {
         id: 'route-layer',
         sourceId: 'route-src',
         lineColor: const Color(0xFFA855F7).toARGB32(),
-        lineWidth: 4.0,
+        lineWidth: 8.0,
         lineOpacity: 1.0,
         lineCap: LineCap.ROUND,
         lineJoin: LineJoin.ROUND,
@@ -88,24 +102,14 @@ class TrackingMapLogic {
   // ── Driver symbol ─────────────────────────────────────────────────────────
 
   Future<void> updateDriverSymbol(GeoPoint pos, double bearing) async {
-    debugPrint(
-      '🗺️ [MapLogic] updateDriverSymbol called: ${pos.lat}, ${pos.lon}, bearing=$bearing',
-    );
-    if (_driverMgr == null) {
-      debugPrint('🗺️ [MapLogic] ⚠️ _driverMgr is null, cannot update marker');
-      return;
-    }
+    if (_driverMgr == null) return;
     final pt = Point(coordinates: Position(pos.lon, pos.lat));
 
     if (_driverAnn == null) {
       if (_driverCreating) return; // guard: create already in-flight
       _driverCreating = true;
       try {
-        debugPrint('🗺️ [MapLogic] Creating new driver marker...');
         _cachedCarBitmap ??= await MapPainters.renderCarBitmap();
-        debugPrint(
-          '🗺️ [MapLogic] Car bitmap rendered, creating annotation...',
-        );
         _driverAnn = await _driverMgr!.create(
           PointAnnotationOptions(
             geometry: pt,
@@ -115,20 +119,50 @@ class TrackingMapLogic {
             iconRotate: bearing,
           ),
         );
-        debugPrint('🗺️ [MapLogic] ✅ Driver marker created successfully');
       } catch (e) {
         debugPrint('🗺️ [MapLogic] ❌ Failed to create driver marker: $e');
       } finally {
         _driverCreating = false;
       }
     } else {
-      // Subsequent calls — update position & rotation in-place (no flicker)
-      debugPrint('🗺️ [MapLogic] Updating existing driver marker...');
-      _driverAnn!.geometry = pt;
-      _driverAnn!.iconRotate = bearing;
-      await _driverMgr!.update(_driverAnn!);
-      debugPrint('🗺️ [MapLogic] ✅ Driver marker updated');
+      // Throttle: skip if previous update still in-flight to prevent method
+      // channel bottleneck that causes jerky motion.
+      if (_driverUpdating) return;
+      _driverUpdating = true;
+      try {
+        _driverAnn!.geometry = pt;
+        _driverAnn!.iconRotate = bearing;
+        await _driverMgr!.update(_driverAnn!);
+      } catch (e) {
+        // silent fail — marker will catch up on next tick
+      } finally {
+        _driverUpdating = false;
+      }
     }
+
+    // Camera follow: on first position, fly in to navigation zoom.
+    // After that, only pan without resetting zoom (preserves user's zoom).
+    if (_followMode) {
+      if (!_initialCenterDone) {
+        _initialCenterDone = true;
+        animateToDriver(pos, bearing: bearing);
+      } else {
+        _followCameraToDriver(pos, bearing);
+      }
+    }
+  }
+
+  /// Pan the camera to driver's position WITHOUT changing zoom.
+  /// Preserves any zoom level the user or system previously set.
+  void _followCameraToDriver(GeoPoint pos, double bearing) {
+    if (_map == null) return;
+    _map!.easeTo(
+      CameraOptions(
+        center: Point(coordinates: Position(pos.lon, pos.lat)),
+        bearing: bearing,
+      ),
+      MapAnimationOptions(duration: 500),
+    );
   }
 
   // ── Phase 1: Driver → Pickup ──────────────────────────────────────────────
@@ -146,6 +180,7 @@ class TrackingMapLogic {
 
     if (result != null) {
       onEtaUpdate(result.etaText, result.distanceText, 'To Pickup');
+      _deviationDetector.setCurrentRoute(result.geometry, pickupPt);
       await _map!.style.setStyleSourceProperty(
         'route-src',
         'data',
@@ -180,6 +215,7 @@ class TrackingMapLogic {
 
     if (result != null) {
       onEtaUpdate(result.etaText, result.distanceText, 'To Drop-off');
+      _deviationDetector.setCurrentRoute(result.geometry, dropoffPt);
       await _map!.style.setStyleSourceProperty(
         'route-src',
         'data',
@@ -208,6 +244,79 @@ class TrackingMapLogic {
     );
     _pickupRouteDrawn = false;
     _dropoffRouteDrawn = false;
+    _deviationDetector.clearRoute();
+  }
+
+  // ── Route deviation and re-routing ─────────────────────────────────────────
+
+  /// Check if driver has deviated from route and trigger re-routing if needed.
+  ///
+  /// Returns true if re-route was triggered, false otherwise.
+  /// Call this on each GPS update to enable automatic re-routing.
+  Future<bool> checkAndReroute(GeoPoint driverPos, bool isPrePickup) async {
+    if (!_deviationDetector.shouldReroute(driverPos)) {
+      return false;
+    }
+
+    debugPrint('🗺️ [MapLogic] Driver off-route — re-routing');
+
+    // Clear old route
+    await clearRoute();
+
+    // Draw new route from current position (without auto-fit to preserve camera)
+    if (isPrePickup) {
+      await _drawPhase1RouteNoFit(driverPos);
+    } else {
+      await _drawPhase2RouteNoFit(driverPos);
+    }
+
+    return true;
+  }
+
+  /// Draw Phase 1 route WITHOUT fitting camera bounds (preserves current zoom).
+  Future<void> _drawPhase1RouteNoFit(GeoPoint driver) async {
+    if (!_srcReady) return;
+    _pickupRouteDrawn = true;
+
+    final result = await MapboxService.getRoute(
+      driver.lat,
+      driver.lon,
+      pickupPt.lat,
+      pickupPt.lon,
+    );
+
+    if (result != null) {
+      onEtaUpdate(result.etaText, result.distanceText, 'To Pickup');
+      _deviationDetector.setCurrentRoute(result.geometry, pickupPt);
+      await _map!.style.setStyleSourceProperty(
+        'route-src',
+        'data',
+        _geometryToGeoJson(result.geometry),
+      );
+    }
+  }
+
+  /// Draw Phase 2 route WITHOUT fitting camera bounds (preserves current zoom).
+  Future<void> _drawPhase2RouteNoFit(GeoPoint driver) async {
+    if (!_srcReady) return;
+    _dropoffRouteDrawn = true;
+
+    final result = await MapboxService.getRoute(
+      driver.lat,
+      driver.lon,
+      dropoffPt.lat,
+      dropoffPt.lon,
+    );
+
+    if (result != null) {
+      onEtaUpdate(result.etaText, result.distanceText, 'To Drop-off');
+      _deviationDetector.setCurrentRoute(result.geometry, dropoffPt);
+      await _map!.style.setStyleSourceProperty(
+        'route-src',
+        'data',
+        _geometryToGeoJson(result.geometry),
+      );
+    }
   }
 
   // ── ETA refresh ───────────────────────────────────────────────────────────
@@ -284,6 +393,11 @@ class TrackingMapLogic {
 
   void fitBoundsDriverToPickup(GeoPoint driver) {
     if (_map == null) return;
+    // Skip auto-zoom if manual zoom happened within last 5 seconds
+    if (_lastManualZoom != null &&
+        DateTime.now().difference(_lastManualZoom!).inSeconds < 5) {
+      return;
+    }
     final sw = GeoPoint(
       math.min(driver.lat, pickupPt.lat),
       math.min(driver.lon, pickupPt.lon),
@@ -311,6 +425,11 @@ class TrackingMapLogic {
 
   void fitToFullRoute() {
     if (_map == null) return;
+    // Skip auto-zoom if manual zoom happened within last 5 seconds
+    if (_lastManualZoom != null &&
+        DateTime.now().difference(_lastManualZoom!).inSeconds < 5) {
+      return;
+    }
     final sw = GeoPoint(
       math.min(pickupPt.lat, dropoffPt.lat),
       math.min(pickupPt.lon, dropoffPt.lon),
@@ -336,11 +455,17 @@ class TrackingMapLogic {
         .catchError((_) {});
   }
 
+  /// Called by the GPS location button OR for initial centering.
+  /// Resets zoom to a navigation-friendly level and centers on driver.
+  /// Re-enables follow mode.
   void animateToDriver(GeoPoint pos, {double bearing = 0}) {
+    _lastManualZoom = DateTime.now();
+    _followMode = true;
+    _initialCenterDone = true;
     _map?.flyTo(
       CameraOptions(
         center: Point(coordinates: Position(pos.lon, pos.lat)),
-        zoom: 16.0,
+        zoom: _defaultFollowZoom,
         bearing: bearing,
         pitch: 45.0,
       ),

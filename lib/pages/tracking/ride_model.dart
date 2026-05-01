@@ -89,6 +89,7 @@ class RideModel {
   final double? pickupLon;
   final double? dropoffLat;
   final double? dropoffLon;
+  final RideStatus status;
 
   const RideModel({
     required this.id,
@@ -103,5 +104,6 @@ class RideModel {
     this.pickupLon,
     this.dropoffLat,
     this.dropoffLon,
+    this.status = RideStatus.assigned,
   });
 }

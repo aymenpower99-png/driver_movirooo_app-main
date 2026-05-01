@@ -244,16 +244,25 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
       // we were backgrounded and the FCM background handler couldn't update state.
       _syncOnResume();
     } else if (state == AppLifecycleState.paused ||
-        state == AppLifecycleState.inactive ||
-        state == AppLifecycleState.detached) {
+        state == AppLifecycleState.inactive) {
       // Stop heartbeat when app goes to background
       _stopHeartbeat();
+    } else if (state == AppLifecycleState.detached) {
+      // App is being terminated (force-killed / swiped away)
+      // Stop heartbeat AND stop background tracking service entirely
+      // so the persistent notification disappears and GPS streaming stops.
+      _stopHeartbeat();
+      debugPrint(
+        '🚗 [OnlineProvider] App detached — stopping background tracking service',
+      );
+      BackgroundTrackingService.stopTracking();
+      BackgroundTrackingService.stop();
     }
   }
 
   /// Re-fetches driver status from backend on app resume.
   /// If backend says offline but we think we're online → treat as forced offline.
-  /// If still online → send an immediate heartbeat to keep alive.
+  /// If still online → send an immediate heartbeat to prevent stale sweep.
   Future<void> _syncOnResume() async {
     if (_forcedOffline) return; // already handled locally
     try {
@@ -262,30 +271,43 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
 
       if (_isOnline && !backendOnline) {
         // Backend marked us offline while we were backgrounded.
-        // The backend sweep already accumulated the session time — just clear local state.
-        _forcedOffline = true;
-        _isOnline = false;
-        _lastOnlineAt = null;
-        _stopTimers();
+        // However, if we have an active ride, the backend sweep may have
+        // marked us offline due to heartbeat stopping in background (normal).
+        // Only force offline if we truly have no active ride.
+        if (_activeRideId == null) {
+          // No active ride — driver was genuinely inactive
+          _forcedOffline = true;
+          _isOnline = false;
+          _lastOnlineAt = null;
+          _stopTimers();
 
-        // Re-fetch to get the updated monthlyOnlineMs from backend.
-        try {
-          final updated = await _driver.getMe();
-          _backendMonthlyMs = updated.monthlyOnlineMs;
-          _driverProfile = updated;
-        } catch (_) {
-          // keep last known value
+          // Re-fetch to get the updated monthlyOnlineMs from backend.
+          try {
+            final updated = await _driver.getMe();
+            _backendMonthlyMs = updated.monthlyOnlineMs;
+            _driverProfile = updated;
+          } catch (_) {
+            // keep last known value
+          }
+
+          _error =
+              'You went offline due to inactivity. Toggle online to reconnect.';
+          NotificationService.instance.showLocalNotification(
+            title: '⚠️ You went offline',
+            body:
+                'Your status was changed to offline due to inactivity. Tap to go back online.',
+            payload: 'DRIVER_WENT_OFFLINE',
+          );
+          notifyListeners();
+        } else {
+          // Has active ride — backend marked us offline due to heartbeat stopping
+          // in background (normal during long trips). Ignore and send heartbeat
+          // to re-establish online status with backend.
+          debugPrint(
+            '🚗 [OnlineProvider] Backend says OFFLINE but we have active ride $_activeRideId — ignoring, sending heartbeat',
+          );
+          _sendImmediateHeartbeat();
         }
-
-        _error =
-            'You went offline due to inactivity. Toggle online to reconnect.';
-        NotificationService.instance.showLocalNotification(
-          title: '⚠️ You went offline',
-          body:
-              'Your status was changed to offline due to inactivity. Tap to go back online.',
-          payload: 'DRIVER_WENT_OFFLINE',
-        );
-        notifyListeners();
       } else if (_isOnline) {
         // Still online — send heartbeat to prevent stale sweep
         _sendImmediateHeartbeat();
@@ -508,6 +530,7 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
       }
     } catch (e) {
       debugPrint('OnlineProvider.toggleOnline: $e');
+      _error = 'Failed to change online status: ${e.toString()}';
     } finally {
       _loading = false;
       notifyListeners();

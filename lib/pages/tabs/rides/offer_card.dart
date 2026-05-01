@@ -77,7 +77,10 @@ class OfferCard extends StatelessWidget {
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.primaryPurple.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(20),
@@ -102,27 +105,48 @@ class OfferCard extends StatelessWidget {
           if (ride.rideTime.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 8),
-              child: Builder(builder: (_) {
-                final dt = tryParseDateTime(ride.rideTime);
-                if (dt == null) {
-                  return Row(children: [
-                    RideInfoChip(icon: Icons.schedule_outlined, label: ride.rideTime),
-                    if ((ride.distanceKm ?? 0) > 0) ...[
+              child: Builder(
+                builder: (_) {
+                  final dt = tryParseDateTime(ride.rideTime);
+                  if (dt == null) {
+                    return Row(
+                      children: [
+                        RideInfoChip(
+                          icon: Icons.schedule_outlined,
+                          label: ride.rideTime,
+                        ),
+                        if ((ride.distanceKm ?? 0) > 0) ...[
+                          const SizedBox(width: 14),
+                          RideInfoChip(
+                            icon: Icons.route_rounded,
+                            label: '${ride.distanceKm!.toStringAsFixed(1)} km',
+                          ),
+                        ],
+                      ],
+                    );
+                  }
+                  return Row(
+                    children: [
+                      RideInfoChip(
+                        icon: Icons.calendar_today_outlined,
+                        label: formatRideDate(dt),
+                      ),
                       const SizedBox(width: 14),
-                      RideInfoChip(icon: Icons.route_rounded, label: '${ride.distanceKm!.toStringAsFixed(1)} km'),
+                      RideInfoChip(
+                        icon: Icons.access_time_outlined,
+                        label: formatRideTime(dt),
+                      ),
+                      if ((ride.distanceKm ?? 0) > 0) ...[
+                        const SizedBox(width: 14),
+                        RideInfoChip(
+                          icon: Icons.route_rounded,
+                          label: '${ride.distanceKm!.toStringAsFixed(1)} km',
+                        ),
+                      ],
                     ],
-                  ]);
-                }
-                return Row(children: [
-                  RideInfoChip(icon: Icons.calendar_today_outlined, label: formatRideDate(dt)),
-                  const SizedBox(width: 14),
-                  RideInfoChip(icon: Icons.access_time_outlined, label: formatRideTime(dt)),
-                  if ((ride.distanceKm ?? 0) > 0) ...[
-                    const SizedBox(width: 14),
-                    RideInfoChip(icon: Icons.route_rounded, label: '${ride.distanceKm!.toStringAsFixed(1)} km'),
-                  ],
-                ]);
-              }),
+                  );
+                },
+              ),
             ),
 
           // ── Route timeline ─────────────────────────────────
@@ -164,14 +188,18 @@ class OfferCard extends StatelessWidget {
                         onlineProvider.refreshDriverProfile();
                       } else {
                         AppToast.errorMessenger(
-                            messenger, rideProvider.error ?? 'Error');
+                          messenger,
+                          rideProvider.error ?? 'Error',
+                        );
                       }
                     },
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.error,
                       side: BorderSide(color: AppColors.error),
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                     child: Text(t('ride_action_reject')),
                   ),
@@ -192,9 +220,29 @@ class OfferCard extends StatelessWidget {
                       final ok = await rideProvider.acceptOffer(offer.id);
                       if (ok) {
                         final rideData = offer.ride;
-                        final initial = (rideData.passengerName ?? '').trim().isNotEmpty
+                        final initial =
+                            (rideData.passengerName ?? '').trim().isNotEmpty
                             ? rideData.passengerName!.trim()[0].toUpperCase()
                             : '?';
+
+                        // Map backend status to tracking RideStatus enum
+                        tracking.RideStatus mapStatus(String status) {
+                          switch (status.toUpperCase()) {
+                            case 'ASSIGNED':
+                              return tracking.RideStatus.assigned;
+                            case 'EN_ROUTE_TO_PICKUP':
+                              return tracking.RideStatus.onTheWay;
+                            case 'ARRIVED':
+                              return tracking.RideStatus.arrived;
+                            case 'IN_TRIP':
+                              return tracking.RideStatus.startRide;
+                            case 'COMPLETED':
+                              return tracking.RideStatus.completed;
+                            default:
+                              return tracking.RideStatus.assigned;
+                          }
+                        }
+
                         final trackRide = tracking.RideModel(
                           id: offer.rideId,
                           passenger: tracking.PassengerModel(
@@ -213,17 +261,21 @@ class OfferCard extends StatelessWidget {
                           pickupLon: rideData.pickupLon,
                           dropoffLat: rideData.dropoffLat,
                           dropoffLon: rideData.dropoffLon,
+                          status: mapStatus(rideData.status),
                         );
                         AppToast.successMessenger(messenger, acceptedText);
                         NotificationService.instance.showLocalNotification(
                           title: 'Ride Accepted',
-                          body: 'You are on the way to pick up ${rideData.passengerName ?? 'the passenger'}.',
+                          body:
+                              'You are on the way to pick up ${rideData.passengerName ?? 'the passenger'}.',
                         );
                         onlineProvider.refreshDriverProfile();
                         navigator.push(TrackPassengerPage.route(trackRide));
                       } else {
                         AppToast.errorMessenger(
-                            messenger, rideProvider.error ?? 'Error');
+                          messenger,
+                          rideProvider.error ?? 'Error',
+                        );
                       }
                     },
                     style: ElevatedButton.styleFrom(
@@ -231,7 +283,9 @@ class OfferCard extends StatelessWidget {
                       foregroundColor: Colors.white,
                       elevation: 0,
                       padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
                     ),
                     child: Text(t('ride_action_accept')),
                   ),

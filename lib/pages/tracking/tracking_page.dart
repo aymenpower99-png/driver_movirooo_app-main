@@ -27,7 +27,7 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
     with TickerProviderStateMixin {
   late TrackingPageController _controller;
   late TrackingMapLogic _mapLogic;
-  RideStatus _status = RideStatus.assigned;
+  late RideStatus _status;
 
   GeoPoint get _pickupPt => widget.ride.pickupLat != null
       ? GeoPoint(widget.ride.pickupLat!, widget.ride.pickupLon!)
@@ -46,6 +46,8 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
   void initState() {
     super.initState();
     debugPrint(' [TrackingPage] Page opened for ride: ${widget.ride.id}');
+
+    _status = widget.ride.status;
 
     _controller = TrackingPageController(
       rideId: widget.ride.id,
@@ -72,13 +74,12 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
   }
 
   void _onPositionUpdate(GeoPoint position, double bearing) {
-    debugPrint(
-      '🗺️ [TrackingPage] Position update received: ${position.lat}, ${position.lon}',
-    );
+    // Check for route deviation and trigger re-routing if needed
+    _mapLogic.checkAndReroute(position, _isPrePickup);
 
-    // Note: marker movement & rotation are handled smoothly via _onAnimationTick.
-    // We only handle camera + route + ETA refresh here.
-    _mapLogic.animateToDriver(position, bearing: bearing);
+    // Note: marker movement, rotation AND camera follow are handled smoothly
+    // via _onAnimationTick -> updateDriverSymbol (which pans camera without
+    // resetting zoom). No need to call animateToDriver here on every update.
 
     if (_status == RideStatus.onTheWay && !_isInTrip) {
       _mapLogic.drawPhase1Route(position);
@@ -142,6 +143,17 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
     debugPrint('🗺️ [TrackingPage] Page closing, disposing resources');
     _controller.dispose();
     _mapLogic.dispose();
+
+    // If the ride reached a terminal state (completed), make sure background
+    // tracking is fully stopped. Cancel/end paths already stop it explicitly,
+    // but this is a safety net for any other navigation away from the page.
+    if (_status == RideStatus.completed) {
+      debugPrint(
+        '🗺️ [TrackingPage] Ride is COMPLETED — stopping background tracking',
+      );
+      BackgroundTrackingService.stopTracking();
+      BackgroundTrackingService.stop();
+    }
     super.dispose();
   }
 

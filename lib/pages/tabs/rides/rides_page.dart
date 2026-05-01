@@ -206,6 +206,25 @@ class _UpcomingTab extends StatelessWidget {
     final initial = (r.passengerName ?? '').trim().isNotEmpty
         ? r.passengerName!.trim()[0].toUpperCase()
         : '?';
+
+    // Map backend status to tracking RideStatus enum
+    tracking.RideStatus mapStatus(String status) {
+      switch (status.toUpperCase()) {
+        case 'ASSIGNED':
+          return tracking.RideStatus.assigned;
+        case 'EN_ROUTE_TO_PICKUP':
+          return tracking.RideStatus.onTheWay;
+        case 'ARRIVED':
+          return tracking.RideStatus.arrived;
+        case 'IN_TRIP':
+          return tracking.RideStatus.startRide;
+        case 'COMPLETED':
+          return tracking.RideStatus.completed;
+        default:
+          return tracking.RideStatus.assigned;
+      }
+    }
+
     return tracking.RideModel(
       id: r.id,
       passenger: tracking.PassengerModel(
@@ -224,6 +243,7 @@ class _UpcomingTab extends StatelessWidget {
       pickupLon: r.pickupLon,
       dropoffLat: r.dropoffLat,
       dropoffLon: r.dropoffLon,
+      status: mapStatus(r.status),
     );
   }
 

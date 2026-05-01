@@ -15,6 +15,7 @@ import 'package:moviroo_driver_app/core/widgets/app_toast.dart';
 import 'package:moviroo_driver_app/pages/tracking/widgets/actions/cancel_reason_sheet.dart';
 import 'package:moviroo_driver_app/providers/ride_provider.dart';
 import 'package:moviroo_driver_app/providers/online_provider.dart';
+import 'package:moviroo_driver_app/services/background/background_tracking_service.dart';
 
 class TrackingBottomSheet extends StatefulWidget {
   final RideModel ride;
@@ -93,6 +94,10 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
     setState(() => _apiLoading = true);
     try {
       await _tripService.endTrip(widget.ride.id);
+      // Stop GPS streaming + foreground service immediately so the
+      // notification disappears and no more waypoints are emitted.
+      BackgroundTrackingService.stopTracking();
+      await BackgroundTrackingService.stop();
       setState(() => _apiLoading = false);
       if (mounted) {
         AppToast.success(context, 'Ride completed');
@@ -245,6 +250,11 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
     } finally {
       if (mounted) setState(() => _apiLoading = false);
     }
+
+    // Stop GPS streaming + foreground service immediately so the
+    // notification disappears and no more waypoints are emitted.
+    BackgroundTrackingService.stopTracking();
+    await BackgroundTrackingService.stop();
     if (mounted) {
       // Small delay to ensure backend transaction commits before refresh
       await Future.delayed(const Duration(milliseconds: 500));

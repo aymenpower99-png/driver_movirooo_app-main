@@ -40,6 +40,16 @@ class _EarningsPageState extends State<EarningsPage> {
         '${DateTime.now().year}-${DateTime.now().month.toString().padLeft(2, '0')}';
     final isCurrentMonth = provider.selectedMonth == currentMonth;
 
+    // Format online time from milliseconds to "Xh Ym"
+    String formatOnlineTime(int? ms) {
+      if (ms == null || ms == 0) return '—';
+      final d = Duration(milliseconds: ms);
+      final h = d.inHours;
+      final m = d.inMinutes.remainder(60);
+      if (h > 0) return '${h}h ${m}m';
+      return '${m}m';
+    }
+
     return Scaffold(
       backgroundColor: AppColors.bg(context),
       body: SafeArea(
@@ -149,7 +159,9 @@ class _EarningsPageState extends State<EarningsPage> {
                                         label: t('earnings_online_time_label'),
                                         value: isCurrentMonth
                                             ? online.monthOnlineFormatted
-                                            : '—',
+                                            : formatOnlineTime(
+                                                earnings.onlineTimeMs,
+                                              ),
                                       ),
                                     ),
                                   ],

@@ -49,7 +49,8 @@ class EarningsProvider extends ChangeNotifier {
     try {
       _earnings = await _service.getMyEarnings(month: _selectedMonth);
     } catch (e) {
-      _error = e.toString();
+      _error = 'Failed to load earnings: ${e.toString()}';
+      debugPrint('❌ [EarningsProvider] Error loading earnings: $e');
     }
     _loading = false;
     notifyListeners();

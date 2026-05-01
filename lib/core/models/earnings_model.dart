@@ -14,12 +14,12 @@ class TierProgress {
   });
 
   factory TierProgress.fromJson(Map<String, dynamic> json) => TierProgress(
-        tierId: json['tierId'] as String? ?? '',
-        tierName: json['tierName'] as String? ?? '',
-        requiredRides: (json['requiredRides'] as num?)?.toInt() ?? 0,
-        bonusAmount: (json['bonusAmount'] as num?)?.toDouble() ?? 0,
-        reached: json['reached'] as bool? ?? false,
-      );
+    tierId: json['tierId'] as String? ?? '',
+    tierName: json['tierName'] as String? ?? '',
+    requiredRides: (json['requiredRides'] as num?)?.toInt() ?? 0,
+    bonusAmount: (json['bonusAmount'] as num?)?.toDouble() ?? 0,
+    reached: json['reached'] as bool? ?? false,
+  );
 }
 
 class DailyRides {
@@ -29,9 +29,9 @@ class DailyRides {
   const DailyRides({required this.day, required this.rides});
 
   factory DailyRides.fromJson(Map<String, dynamic> json) => DailyRides(
-        day: json['day'] as String? ?? '',
-        rides: (json['rides'] as num?)?.toInt() ?? 0,
-      );
+    day: json['day'] as String? ?? '',
+    rides: (json['rides'] as num?)?.toInt() ?? 0,
+  );
 }
 
 class EarningsModel {
@@ -43,6 +43,7 @@ class EarningsModel {
   final String? nextTierName;
   final int? nextTierRidesNeeded;
   final List<DailyRides> dailyRides;
+  final int? onlineTimeMs; // Online time in milliseconds for the selected month
 
   const EarningsModel({
     required this.salary,
@@ -53,6 +54,7 @@ class EarningsModel {
     this.nextTierName,
     this.nextTierRidesNeeded,
     this.dailyRides = const [],
+    this.onlineTimeMs,
   });
 
   factory EarningsModel.fromJson(Map<String, dynamic> json) {
@@ -73,6 +75,11 @@ class EarningsModel {
       nextTierName: nextTier?['name'] as String?,
       nextTierRidesNeeded: (nextTier?['ridesNeeded'] as num?)?.toInt(),
       dailyRides: dailyList,
+      onlineTimeMs: json['onlineTimeMs'] == null
+          ? null
+          : json['onlineTimeMs'] is String
+          ? int.tryParse(json['onlineTimeMs'] as String)
+          : (json['onlineTimeMs'] as num?)?.toInt(),
     );
   }
 }

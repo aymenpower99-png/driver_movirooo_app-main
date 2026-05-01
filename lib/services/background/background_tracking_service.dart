@@ -1,9 +1,61 @@
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io' show HttpClient;
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import '../../core/config/app_config.dart';
+import '../../core/storage/token_storage.dart';
 import 'background_gps_handler.dart';
+
+/// Ride statuses where the driver is considered busy with an active trip.
+/// Mirrors the backend list used in dispatch eligibility queries.
+const Set<String> _kActiveRideStatuses = {
+  'ASSIGNED',
+  'EN_ROUTE_TO_PICKUP',
+  'ARRIVED',
+  'IN_TRIP',
+};
+
+/// Returns true if the ride is still active. If we cannot determine
+/// (network error, 401, ride not found) we return null so the caller
+/// can decide what to do (we keep tracking on transient errors, but
+/// stop on a definitive non-active status).
+Future<bool?> _isRideStillActive(String rideId) async {
+  HttpClient? client;
+  try {
+    final token = await TokenStorage.getAccess();
+    if (token == null) return null;
+
+    final url = Uri.parse('${AppConfig.baseUrl}/trips/$rideId');
+    client = HttpClient()..connectionTimeout = const Duration(seconds: 8);
+
+    final req = await client.getUrl(url).timeout(const Duration(seconds: 8));
+    req.headers.set('Authorization', 'Bearer $token');
+    req.headers.set('ngrok-skip-browser-warning', 'true');
+
+    final res = await req.close().timeout(const Duration(seconds: 8));
+
+    if (res.statusCode == 404) {
+      // Ride no longer exists — definitively stop.
+      return false;
+    }
+    if (res.statusCode < 200 || res.statusCode >= 300) {
+      return null; // transient / auth error — don't stop
+    }
+
+    final body = await res.transform(utf8.decoder).join();
+    final data = json.decode(body) as Map<String, dynamic>;
+    final status = (data['status'] as String?)?.toUpperCase();
+    if (status == null) return null;
+    return _kActiveRideStatuses.contains(status);
+  } catch (_) {
+    return null; // network error — keep tracking
+  } finally {
+    client?.close(force: true);
+  }
+}
 
 /// Background service for GPS tracking.
 ///
@@ -212,8 +264,15 @@ Future<void> backgroundServiceOnStart(ServiceInstance service) async {
   debugPrint('🚗 [BgTrack:isolate] Command listeners set up, isolate ready');
   debugPrint('🚗 [BgTrack:isolate] === ISOLATE INITIALIZED ===');
 
-  // ── Keep-alive heartbeat (updates notification text) ────────────────────
-  Timer.periodic(const Duration(seconds: 30), (_) {
+  // ── Keep-alive heartbeat + ride status validation ──────────────────────
+  // Every 30s:
+  //   1. Update the foreground notification text
+  //   2. If we are actively tracking, ask the backend whether the ride is
+  //      still active. If it isn't (CANCELLED / COMPLETED / 404) we stop
+  //      GPS streaming and shut the service down. This is a safety net for
+  //      the case where the main isolate failed to send 'stop_tracking'
+  //      (e.g. app crashed, lost WebSocket, FCM dropped).
+  Timer.periodic(const Duration(seconds: 30), (_) async {
     if (service is AndroidServiceInstance) {
       service.setForegroundNotificationInfo(
         title: 'Moviroo Driver',
@@ -221,6 +280,20 @@ Future<void> backgroundServiceOnStart(ServiceInstance service) async {
             ? 'Tracking active ride'
             : 'Online — waiting for ride',
       );
+    }
+
+    final rideId = currentRideId;
+    if (rideId == null) return;
+
+    final stillActive = await _isRideStillActive(rideId);
+    if (stillActive == false) {
+      debugPrint(
+        '🚗 [BgTrack:isolate] ⛔ Ride $rideId is no longer active — self-stopping',
+      );
+      await BackgroundGpsHandler.stopSession(session);
+      session = null;
+      currentRideId = null;
+      await service.stopSelf();
     }
   });
 }
