@@ -13,10 +13,12 @@ class GpsSessionHandle {
   io.Socket socket;
   StreamSubscription<Position> gpsSubscription;
   Timer? gpsTimeoutTimer;
+  Timer? heartbeatTimer;
   GpsSessionHandle({
     required this.socket,
     required this.gpsSubscription,
     this.gpsTimeoutTimer,
+    this.heartbeatTimer,
   });
 }
 
@@ -89,6 +91,9 @@ class BackgroundGpsHandler {
     // On Android we MUST use AndroidSettings with a foreground notification
     // so the OS keeps delivering GPS while the activity is invisible.
     debugPrint('🚗 [BackgroundGps] Setting up GPS stream...');
+    // distanceFilter: 0 → OS emits as fast as it can (typically 1Hz)
+    // We pair this with an app-level heartbeat below so backend ALWAYS
+    // gets a tick every 5s even if the driver is stationary or OS coalesces.
     final LocationSettings locationSettings;
     if (Platform.isAndroid) {
       debugPrint(
@@ -96,7 +101,7 @@ class BackgroundGpsHandler {
       );
       locationSettings = AndroidSettings(
         accuracy: LocationAccuracy.high,
-        distanceFilter: 10,
+        distanceFilter: 0,
         // Keep GPS alive when the Activity is no longer in the foreground.
         foregroundNotificationConfig: const ForegroundNotificationConfig(
           notificationTitle: 'Moviroo Driver',
@@ -110,7 +115,7 @@ class BackgroundGpsHandler {
       // iOS — use AppleSettings for background delivery
       locationSettings = AppleSettings(
         accuracy: LocationAccuracy.high,
-        distanceFilter: 10,
+        distanceFilter: 0,
         activityType: ActivityType.automotiveNavigation,
         pauseLocationUpdatesAutomatically: false,
         showBackgroundLocationIndicator: true,
@@ -123,12 +128,41 @@ class BackgroundGpsHandler {
     // GPS timeout detection - 30s without GPS position
     Timer? gpsTimeoutTimer;
 
+    // Heartbeat: re-emit last known position every 5s so backend always
+    // gets a fresh tick even when the driver is stationary at a red light,
+    // pickup point, or in slow traffic. This guarantees passenger UI
+    // (marker, progress, ETA) stays "live".
+    Position? lastKnownPosition;
+    Timer? heartbeatTimer;
+
+    void emitGpsToBackend(Position pos, {required bool isHeartbeat}) {
+      if (!socket.connected) {
+        debugPrint(
+          '🚗 [BackgroundGps] ⚠️ trip:gps SKIPPED — socket not connected',
+        );
+        return;
+      }
+      socket.emit('trip:gps', {
+        'ride_id': rideId,
+        'latitude': pos.latitude,
+        'longitude': pos.longitude,
+        'speed_kmh': pos.speed * 3.6,
+        'recorded_at': DateTime.now().toIso8601String(),
+      });
+      debugPrint(
+        '🚗 [BackgroundGps] ✅ trip:gps EMITTED ${isHeartbeat ? "(heartbeat)" : "(fresh GPS)"}',
+      );
+    }
+
     final gpsSubscription =
         Geolocator.getPositionStream(locationSettings: locationSettings).listen(
           (pos) {
             debugPrint(
               '🚗 [BackgroundGps] 📍 GPS POSITION RECEIVED: lat=${pos.latitude}, lng=${pos.longitude}, speed=${pos.speed}',
             );
+
+            // Cache for heartbeat fallback
+            lastKnownPosition = pos;
 
             // Reset GPS timeout timer on each position
             gpsTimeoutTimer?.cancel();
@@ -151,21 +185,7 @@ class BackgroundGpsHandler {
             debugPrint(
               '🚗 [BackgroundGps] Socket connected: ${socket.connected}',
             );
-            if (socket.connected) {
-              debugPrint('🚗 [BackgroundGps] Emitting trip:gps to backend...');
-              socket.emit('trip:gps', {
-                'ride_id': rideId,
-                'latitude': pos.latitude,
-                'longitude': pos.longitude,
-                'speed_kmh': pos.speed * 3.6,
-                'recorded_at': DateTime.now().toIso8601String(),
-              });
-              debugPrint('🚗 [BackgroundGps] ✅ trip:gps EMITTED to backend');
-            } else {
-              debugPrint(
-                '🚗 [BackgroundGps] ⚠️ trip:gps SKIPPED — socket not connected',
-              );
-            }
+            emitGpsToBackend(pos, isHeartbeat: false);
 
             // Notify caller (so it can bridge to UI isolate)
             debugPrint('🚗 [BackgroundGps] Calling onGpsPosition callback...');
@@ -177,6 +197,15 @@ class BackgroundGpsHandler {
           },
         );
 
+    // Heartbeat timer: every 5s, if we have a cached GPS, re-emit it.
+    // This ensures backend / passenger UI receives ticks even when the
+    // OS withholds GPS callbacks (e.g. driver stationary).
+    heartbeatTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (lastKnownPosition == null) return;
+      debugPrint('🚗 [BackgroundGps] 💓 Heartbeat tick');
+      emitGpsToBackend(lastKnownPosition!, isHeartbeat: true);
+    });
+
     debugPrint('🚗 [BackgroundGps] ✅ GPS stream started successfully');
     debugPrint('🚗 [BackgroundGps] === GPS AND SOCKET START COMPLETE ===');
 
@@ -184,6 +213,7 @@ class BackgroundGpsHandler {
       socket: socket,
       gpsSubscription: gpsSubscription,
       gpsTimeoutTimer: gpsTimeoutTimer,
+      heartbeatTimer: heartbeatTimer,
     );
   }
 
@@ -197,6 +227,9 @@ class BackgroundGpsHandler {
 
     // Cancel GPS timeout timer
     handle.gpsTimeoutTimer?.cancel();
+
+    // Cancel heartbeat timer
+    handle.heartbeatTimer?.cancel();
 
     await handle.gpsSubscription.cancel();
 
