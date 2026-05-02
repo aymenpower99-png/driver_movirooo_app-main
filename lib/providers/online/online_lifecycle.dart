@@ -1,19 +1,21 @@
 import 'package:flutter/widgets.dart';
 import '../../services/driver/driver_service.dart';
 import '../../services/background/background_tracking_service.dart';
+import '../../services/background/background_permission_handler.dart';
 import '../../core/notifications/notification_service.dart';
 import 'online_state.dart';
 import 'online_time_tracking.dart';
 import 'online_heartbeat.dart';
 
 /// Lifecycle logic for OnlineProvider.
-/// Handles app lifecycle events and backend sync.
+/// Handles app lifecycle events, ride tracking, and backend sync.
 class OnlineLifecycle {
   final DriverService _driver;
   final OnlineState _state;
   final OnlineTimeTracking _timeTracking;
   final OnlineHeartbeat _heartbeat;
   final Function() onForcedOfflineCallback;
+  final Function() onNotifyListeners;
 
   OnlineLifecycle({
     required DriverService driver,
@@ -21,10 +23,52 @@ class OnlineLifecycle {
     required OnlineTimeTracking timeTracking,
     required OnlineHeartbeat heartbeat,
     required this.onForcedOfflineCallback,
+    required this.onNotifyListeners,
   }) : _driver = driver,
        _state = state,
        _timeTracking = timeTracking,
        _heartbeat = heartbeat;
+
+  /// Set the active ride ID for tracking. Call this when a ride is assigned or status changes.
+  /// Tracking starts/stops based on ride ID, independent of online status.
+  Future<void> setActiveRide(String? rideId) async {
+    _state.activeRideId = rideId;
+
+    if (rideId != null) {
+      // Check REAL OS permission before starting tracking
+      final hasPermission =
+          await BackgroundPermissionHandler.checkPermissionsOnly();
+      if (hasPermission) {
+        debugPrint(
+          '🚗 [OnlineLifecycle] Starting background tracking for ride: $rideId',
+        );
+        BackgroundTrackingService.startTracking(rideId);
+      } else {
+        debugPrint(
+          '🚗 [OnlineLifecycle] Permission denied, not starting tracking for ride: $rideId',
+        );
+        _state.error =
+            'Location permission required for tracking. Enable in settings to track ride.';
+        onNotifyListeners();
+      }
+    } else {
+      // Stop tracking when ride is completed/cancelled
+      debugPrint(
+        '🚗 [OnlineLifecycle] Stopping background tracking (no active ride)',
+      );
+      BackgroundTrackingService.stopTracking();
+    }
+  }
+
+  /// Refreshes driver profile stats from the backend without the init guard.
+  Future<void> refreshDriverProfile() async {
+    try {
+      _state.driverProfile = await _driver.getMe();
+      onNotifyListeners();
+    } catch (_) {
+      // Non-fatal — stale data until next natural refresh
+    }
+  }
 
   /// Called by Flutter when the app moves between foreground/background.
   Future<void> onAppLifecycleStateChange(AppLifecycleState state) async {
@@ -34,19 +78,10 @@ class OnlineLifecycle {
       // Re-sync status from backend on resume.
       await _syncOnResume();
     } else if (state == AppLifecycleState.paused) {
-      // Stop heartbeat when app goes to background (but keep background service running)
+      // Stop heartbeat when app goes to background
       _heartbeat.stop();
-    } else if (state == AppLifecycleState.detached) {
-      // App is being closed/killed - stop everything and go offline
-      debugPrint(
-        '🚗 [OnlineLifecycle] App detached - stopping all services and going offline',
-      );
-      _heartbeat.stop();
-      BackgroundTrackingService.stopTracking();
-      await BackgroundTrackingService.stop();
-      _state.isOnline = false;
-      _timeTracking.lastOnlineAt = null;
     }
+    // Note: detached state is handled by parent dispose() to avoid duplication
   }
 
   /// Re-fetches driver status from backend on app resume.

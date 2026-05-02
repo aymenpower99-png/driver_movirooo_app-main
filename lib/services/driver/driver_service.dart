@@ -68,6 +68,14 @@ class DriverService {
   /// One-time migration: push legacy SharedPreferences monthly time to backend.
   /// Idempotent — backend only writes if its counter is currently 0.
   Future<void> seedMonthlyOnlineTime(int ms, String month) async {
+    // Validate: max 31 days in milliseconds (~2.68 billion)
+    const maxMonthlyMs = 31 * 24 * 60 * 60 * 1000;
+    if (ms < 0 || ms > maxMonthlyMs) {
+      print(
+        '[DriverService] Invalid monthlyOnlineMs: $ms (max: $maxMonthlyMs) - skipping migration',
+      );
+      return;
+    }
     await _dio.post(
       Endpoints.driverSeedMonthlyTime,
       data: {'monthlyOnlineMs': ms, 'month': month},

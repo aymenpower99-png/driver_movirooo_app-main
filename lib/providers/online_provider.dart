@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:flutter/widgets.dart';
 import 'package:flutter/foundation.dart';
+import 'package:dio/dio.dart';
 import '../services/dispatch/dispatch_service.dart';
 import '../services/driver/driver_service.dart';
 import '../services/background/background_tracking_service.dart';
-import '../services/background/background_permission_handler.dart';
 import '../services/background/permission_state_storage.dart';
 import '../core/models/driver_model.dart';
 import '../core/notifications/notification_service.dart';
@@ -24,14 +24,11 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   // Child modules
   final OnlineState _state = OnlineState();
-  final OnlineTimeTracking _timeTracking = OnlineTimeTracking();
+  late final OnlineTimeTracking _timeTracking;
   late final OnlinePersistence _persistence;
   late final OnlineHeartbeat _heartbeat;
   late final OnlineGps _gps;
   late final OnlineLifecycle _lifecycle;
-
-  // UI Timer
-  Timer? _uiTimer;
 
   // Getters - delegate to child modules
   bool get isOnline => _state.isOnline;
@@ -69,6 +66,7 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
   }
 
   OnlineProvider() {
+    _timeTracking = OnlineTimeTracking(onTickCallback: notifyListeners);
     _persistence = OnlinePersistence(_timeTracking);
     _heartbeat = OnlineHeartbeat(
       dispatch: _dispatch,
@@ -84,6 +82,7 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
       onForcedOfflineCallback: () {
         notifyListeners();
       },
+      onNotifyListeners: notifyListeners,
     );
   }
 
@@ -123,7 +122,7 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
       if (_state.isOnline) {
         _timeTracking.lastOnlineAt =
             _state.driverProfile!.onlineSince ?? DateTime.now();
-        _startUiTimer();
+        _timeTracking.startUiTimer();
       }
       notifyListeners();
     } catch (_) {
@@ -137,35 +136,9 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
     _lifecycle.onAppLifecycleStateChange(state);
   }
 
-  /// Set the active ride ID for tracking. Call this when a ride is assigned or status changes.
-  /// Tracking starts/stops based on ride ID, independent of online status.
+  /// Set the active ride ID for tracking. Delegates to lifecycle module.
   Future<void> setActiveRide(String? rideId) async {
-    _state.activeRideId = rideId;
-
-    if (rideId != null) {
-      // Check REAL OS permission before starting tracking
-      final hasPermission =
-          await BackgroundPermissionHandler.checkPermissionsOnly();
-      if (hasPermission) {
-        debugPrint(
-          '🚗 [OnlineProvider] Starting background tracking for ride: $rideId',
-        );
-        BackgroundTrackingService.startTracking(rideId);
-      } else {
-        debugPrint(
-          '🚗 [OnlineProvider] Permission denied, not starting tracking for ride: $rideId',
-        );
-        _state.error =
-            'Location permission required for tracking. Enable in settings to track ride.';
-        notifyListeners();
-      }
-    } else {
-      // Stop tracking when ride is completed/cancelled
-      debugPrint(
-        '🚗 [OnlineProvider] Stopping background tracking (no active ride)',
-      );
-      BackgroundTrackingService.stopTracking();
-    }
+    await _lifecycle.setActiveRide(rideId);
   }
 
   // ── Toggle ────────────────────────────────────────────────────────────────
@@ -192,6 +165,17 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
         try {
           await _dispatch.goOffline();
         } catch (e) {
+          // Check for DioError with 403 status (Forbidden)
+          if (e is DioError && e.response?.statusCode == 403) {
+            NotificationService.instance.showLocalNotification(
+              title: 'Cannot Go Offline',
+              body: 'You are currently in a trip and cannot go offline.',
+            );
+            _state.loading = false;
+            notifyListeners();
+            return;
+          }
+          // Also check for string-based fallback
           if (e.toString().contains('403') ||
               e.toString().contains('Forbidden') ||
               e.toString().contains('trip')) {
@@ -210,7 +194,7 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
           _timeTracking.addSessionTime(sessionMs);
           await _persistence.persistTime();
         }
-        _stopUiTimer();
+        _timeTracking.stopUiTimer();
         _state.isOnline = false;
 
         if (_state.activeRideId == null) {
@@ -251,7 +235,7 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
         await _dispatch.goOnline(lat: pos?.latitude, lng: pos?.longitude);
         _timeTracking.lastOnlineAt = DateTime.now();
         _heartbeat.resetFailCount();
-        _startUiTimer();
+        _timeTracking.startUiTimer();
         _state.isOnline = true;
 
         await BackgroundTrackingService.start();
@@ -315,19 +299,6 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
     }
   }
 
-  // ── Timers ────────────────────────────────────────────────────────────────
-  void _startUiTimer() {
-    _uiTimer?.cancel();
-    _uiTimer = Timer.periodic(const Duration(seconds: 1), (_) {
-      notifyListeners();
-    });
-  }
-
-  void _stopUiTimer() {
-    _uiTimer?.cancel();
-    _uiTimer = null;
-  }
-
   void clearGpsRequired() {
     _state.clearGpsRequired();
     notifyListeners();
@@ -343,14 +314,9 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
-  /// Refreshes driver profile stats from the backend without the init guard.
+  /// Refreshes driver profile stats from the backend. Delegates to lifecycle module.
   Future<void> refreshDriverProfile() async {
-    try {
-      _state.driverProfile = await _driver.getMe();
-      notifyListeners();
-    } catch (_) {
-      // Non-fatal — stale data until next natural refresh
-    }
+    await _lifecycle.refreshDriverProfile();
   }
 
   @override
@@ -358,12 +324,30 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
     debugPrint(
       '🚗 [OnlineProvider] Disposing - stopping all services and going offline',
     );
+    // Persist current session time if online, so it doesn't reset on app reopen
+    if (_state.isOnline && _timeTracking.lastOnlineAt != null) {
+      final sessionMs = _timeTracking.getSessionMs(_state.isOnline);
+      _timeTracking.addSessionTime(sessionMs);
+      _persistence.persistTime().catchError((e) {
+        debugPrint('🚗 [OnlineProvider] Failed to persist time on dispose: $e');
+      });
+    }
     WidgetsBinding.instance.removeObserver(this);
     _heartbeat.stop();
-    _stopUiTimer();
+    _timeTracking.dispose();
     // Stop background tracking service when provider is disposed (app closed)
     BackgroundTrackingService.stopTracking();
     BackgroundTrackingService.stop();
+
+    // Call backend goOffline to ensure driver goes offline in database
+    if (_state.isOnline) {
+      _dispatch.goOffline().catchError((e) {
+        debugPrint(
+          '🚗 [OnlineProvider] Failed to call goOffline on dispose: $e',
+        );
+      });
+    }
+
     _state.isOnline = false;
     _timeTracking.lastOnlineAt = null;
     super.dispose();

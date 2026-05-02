@@ -1,3 +1,5 @@
+import 'dart:async';
+
 /// Time tracking logic for OnlineProvider.
 /// Handles session time, monthly time, and formatting.
 class OnlineTimeTracking {
@@ -17,6 +19,12 @@ class OnlineTimeTracking {
   int _legacyMonthMs = 0;
   String _legacyMonth = '';
 
+  // ── UI Timer ─────────────────────────────────────────────────────────────
+  Timer? _uiTimer;
+  final Function() onTickCallback;
+
+  OnlineTimeTracking({required this.onTickCallback});
+
   // Getters
   DateTime? get lastOnlineAt => _lastOnlineAt;
   int get backendMonthlyMs => _backendMonthlyMs;
@@ -34,6 +42,23 @@ class OnlineTimeTracking {
   set storedDate(String value) => _storedDate = value;
   set legacyMonthMs(int value) => _legacyMonthMs = value;
   set legacyMonth(String value) => _legacyMonth = value;
+
+  // ── UI Timer methods ─────────────────────────────────────────────────────
+  void startUiTimer() {
+    _uiTimer?.cancel();
+    _uiTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+      onTickCallback();
+    });
+  }
+
+  void stopUiTimer() {
+    _uiTimer?.cancel();
+    _uiTimer = null;
+  }
+
+  void dispose() {
+    stopUiTimer();
+  }
 
   /// Milliseconds elapsed in the current online session (0 if offline).
   int getSessionMs(bool isOnline) {
