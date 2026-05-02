@@ -1,14 +1,14 @@
-import 'dart:convert';
-import 'dart:math' as math;
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:moviroo_driver_app/core/models/geo_point.dart';
 import 'package:moviroo_driver_app/services/mapbox/mapbox_service.dart';
 import 'map/map_painters.dart';
-import 'route_deviation_detector.dart';
+import 'map/camera_controller.dart';
+import 'map/driver_marker_manager.dart';
+import 'map/route_manager.dart';
 
-/// Manages all Mapbox map logic: markers, route line, and camera.
+/// Lightweight coordinator for map tracking logic.
+/// Delegates to specialized modules: camera, markers, and routes.
 class TrackingMapLogic {
   final GeoPoint pickupPt;
   final GeoPoint dropoffPt;
@@ -16,48 +16,50 @@ class TrackingMapLogic {
 
   MapboxMap? _map;
   PointAnnotationManager? _pointMgr;
-  PointAnnotationManager? _driverMgr;
 
-  PointAnnotation? _driverAnn;
-  bool _driverCreating = false;
-  bool _driverUpdating = false;
-  Uint8List? _cachedCarBitmap;
-
-  bool _pickupRouteDrawn = false;
-  bool _dropoffRouteDrawn = false;
-  bool _srcReady = false;
+  late CameraController _camera;
+  late DriverMarkerManager _driverMarker;
+  late RouteManager _route;
 
   DateTime? _lastEtaRefresh;
-  DateTime? _lastManualZoom;
-
-  /// Default zoom used when user explicitly taps GPS button or on first center.
-  static const double _defaultFollowZoom = 17.0;
-
-  /// Whether the camera should follow the driver (pans without resetting zoom).
-  bool _followMode = true;
-
-  /// Whether we've centered on the driver at least once (to set initial zoom).
-  bool _initialCenterDone = false;
-
-  final RouteDeviationDetector _deviationDetector = RouteDeviationDetector();
 
   TrackingMapLogic({
     required this.pickupPt,
     required this.dropoffPt,
     required this.onEtaUpdate,
-  });
+  }) {
+    _camera = CameraController(pickupPt: pickupPt, dropoffPt: dropoffPt);
+    _driverMarker = DriverMarkerManager();
+    _route = RouteManager(
+      pickupPt: pickupPt,
+      dropoffPt: dropoffPt,
+      onEtaUpdate: onEtaUpdate,
+    );
+  }
 
   // ── Init ──────────────────────────────────────────────────────────────────
 
   void onMapCreated(MapboxMap map) {
     _map = map;
+    _camera.setMap(map);
+    _route.setMap(map);
   }
+
+  /// Call this when user manually interacts with the map (pan, zoom, etc.).
+  /// Disables follow mode so camera stops auto-snapping to driver.
+  void disableFollowMode() {
+    _camera.disableFollowMode();
+  }
+
+  /// Expose camera controller for accessing follow mode state
+  CameraController get camera => _camera;
 
   Future<void> onStyleLoaded() async {
     if (_map == null) return;
 
     _pointMgr = await _map!.annotations.createPointAnnotationManager();
-    _driverMgr = await _map!.annotations.createPointAnnotationManager();
+    final driverMgr = await _map!.annotations.createPointAnnotationManager();
+    await _driverMarker.setManager(driverMgr);
 
     // Always show BOTH markers from the start
     await _pointMgr!.create(
@@ -78,173 +80,38 @@ class TrackingMapLogic {
       ),
     );
 
-    await _map!.style.addSource(
-      GeoJsonSource(id: 'route-src', data: _emptyGeoJson()),
-    );
-    _srcReady = true;
-
-    await _map!.style.addLayer(
-      LineLayer(
-        id: 'route-layer',
-        sourceId: 'route-src',
-        lineColor: const Color(0xFFA855F7).toARGB32(),
-        lineWidth: 8.0,
-        lineOpacity: 1.0,
-        lineCap: LineCap.ROUND,
-        lineJoin: LineJoin.ROUND,
-      ),
-    );
+    await _route.initialize();
 
     // Fit camera to show both pickup and drop-off markers
-    fitBothMarkers();
+    _camera.fitBothMarkers();
   }
 
   // ── Driver symbol ─────────────────────────────────────────────────────────
 
   Future<void> updateDriverSymbol(GeoPoint pos, double bearing) async {
-    if (_driverMgr == null) return;
-    final pt = Point(coordinates: Position(pos.lon, pos.lat));
-
-    if (_driverAnn == null) {
-      if (_driverCreating) return; // guard: create already in-flight
-      _driverCreating = true;
-      try {
-        _cachedCarBitmap ??= await MapPainters.renderCarBitmap();
-        _driverAnn = await _driverMgr!.create(
-          PointAnnotationOptions(
-            geometry: pt,
-            image: _cachedCarBitmap!,
-            iconSize: 0.9,
-            iconAnchor: IconAnchor.CENTER,
-            iconRotate: bearing,
-          ),
-        );
-      } catch (e) {
-        debugPrint('🗺️ [MapLogic] ❌ Failed to create driver marker: $e');
-      } finally {
-        _driverCreating = false;
-      }
-    } else {
-      // Throttle: skip if previous update still in-flight to prevent method
-      // channel bottleneck that causes jerky motion.
-      if (_driverUpdating) return;
-      _driverUpdating = true;
-      try {
-        _driverAnn!.geometry = pt;
-        _driverAnn!.iconRotate = bearing;
-        await _driverMgr!.update(_driverAnn!);
-      } catch (e) {
-        // silent fail — marker will catch up on next tick
-      } finally {
-        _driverUpdating = false;
-      }
-    }
+    await _driverMarker.update(pos, bearing);
 
     // Camera follow: on first position, fly in to navigation zoom.
     // After that, only pan without resetting zoom (preserves user's zoom).
-    if (_followMode) {
-      if (!_initialCenterDone) {
-        _initialCenterDone = true;
-        animateToDriver(pos, bearing: bearing);
-      } else {
-        _followCameraToDriver(pos, bearing);
-      }
-    }
-  }
-
-  /// Pan the camera to driver's position WITHOUT changing zoom.
-  /// Preserves any zoom level the user or system previously set.
-  void _followCameraToDriver(GeoPoint pos, double bearing) {
-    if (_map == null) return;
-    _map!.easeTo(
-      CameraOptions(
-        center: Point(coordinates: Position(pos.lon, pos.lat)),
-        bearing: bearing,
-      ),
-      MapAnimationOptions(duration: 500),
-    );
+    _camera.shouldFollowDriver(pos, bearing);
   }
 
   // ── Phase 1: Driver → Pickup ──────────────────────────────────────────────
 
   Future<void> drawPhase1Route(GeoPoint driver) async {
-    if (!_srcReady || _pickupRouteDrawn) return;
-    _pickupRouteDrawn = true;
-
-    final result = await MapboxService.getRoute(
-      driver.lat,
-      driver.lon,
-      pickupPt.lat,
-      pickupPt.lon,
-    );
-
-    if (result != null) {
-      onEtaUpdate(result.etaText, result.distanceText, 'To Pickup');
-      _deviationDetector.setCurrentRoute(result.geometry, pickupPt);
-      await _map!.style.setStyleSourceProperty(
-        'route-src',
-        'data',
-        _geometryToGeoJson(result.geometry),
-      );
-    } else {
-      // Fallback to straight line if Mapbox fails
-      final pts = [driver, pickupPt];
-      await _map!.style.setStyleSourceProperty(
-        'route-src',
-        'data',
-        _ptsToGeoJson(pts),
-      );
-    }
-    fitBoundsDriverToPickup(driver);
+    await _route.drawPhase1Route(driver);
   }
 
   // ── Phase 2: Pickup → Drop-off ────────────────────────────────────────────
 
   Future<void> drawPhase2Route(GeoPoint? driver) async {
-    if (!_srcReady || _dropoffRouteDrawn) return;
-    _dropoffRouteDrawn = true;
-
-    // Dropoff marker already created in onStyleLoaded — no need to recreate
-
-    final result = await MapboxService.getRoute(
-      pickupPt.lat,
-      pickupPt.lon,
-      dropoffPt.lat,
-      dropoffPt.lon,
-    );
-
-    if (result != null) {
-      onEtaUpdate(result.etaText, result.distanceText, 'To Drop-off');
-      _deviationDetector.setCurrentRoute(result.geometry, dropoffPt);
-      await _map!.style.setStyleSourceProperty(
-        'route-src',
-        'data',
-        _geometryToGeoJson(result.geometry),
-      );
-    } else {
-      // Fallback to straight line if Mapbox fails
-      final pts = [pickupPt, dropoffPt];
-      await _map!.style.setStyleSourceProperty(
-        'route-src',
-        'data',
-        _ptsToGeoJson(pts),
-      );
-    }
-    fitToFullRoute();
+    await _route.drawPhase2Route(driver);
   }
 
   // ── Clear route (remove line but keep markers) ────────────────────────────
 
   Future<void> clearRoute() async {
-    if (!_srcReady) return;
-    await _map!.style.setStyleSourceProperty(
-      'route-src',
-      'data',
-      _emptyGeoJson(),
-    );
-    _pickupRouteDrawn = false;
-    _dropoffRouteDrawn = false;
-    _deviationDetector.clearRoute();
+    await _route.clearRoute();
   }
 
   // ── Route deviation and re-routing ─────────────────────────────────────────
@@ -254,69 +121,21 @@ class TrackingMapLogic {
   /// Returns true if re-route was triggered, false otherwise.
   /// Call this on each GPS update to enable automatic re-routing.
   Future<bool> checkAndReroute(GeoPoint driverPos, bool isPrePickup) async {
-    if (!_deviationDetector.shouldReroute(driverPos)) {
+    if (!_route.deviationDetector.shouldReroute(driverPos)) {
       return false;
     }
 
     debugPrint('🗺️ [MapLogic] Driver off-route — re-routing');
 
-    // Clear old route
-    await clearRoute();
-
-    // Draw new route from current position (without auto-fit to preserve camera)
+    // Draw new route from current position (without auto-fit to preserve camera).
+    // Old route stays visible while fetching new route to prevent fade effect.
     if (isPrePickup) {
-      await _drawPhase1RouteNoFit(driverPos);
+      await _route.drawPhase1Route(driverPos);
     } else {
-      await _drawPhase2RouteNoFit(driverPos);
+      await _route.drawPhase2Route(driverPos);
     }
 
     return true;
-  }
-
-  /// Draw Phase 1 route WITHOUT fitting camera bounds (preserves current zoom).
-  Future<void> _drawPhase1RouteNoFit(GeoPoint driver) async {
-    if (!_srcReady) return;
-    _pickupRouteDrawn = true;
-
-    final result = await MapboxService.getRoute(
-      driver.lat,
-      driver.lon,
-      pickupPt.lat,
-      pickupPt.lon,
-    );
-
-    if (result != null) {
-      onEtaUpdate(result.etaText, result.distanceText, 'To Pickup');
-      _deviationDetector.setCurrentRoute(result.geometry, pickupPt);
-      await _map!.style.setStyleSourceProperty(
-        'route-src',
-        'data',
-        _geometryToGeoJson(result.geometry),
-      );
-    }
-  }
-
-  /// Draw Phase 2 route WITHOUT fitting camera bounds (preserves current zoom).
-  Future<void> _drawPhase2RouteNoFit(GeoPoint driver) async {
-    if (!_srcReady) return;
-    _dropoffRouteDrawn = true;
-
-    final result = await MapboxService.getRoute(
-      driver.lat,
-      driver.lon,
-      dropoffPt.lat,
-      dropoffPt.lon,
-    );
-
-    if (result != null) {
-      onEtaUpdate(result.etaText, result.distanceText, 'To Drop-off');
-      _deviationDetector.setCurrentRoute(result.geometry, dropoffPt);
-      await _map!.style.setStyleSourceProperty(
-        'route-src',
-        'data',
-        _geometryToGeoJson(result.geometry),
-      );
-    }
   }
 
   // ── ETA refresh ───────────────────────────────────────────────────────────
@@ -354,168 +173,32 @@ class TrackingMapLogic {
   // ── Camera ────────────────────────────────────────────────────────────────
 
   void fitToPickup() {
-    _map?.flyTo(
-      CameraOptions(
-        center: Point(coordinates: Position(pickupPt.lon, pickupPt.lat)),
-        zoom: 15.0,
-      ),
-      MapAnimationOptions(duration: 800),
-    );
+    _camera.fitToPickup();
   }
 
-  /// Fit camera to show both pickup and dropoff markers (no route needed).
   void fitBothMarkers() {
-    if (_map == null) return;
-    final sw = GeoPoint(
-      math.min(pickupPt.lat, dropoffPt.lat),
-      math.min(pickupPt.lon, dropoffPt.lon),
-    );
-    final ne = GeoPoint(
-      math.max(pickupPt.lat, dropoffPt.lat),
-      math.max(pickupPt.lon, dropoffPt.lon),
-    );
-    _map!
-        .cameraForCoordinateBounds(
-          CoordinateBounds(
-            southwest: Point(coordinates: Position(sw.lon, sw.lat)),
-            northeast: Point(coordinates: Position(ne.lon, ne.lat)),
-            infiniteBounds: false,
-          ),
-          MbxEdgeInsets(top: 120, left: 60, bottom: 300, right: 60),
-          null,
-          null,
-          null,
-          null,
-        )
-        .then((c) => _map?.flyTo(c, MapAnimationOptions(duration: 1000)))
-        .catchError((_) {});
+    _camera.fitBothMarkers();
   }
 
   void fitBoundsDriverToPickup(GeoPoint driver) {
-    if (_map == null) return;
-    // Skip auto-zoom if manual zoom happened within last 5 seconds
-    if (_lastManualZoom != null &&
-        DateTime.now().difference(_lastManualZoom!).inSeconds < 5) {
-      return;
-    }
-    final sw = GeoPoint(
-      math.min(driver.lat, pickupPt.lat),
-      math.min(driver.lon, pickupPt.lon),
-    );
-    final ne = GeoPoint(
-      math.max(driver.lat, pickupPt.lat),
-      math.max(driver.lon, pickupPt.lon),
-    );
-    _map!
-        .cameraForCoordinateBounds(
-          CoordinateBounds(
-            southwest: Point(coordinates: Position(sw.lon, sw.lat)),
-            northeast: Point(coordinates: Position(ne.lon, ne.lat)),
-            infiniteBounds: false,
-          ),
-          MbxEdgeInsets(top: 120, left: 60, bottom: 300, right: 60),
-          null,
-          null,
-          null,
-          null,
-        )
-        .then((c) => _map?.flyTo(c, MapAnimationOptions(duration: 1000)))
-        .catchError((_) {});
+    _camera.fitBoundsDriverToPickup(driver);
   }
 
   void fitToFullRoute() {
-    if (_map == null) return;
-    // Skip auto-zoom if manual zoom happened within last 5 seconds
-    if (_lastManualZoom != null &&
-        DateTime.now().difference(_lastManualZoom!).inSeconds < 5) {
-      return;
-    }
-    final sw = GeoPoint(
-      math.min(pickupPt.lat, dropoffPt.lat),
-      math.min(pickupPt.lon, dropoffPt.lon),
-    );
-    final ne = GeoPoint(
-      math.max(pickupPt.lat, dropoffPt.lat),
-      math.max(pickupPt.lon, dropoffPt.lon),
-    );
-    _map!
-        .cameraForCoordinateBounds(
-          CoordinateBounds(
-            southwest: Point(coordinates: Position(sw.lon, sw.lat)),
-            northeast: Point(coordinates: Position(ne.lon, ne.lat)),
-            infiniteBounds: false,
-          ),
-          MbxEdgeInsets(top: 120, left: 60, bottom: 300, right: 60),
-          null,
-          null,
-          null,
-          null,
-        )
-        .then((c) => _map?.flyTo(c, MapAnimationOptions(duration: 1000)))
-        .catchError((_) {});
+    _camera.fitToFullRoute();
   }
 
-  /// Called by the GPS location button OR for initial centering.
-  /// Resets zoom to a navigation-friendly level and centers on driver.
-  /// Re-enables follow mode.
   void animateToDriver(GeoPoint pos, {double bearing = 0}) {
-    _lastManualZoom = DateTime.now();
-    _followMode = true;
-    _initialCenterDone = true;
-    _map?.flyTo(
-      CameraOptions(
-        center: Point(coordinates: Position(pos.lon, pos.lat)),
-        zoom: _defaultFollowZoom,
-        bearing: bearing,
-        pitch: 45.0,
-      ),
-      MapAnimationOptions(duration: 800),
-    );
+    _camera.animateToDriver(pos, bearing: bearing);
   }
 
-  void stopAnimations() {}
-
-  // ── GeoJSON helpers ───────────────────────────────────────────────────────
-
-  String _ptsToGeoJson(List<GeoPoint> pts) => jsonEncode({
-    'type': 'FeatureCollection',
-    'features': [
-      {
-        'type': 'Feature',
-        'geometry': {
-          'type': 'LineString',
-          'coordinates': pts.map((p) => [p.lon, p.lat]).toList(),
-        },
-        'properties': {},
-      },
-    ],
-  });
-
-  /// Convert flattened geometry array [lon, lat, lon, lat, ...] to GeoJSON LineString
-  String _geometryToGeoJson(List<double> geometry) {
-    if (geometry.length < 4) return _emptyGeoJson();
-
-    final coordinates = <List<double>>[];
-    for (int i = 0; i < geometry.length; i += 2) {
-      coordinates.add([geometry[i], geometry[i + 1]]);
-    }
-
-    return jsonEncode({
-      'type': 'FeatureCollection',
-      'features': [
-        {
-          'type': 'Feature',
-          'geometry': {'type': 'LineString', 'coordinates': coordinates},
-          'properties': {},
-        },
-      ],
-    });
+  void stopAnimations() {
+    _camera.stopAnimations();
   }
-
-  String _emptyGeoJson() =>
-      jsonEncode({'type': 'FeatureCollection', 'features': []});
 
   // ── Dispose ───────────────────────────────────────────────────────────────
 
-  void dispose() {}
+  void dispose() {
+    _driverMarker.dispose();
+  }
 }

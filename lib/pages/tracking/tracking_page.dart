@@ -60,9 +60,17 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
     _controller.initialize(this);
 
     // Start background tracking service
-    debugPrint(' [TrackingPage] Starting background tracking service...');
+    debugPrint(
+      '🗺️ [TrackingPage] Requesting GPS tracking for ride: ${widget.ride.id}',
+    );
+    debugPrint(
+      '🗺️ [TrackingPage] NOTE: GPS should already be running if driver is online with active ride',
+    );
+    debugPrint(
+      '🗺️ [TrackingPage] This call ensures GPS is running (idempotent)',
+    );
     BackgroundTrackingService.startTracking(widget.ride.id);
-    debugPrint(' [TrackingPage] Background tracking service started');
+    debugPrint('🗺️ [TrackingPage] GPS tracking request sent');
 
     _controller.subscribeToGpsStreams();
 
@@ -118,8 +126,10 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
     setState(() => _status = newStatus);
     switch (newStatus) {
       case RideStatus.onTheWay:
-        if (_controller.driverPosition != null)
+        if (_controller.driverPosition != null) {
           _mapLogic.drawPhase1Route(_controller.driverPosition!);
+          _mapLogic.fitBoundsDriverToPickup(_controller.driverPosition!);
+        }
         break;
       case RideStatus.arrived:
         if (_controller.driverPosition != null) {
@@ -129,6 +139,7 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
       case RideStatus.startRide:
         await _mapLogic.clearRoute();
         _mapLogic.drawPhase2Route(_controller.driverPosition);
+        _mapLogic.fitToFullRoute();
         break;
       case RideStatus.completed:
         _mapLogic.stopAnimations();
@@ -183,6 +194,13 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
               onMapCreated: _onMapCreated,
               onStyleLoadedListener: (StyleLoadedEventData _) =>
                   _onStyleLoaded(),
+              onCameraChangeListener: (CameraChangedEventData data) {
+                // Only disable follow mode when user manually interacts with the map
+                // (not during programmatic camera moves like following the driver)
+                if (!_mapLogic.camera.isProgrammaticMove) {
+                  _mapLogic.disableFollowMode();
+                }
+              },
             ),
           ),
 

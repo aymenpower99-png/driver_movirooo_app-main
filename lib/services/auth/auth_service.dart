@@ -15,7 +15,7 @@ class AuthService {
   Future<Map<String, dynamic>> login(String email, String password) async {
     final res = await _dio.post(
       Endpoints.login,
-      data: {'email': email, 'password': password},
+      data: {'email': email, 'password': password, 'appType': 'driver'},
     );
     return res.data as Map<String, dynamic>;
   }

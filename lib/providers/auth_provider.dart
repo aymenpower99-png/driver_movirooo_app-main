@@ -202,10 +202,13 @@ class AuthProvider extends ChangeNotifier {
 
   String _friendlyError(Exception e) {
     final msg = e.toString().toLowerCase();
+    if (msg.contains('403') || msg.contains('forbidden')) {
+      return 'This application is restricted to drivers approved and verified by the agency.';
+    }
     if (msg.contains('401') ||
         msg.contains('unauthorized') ||
         msg.contains('invalid')) {
-      return 'Email or password is incorrect.';
+      return 'Invalid email or password. Please try again.';
     }
     if (msg.contains('socketexception') || msg.contains('connection')) {
       return 'Cannot connect to server. Check your network.';

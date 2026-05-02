@@ -65,7 +65,11 @@
             android:exported="false"
             android:enabled="true"
             android:stopWithTask="true"
-            tools:replace="android:stopWithTask" />
+            tools:replace="android:stopWithTask">
+            <meta-data
+                android:name="notification_icon"
+                android:resource="@mipmap/ic_launcher" />
+        </service>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

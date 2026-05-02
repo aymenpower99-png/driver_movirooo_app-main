@@ -102,13 +102,9 @@ class BackgroundGpsHandler {
       locationSettings = AndroidSettings(
         accuracy: LocationAccuracy.high,
         distanceFilter: 0,
-        // Keep GPS alive when the Activity is no longer in the foreground.
-        foregroundNotificationConfig: const ForegroundNotificationConfig(
-          notificationTitle: 'Moviroo Driver',
-          notificationText: 'Tracking your location...',
-          notificationChannelName: 'Background Location',
-          enableWakeLock: true,
-        ),
+        // No ForegroundNotificationConfig here — BackgroundTrackingService
+        // already provides the foreground service notification (ID 888).
+        // Adding one here would create a DUPLICATE notification.
       );
     } else {
       debugPrint('🚗 [BackgroundGps] Platform: iOS - using AppleSettings');

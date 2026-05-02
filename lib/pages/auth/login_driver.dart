@@ -82,7 +82,7 @@ class _DriverLoginPageState extends State<DriverLoginPage>
 
   void _login() async {
     final email = _emailController.text.trim();
-    final pass  = _passController.text.trim();
+    final pass = _passController.text.trim();
 
     if (email.isEmpty || pass.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -91,8 +91,8 @@ class _DriverLoginPageState extends State<DriverLoginPage>
       return;
     }
 
-    final auth    = context.read<AuthProvider>();
-    final direct  = await auth.login(email, pass);
+    final auth = context.read<AuthProvider>();
+    final direct = await auth.login(email, pass);
 
     if (!mounted) return;
 
@@ -100,31 +100,24 @@ class _DriverLoginPageState extends State<DriverLoginPage>
       AppRouter.clearAndGo(context, AppRouter.driverDashboard);
     } else if (auth.preAuthToken != null) {
       // OTP required — navigate to verification screen
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const OtpVerifyPage()),
+      Navigator.of(
+        context,
+      ).push(MaterialPageRoute(builder: (_) => const OtpVerifyPage()));
+    } else if (auth.error != null) {
+      // Show error immediately
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(auth.error!),
+          backgroundColor: Colors.red.shade700,
+        ),
       );
+      auth.clearError();
     }
-    // Error is displayed via Consumer below
   }
 
   @override
   Widget build(BuildContext context) {
-    final t       = AppLocalizations.of(context).translate;
-    final auth    = context.watch<AuthProvider>();
-    final loading = auth.loading;
-
-    // Show error snackbar when auth error changes
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (auth.error != null) {
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(SnackBar(
-            content: Text(auth.error!),
-            backgroundColor: Colors.red.shade700,
-          ));
-        auth.clearError();
-      }
-    });
+    final t = AppLocalizations.of(context).translate;
 
     return Scaffold(
       backgroundColor: AppColors.bg(context),
@@ -192,6 +185,7 @@ class _DriverLoginPageState extends State<DriverLoginPage>
                           _label(context, t('label_email')),
                           const SizedBox(height: 8),
                           TextField(
+                            key: const ValueKey('email_field'),
                             controller: _emailController,
                             keyboardType: TextInputType.emailAddress,
                             cursorColor: AppColors.primaryPurple,
@@ -222,6 +216,7 @@ class _DriverLoginPageState extends State<DriverLoginPage>
                           _label(context, t('label_password')),
                           const SizedBox(height: 8),
                           TextField(
+                            key: const ValueKey('password_field'),
                             controller: _passController,
                             obscureText: _obscurePass,
                             cursorColor: AppColors.primaryPurple,
@@ -287,38 +282,42 @@ class _DriverLoginPageState extends State<DriverLoginPage>
                   // ── Sign In button ─────────────────────────────────────
                   FadeTransition(
                     opacity: _fadeAnim,
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 54,
-                      child: ElevatedButton(
-                        onPressed: loading ? null : _login,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryPurple,
-                          disabledBackgroundColor: AppColors.primaryPurple
-                              .withValues(alpha: 0.45),
-                          elevation: 0,
-                          shadowColor: Colors.transparent,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: loading
-                            ? const SizedBox(
-                                width: 22,
-                                height: 22,
-                                child: CircularProgressIndicator(
-                                  color: Colors.white,
-                                  strokeWidth: 2.4,
-                                ),
-                              )
-                            : Text(
-                                t('sign_in'),
-                                style: AppTextStyles.buttonPrimary.copyWith(
-                                  fontSize: 16,
-                                  letterSpacing: 0.3,
-                                ),
+                    child: Consumer<AuthProvider>(
+                      builder: (context, auth, _) {
+                        return SizedBox(
+                          width: double.infinity,
+                          height: 54,
+                          child: ElevatedButton(
+                            onPressed: auth.loading ? null : _login,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryPurple,
+                              disabledBackgroundColor: AppColors.primaryPurple
+                                  .withValues(alpha: 0.45),
+                              elevation: 0,
+                              shadowColor: Colors.transparent,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
                               ),
-                      ),
+                            ),
+                            child: auth.loading
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2.4,
+                                    ),
+                                  )
+                                : Text(
+                                    t('sign_in'),
+                                    style: AppTextStyles.buttonPrimary.copyWith(
+                                      fontSize: 16,
+                                      letterSpacing: 0.3,
+                                    ),
+                                  ),
+                          ),
+                        );
+                      },
                     ),
                   ),
 

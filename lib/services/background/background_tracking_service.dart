@@ -93,6 +93,7 @@ class BackgroundTrackingService {
       'Moviroo Driver Tracking',
       description: 'Shows driver location tracking status',
       importance: Importance.low,
+      showBadge: false,
     );
     await notifications
         .resolvePlatformSpecificImplementation<
@@ -157,6 +158,7 @@ class BackgroundTrackingService {
     }
     _service.invoke('start_tracking', {'rideId': rideId});
     debugPrint('🚗 [BgTrack] Sent start_tracking command to isolate');
+    debugPrint('🚗 [BgTrack] GPS + WebSocket will start in background isolate');
     debugPrint('🚗 [BgTrack] === END START TRACKING REQUEST ===');
   }
 
@@ -200,6 +202,14 @@ Future<void> backgroundServiceOnStart(ServiceInstance service) async {
     }
 
     debugPrint('🚗 [BgTrack:isolate] Starting GPS session for ride=$rideId');
+
+    // Update notification immediately to show active ride status
+    if (service is AndroidServiceInstance) {
+      service.setForegroundNotificationInfo(
+        title: 'Moviroo Driver',
+        content: 'Tracking active ride',
+      );
+    }
 
     // Stop previous session if any
     if (session != null) {
@@ -246,6 +256,13 @@ Future<void> backgroundServiceOnStart(ServiceInstance service) async {
     await BackgroundGpsHandler.stopSession(session);
     session = null;
     currentRideId = null;
+    // Update notification back to idle state
+    if (service is AndroidServiceInstance) {
+      service.setForegroundNotificationInfo(
+        title: 'Moviroo Driver',
+        content: 'Online — waiting for ride',
+      );
+    }
     debugPrint('🚗 [BgTrack:isolate] === STOP_TRACKING COMMAND COMPLETE ===');
   });
 

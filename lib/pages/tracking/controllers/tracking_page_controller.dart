@@ -3,9 +3,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart' as geo;
 import 'package:moviroo_driver_app/core/models/geo_point.dart';
-import 'package:moviroo_driver_app/services/location/location_tracking_service.dart';
 import 'package:moviroo_driver_app/services/background/background_tracking_service.dart';
 import '../utils/geo_math.dart';
 
@@ -18,9 +16,7 @@ class TrackingPageController {
   final void Function(GeoPoint position, double bearing) onPositionUpdate;
   final void Function(GeoPoint position, double bearing) onAnimationTick;
 
-  // GPS streams
-  final LocationTrackingService _locationService = LocationTrackingService();
-  StreamSubscription<geo.Position>? _positionSubscription;
+  // GPS stream (single source from BackgroundTrackingService)
   StreamSubscription<Map<String, dynamic>?>? _bgGpsSubscription;
 
   // Animation
@@ -54,69 +50,28 @@ class TrackingPageController {
     )..addListener(_onMoveAnimTick);
   }
 
-  /// Subscribe to GPS streams (foreground + background).
+  /// Subscribe to GPS stream from BackgroundTrackingService (single source).
   void subscribeToGpsStreams() {
-    debugPrint('🚗 [TrackingController] === Subscribing to GPS streams ===');
+    debugPrint('🚗 [TrackingController] === Subscribing to GPS stream ===');
     debugPrint('🚗 [TrackingController] Ride ID: $rideId');
 
-    // Subscribe to foreground service's position stream
-    _positionSubscription = _locationService.positionStream.listen(
-      (pos) {
-        debugPrint(
-          '🚗 [TrackingController] Foreground GPS received: lat=${pos.latitude}, lng=${pos.longitude}',
-        );
-        _onNewPosition(pos);
-      },
-      onError: (e) {
-        debugPrint('🚗 [TrackingController] Foreground GPS stream error: $e');
-      },
-    );
-    debugPrint('🚗 [TrackingController] Subscribed to foreground GPS stream');
-
-    // Subscribe to background service GPS bridge
     _bgGpsSubscription = BackgroundTrackingService.onGpsUpdate.listen(
       (data) {
-        debugPrint(
-          '🚗 [TrackingController] Background GPS stream received: $data',
-        );
-        if (data == null) {
-          debugPrint('🚗 [TrackingController] Background GPS data is null');
-          return;
-        }
+        if (data == null) return;
         final lat = data['latitude'] as double?;
         final lng = data['longitude'] as double?;
         if (lat != null && lng != null) {
-          debugPrint(
-            '🚗 [TrackingController] Processing background GPS: lat=$lat, lng=$lng',
-          );
-          _onNewPositionFromCoords(lat, lng);
-        } else {
-          debugPrint(
-            '🚗 [TrackingController] Background GPS missing lat/lng: $data',
-          );
+          _processNewPosition(GeoPoint(lat, lng));
         }
       },
       onError: (e) {
-        debugPrint('🚗 [TrackingController] Background GPS stream error: $e');
+        debugPrint('🚗 [TrackingController] GPS stream error: $e');
       },
     );
-    debugPrint('🚗 [TrackingController] Subscribed to background GPS stream');
-    debugPrint(
-      '🚗 [TrackingController] === GPS stream subscriptions complete ===',
-    );
+    debugPrint('🚗 [TrackingController] Subscribed to GPS stream ✓');
   }
 
-  /// Handle GPS position from background service (lat/lng only).
-  void _onNewPositionFromCoords(double lat, double lng) {
-    _processNewPosition(GeoPoint(lat, lng));
-  }
-
-  /// Handle GPS position from foreground stream.
-  void _onNewPosition(geo.Position pos) {
-    _processNewPosition(GeoPoint(pos.latitude, pos.longitude));
-  }
-
-  /// Common processing for a new GPS position - sets up smooth animation.
+  /// Process a new GPS position — sets up smooth animation.
   void _processNewPosition(GeoPoint newPt) {
     _prevBearing = _driverBearing;
     if (_driverPosition != null) {
@@ -157,7 +112,6 @@ class TrackingPageController {
   void dispose() {
     debugPrint('🚗 [TrackingController] Disposing controller');
     _moveAnim?.dispose();
-    _positionSubscription?.cancel();
     _bgGpsSubscription?.cancel();
     debugPrint('🚗 [TrackingController] Controller disposed');
   }
