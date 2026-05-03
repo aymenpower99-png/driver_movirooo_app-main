@@ -22,6 +22,10 @@ class DriverMarkerManager {
     if (_manager == null) return;
     final pt = Point(coordinates: Position(pos.lon, pos.lat));
 
+    // Add 180° offset to bearing because the icon is drawn pointing UP (north)
+    // but we want it to point in the direction of travel
+    final correctedBearing = (bearing + 180) % 360;
+
     if (_annotation == null) {
       if (_creating) return;
       _creating = true;
@@ -33,7 +37,7 @@ class DriverMarkerManager {
             image: _cachedBitmap!,
             iconSize: 0.9,
             iconAnchor: IconAnchor.CENTER,
-            iconRotate: bearing,
+            iconRotate: correctedBearing,
           ),
         );
       } catch (e) {
@@ -46,7 +50,7 @@ class DriverMarkerManager {
       _updating = true;
       try {
         _annotation!.geometry = pt;
-        _annotation!.iconRotate = bearing;
+        _annotation!.iconRotate = correctedBearing;
         await _manager!.update(_annotation!);
       } catch (e) {
         // silent fail — marker will catch up on next tick

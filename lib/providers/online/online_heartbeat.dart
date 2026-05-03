@@ -29,6 +29,10 @@ class OnlineHeartbeat {
     // Send heartbeat every 20s. Backend stale threshold is 120s, so this gives
     // 6x redundancy against network hiccups, GPS delays, and background throttling.
     _heartbeatTimer = Timer.periodic(const Duration(seconds: 20), (_) async {
+      // Skip heartbeat if driver is offline with no active ride - no need to sync
+      if (!_state.isOnline && _state.activeRideId == null) {
+        return;
+      }
       bool success = false;
       try {
         // Use last-known position only — instant, never blocks the timer.
@@ -99,6 +103,10 @@ class OnlineHeartbeat {
 
   /// Send an immediate heartbeat (e.g., on app resume)
   Future<void> sendImmediate() async {
+    // Skip heartbeat if driver is offline with no active ride - no need to sync
+    if (!_state.isOnline && _state.activeRideId == null) {
+      return;
+    }
     try {
       final pos = await Geolocator.getLastKnownPosition();
       final driverState = _state.isOnline ? 'online' : 'offline';

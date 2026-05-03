@@ -81,4 +81,21 @@ class DriverService {
       data: {'monthlyOnlineMs': ms, 'month': month},
     );
   }
+
+  /// Update monthly online time by adding session duration to backend.
+  /// Backend adds the received duration to the existing monthly total.
+  Future<void> updateMonthlyOnlineTime(int sessionMs) async {
+    // Validate: max 24 hours in milliseconds for a single session
+    const maxSessionMs = 24 * 60 * 60 * 1000;
+    if (sessionMs < 0 || sessionMs > maxSessionMs) {
+      print(
+        '[DriverService] Invalid sessionMs: $sessionMs (max: $maxSessionMs) - skipping update',
+      );
+      return;
+    }
+    await _dio.patch(
+      Endpoints.driverUpdateMonthlyTime,
+      data: {'sessionMs': sessionMs},
+    );
+  }
 }

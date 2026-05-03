@@ -1,13 +1,9 @@
 import 'dart:async';
 import 'package:flutter/widgets.dart';
-import 'package:flutter/foundation.dart';
-import 'package:dio/dio.dart';
 import '../services/dispatch/dispatch_service.dart';
 import '../services/driver/driver_service.dart';
-import '../services/background/background_tracking_service.dart';
 import '../services/background/permission_state_storage.dart';
 import '../core/models/driver_model.dart';
-import '../core/notifications/notification_service.dart';
 import 'online/online_state.dart';
 import 'online/online_time_tracking.dart';
 import 'online/online_persistence.dart';
@@ -65,6 +61,21 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
     return await _state.permissionState;
   }
 
+  /// Refresh monthly online time from backend to keep Earnings page in sync
+  Future<void> refreshMonthlyTime() async {
+    await _lifecycle.refreshMonthlyTime();
+  }
+
+  /// Start periodic monthly time refresh during online sessions
+  void _startMonthlyRefreshTimer() {
+    _timeTracking.startMonthlyRefreshTimer(refreshMonthlyTime);
+  }
+
+  /// Stop periodic monthly time refresh timer
+  void _stopMonthlyRefreshTimer() {
+    _timeTracking.stopMonthlyRefreshTimer();
+  }
+
   OnlineProvider() {
     _timeTracking = OnlineTimeTracking(onTickCallback: notifyListeners);
     _persistence = OnlinePersistence(_timeTracking);
@@ -76,9 +87,12 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
     _gps = OnlineGps();
     _lifecycle = OnlineLifecycle(
       driver: _driver,
+      dispatch: _dispatch,
       state: _state,
       timeTracking: _timeTracking,
       heartbeat: _heartbeat,
+      persistence: _persistence,
+      gps: _gps,
       onForcedOfflineCallback: () {
         notifyListeners();
       },
@@ -88,46 +102,11 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   // ── Load initial driver state (runs once) ─────────────────────────────────
   Future<void> loadDriverProfile() async {
-    if (_state.initialized) return;
-    _state.initialized = true;
-    await _persistence.loadPersistedTime();
-    // Register lifecycle observer
-    WidgetsBinding.instance.addObserver(this);
-    // Listen for backend-forced offline via FCM
-    NotificationService.instance.onDriverForcedOffline =
-        _lifecycle.handleForcedOffline;
-    try {
-      _state.driverProfile = await _driver.getMe();
-      // Keep driver offline by default on app restart
-      _state.isOnline = false;
-
-      // Seed monthly time from backend
-      _timeTracking.backendMonthlyMs = _state.driverProfile!.monthlyOnlineMs;
-
-      // ── One-time migration from legacy SharedPreferences ─────────────────
-      if (_timeTracking.backendMonthlyMs == 0 &&
-          _timeTracking.legacyMonthMs > 0) {
-        final currentMonth = _timeTracking.monthStr;
-        if (_timeTracking.legacyMonth == currentMonth) {
-          _timeTracking.backendMonthlyMs = _timeTracking.legacyMonthMs;
-          _driver
-              .seedMonthlyOnlineTime(_timeTracking.legacyMonthMs, currentMonth)
-              .then((_) async {
-                await _persistence.clearLegacyKeys();
-              })
-              .catchError((_) {});
-        }
-      }
-
-      if (_state.isOnline) {
-        _timeTracking.lastOnlineAt =
-            _state.driverProfile!.onlineSince ?? DateTime.now();
-        _timeTracking.startUiTimer();
-      }
-      notifyListeners();
-    } catch (_) {
-      // Non-fatal — keep UI working
-    }
+    await _lifecycle.loadDriverProfile(
+      registerLifecycleObserver: () =>
+          WidgetsBinding.instance.addObserver(this),
+      onForcedOfflineCallback: () => notifyListeners(),
+    );
   }
 
   /// Called by Flutter when the app moves between foreground/background.
@@ -143,160 +122,10 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   // ── Toggle ────────────────────────────────────────────────────────────────
   Future<void> toggleOnline() async {
-    if (_state.loading) return;
-    _state.loading = true;
-    _state.error = null;
-    _state.gpsRequired = false;
-    _state.permissionRequired = false;
-    notifyListeners();
-
-    try {
-      if (_state.isOnline) {
-        // ── Going OFFLINE ──────────────────────────────────────────────────
-        if (_state.activeRideId != null) {
-          NotificationService.instance.showLocalNotification(
-            title: 'Cannot Go Offline',
-            body: 'You are currently in a trip and cannot go offline.',
-          );
-          _state.loading = false;
-          notifyListeners();
-          return;
-        }
-        try {
-          await _dispatch.goOffline();
-        } catch (e) {
-          // Check for DioError with 403 status (Forbidden)
-          if (e is DioError && e.response?.statusCode == 403) {
-            NotificationService.instance.showLocalNotification(
-              title: 'Cannot Go Offline',
-              body: 'You are currently in a trip and cannot go offline.',
-            );
-            _state.loading = false;
-            notifyListeners();
-            return;
-          }
-          // Also check for string-based fallback
-          if (e.toString().contains('403') ||
-              e.toString().contains('Forbidden') ||
-              e.toString().contains('trip')) {
-            NotificationService.instance.showLocalNotification(
-              title: 'Cannot Go Offline',
-              body: 'You are currently in a trip and cannot go offline.',
-            );
-            _state.loading = false;
-            notifyListeners();
-            return;
-          }
-          rethrow;
-        }
-        if (_timeTracking.lastOnlineAt != null) {
-          final sessionMs = _timeTracking.getSessionMs(_state.isOnline);
-          _timeTracking.addSessionTime(sessionMs);
-          await _persistence.persistTime();
-        }
-        _timeTracking.stopUiTimer();
-        _state.isOnline = false;
-
-        if (_state.activeRideId == null) {
-          BackgroundTrackingService.stopTracking();
-          await BackgroundTrackingService.stop();
-        }
-        try {
-          final updated = await _driver.getMe();
-          _timeTracking.backendMonthlyMs = updated.monthlyOnlineMs;
-          _state.driverProfile = updated;
-        } catch (_) {}
-      } else {
-        // ── Going ONLINE ───────────────────────────────────────────────────
-        final gpsOn = await _gps.isEnabled();
-        if (!gpsOn) {
-          _state.gpsRequired = true;
-          _state.loading = false;
-          notifyListeners();
-          return;
-        }
-
-        final hasPermission = await _gps.checkPermission();
-        if (!hasPermission) {
-          final granted = await _gps.requestPermission();
-          await PermissionStateStorage.setState(
-            granted ? PermissionState.granted : PermissionState.denied,
-          );
-          if (!granted) {
-            _state.permissionRequired = true;
-            _state.loading = false;
-            notifyListeners();
-            return;
-          }
-        }
-
-        _state.forcedOffline = false;
-        final pos = await _gps.getLocation();
-        await _dispatch.goOnline(lat: pos?.latitude, lng: pos?.longitude);
-        _timeTracking.lastOnlineAt = DateTime.now();
-        _heartbeat.resetFailCount();
-        _timeTracking.startUiTimer();
-        _state.isOnline = true;
-
-        await BackgroundTrackingService.start();
-
-        // Check if driver has an active ride from backend
-        debugPrint(
-          '🚗 [OnlineProvider] 🔍 Checking for active ride from backend...',
-        );
-        try {
-          final rides = await _dispatch.getDriverRides();
-          final activeRides = rides
-              .where(
-                (r) =>
-                    r.status == 'ASSIGNED' ||
-                    r.status == 'EN_ROUTE_TO_PICKUP' ||
-                    r.status == 'ARRIVED' ||
-                    r.status == 'IN_TRIP',
-              )
-              .toList();
-          if (activeRides.isNotEmpty) {
-            _state.activeRideId = activeRides.first.id;
-            debugPrint(
-              '🚗 [OnlineProvider] ✅ Found active ride from backend: ${_state.activeRideId}',
-            );
-          } else {
-            debugPrint(
-              '🚗 [OnlineProvider] ℹ️ No active ride found on backend',
-            );
-          }
-        } catch (e) {
-          debugPrint('🚗 [OnlineProvider] ⚠️ Failed to fetch rides: $e');
-        }
-
-        if (_state.activeRideId != null) {
-          debugPrint(
-            '🚗 [OnlineProvider] 📍 Active ride detected: ${_state.activeRideId} - starting GPS tracking immediately',
-          );
-          BackgroundTrackingService.startTracking(_state.activeRideId!);
-        } else {
-          debugPrint(
-            '🚗 [OnlineProvider] ℹ️ No active ride - GPS tracking not started yet',
-          );
-        }
-      }
-    } catch (e) {
-      debugPrint('OnlineProvider.toggleOnline: $e');
-      final msg = e.toString().toLowerCase();
-      if (msg.contains('cannot go offline') ||
-          msg.contains('trip') ||
-          msg.contains('forbidden')) {
-        NotificationService.instance.showLocalNotification(
-          title: 'Cannot Go Offline',
-          body: 'You are currently in a trip and cannot go offline.',
-        );
-      } else {
-        _state.error = 'Failed to change online status: ${e.toString()}';
-      }
-    } finally {
-      _state.loading = false;
-      notifyListeners();
-    }
+    await _lifecycle.toggleOnline(
+      startMonthlyRefreshTimer: _startMonthlyRefreshTimer,
+      stopMonthlyRefreshTimer: _stopMonthlyRefreshTimer,
+    );
   }
 
   void clearGpsRequired() {
@@ -321,35 +150,8 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
 
   @override
   void dispose() {
-    debugPrint(
-      '🚗 [OnlineProvider] Disposing - stopping all services and going offline',
-    );
-    // Persist current session time if online, so it doesn't reset on app reopen
-    if (_state.isOnline && _timeTracking.lastOnlineAt != null) {
-      final sessionMs = _timeTracking.getSessionMs(_state.isOnline);
-      _timeTracking.addSessionTime(sessionMs);
-      _persistence.persistTime().catchError((e) {
-        debugPrint('🚗 [OnlineProvider] Failed to persist time on dispose: $e');
-      });
-    }
     WidgetsBinding.instance.removeObserver(this);
-    _heartbeat.stop();
-    _timeTracking.dispose();
-    // Stop background tracking service when provider is disposed (app closed)
-    BackgroundTrackingService.stopTracking();
-    BackgroundTrackingService.stop();
-
-    // Call backend goOffline to ensure driver goes offline in database
-    if (_state.isOnline) {
-      _dispatch.goOffline().catchError((e) {
-        debugPrint(
-          '🚗 [OnlineProvider] Failed to call goOffline on dispose: $e',
-        );
-      });
-    }
-
-    _state.isOnline = false;
-    _timeTracking.lastOnlineAt = null;
+    _lifecycle.dispose(stopMonthlyRefreshTimer: _stopMonthlyRefreshTimer);
     super.dispose();
   }
 }

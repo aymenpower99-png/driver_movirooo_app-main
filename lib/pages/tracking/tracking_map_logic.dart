@@ -54,6 +54,14 @@ class TrackingMapLogic {
   /// Expose camera controller for accessing follow mode state
   CameraController get camera => _camera;
 
+  /// Expose route manager for direct access
+  RouteManager get route => _route;
+
+  /// Handle reroute event - update route with new geometry
+  Future<void> handleReroute(List<double> routeGeometry, int sequence) async {
+    await _route.updateRouteGeometry(routeGeometry, sequence);
+  }
+
   Future<void> onStyleLoaded() async {
     if (_map == null) return;
 

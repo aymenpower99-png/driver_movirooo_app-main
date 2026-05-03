@@ -13,6 +13,9 @@ class TrackingSocketService {
   // External listener for incoming location updates (e.g. for passenger app)
   void Function(double lat, double lng)? onLocationUpdate;
 
+  // External listener for reroute events
+  void Function(List<double> routeGeometry, int sequence)? onReroute;
+
   Future<void> connect(String rideId) async {
     if (_socket != null && _currentRideId == rideId) return;
     await disconnect();
@@ -43,6 +46,23 @@ class TrackingSocketService {
         final lat = (data['latitude'] as num?)?.toDouble();
         final lng = (data['longitude'] as num?)?.toDouble();
         if (lat != null && lng != null) onLocationUpdate!(lat, lng);
+      }
+    });
+
+    _socket!.on('trip:reroute', (data) {
+      if (data is Map && onReroute != null) {
+        final routeGeometry = data['routeGeometry'] as List?;
+        final sequence = data['sequence'] as int?;
+        if (routeGeometry != null && sequence != null) {
+          // Convert List<dynamic> to List<double>
+          final coordinates = routeGeometry
+              .map((e) => (e as num).toDouble())
+              .toList();
+          debugPrint(
+            '🔌 [Driver] Received trip:reroute event - sequence=$sequence, points=${coordinates.length ~/ 2}',
+          );
+          onReroute!(coordinates, sequence);
+        }
       }
     });
   }

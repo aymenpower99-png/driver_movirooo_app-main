@@ -144,4 +144,35 @@ class RouteManager {
 
   /// Check if Phase 2 route has been drawn.
   bool get dropoffRouteDrawn => _dropoffRouteDrawn;
+
+  /// Update route with new geometry from reroute event
+  Future<void> updateRouteGeometry(
+    List<double> routeGeometry,
+    int sequence,
+  ) async {
+    if (!_srcReady) return;
+
+    if (routeGeometry.isEmpty || routeGeometry.length < 4) {
+      debugPrint('⚠️ [RouteManager] Invalid reroute geometry');
+      return;
+    }
+
+    // Update the route on the map with flattened coordinates
+    await _map!.style.setStyleSourceProperty(
+      'route-src',
+      'data',
+      GeoJsonHelper.geometryToGeoJson(routeGeometry),
+    );
+
+    // Update deviation detector with new route
+    if (_dropoffRouteDrawn && _dropoffPt != null) {
+      _deviationDetector!.setCurrentRoute(routeGeometry, _dropoffPt!);
+    } else if (_pickupRouteDrawn && _pickupPt != null) {
+      _deviationDetector!.setCurrentRoute(routeGeometry, _pickupPt!);
+    }
+
+    debugPrint(
+      '✅ [RouteManager] Route updated with sequence $sequence (${routeGeometry.length ~/ 2} points)',
+    );
+  }
 }

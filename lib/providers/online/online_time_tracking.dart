@@ -102,4 +102,22 @@ class OnlineTimeTracking {
     _allTimeOnlineMs += sessionMs;
     _lastOnlineAt = null;
   }
+
+  // ── Monthly refresh timer ────────────────────────────────────────────────
+  Timer? _monthlyRefreshTimer;
+
+  /// Start periodic monthly time refresh during online sessions
+  void startMonthlyRefreshTimer(Future<void> Function() refreshCallback) {
+    _monthlyRefreshTimer?.cancel();
+    _monthlyRefreshTimer = Timer.periodic(
+      const Duration(minutes: 5),
+      (_) => refreshCallback(),
+    );
+  }
+
+  /// Stop periodic monthly time refresh timer
+  void stopMonthlyRefreshTimer() {
+    _monthlyRefreshTimer?.cancel();
+    _monthlyRefreshTimer = null;
+  }
 }

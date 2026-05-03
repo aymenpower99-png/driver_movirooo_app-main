@@ -5,6 +5,7 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:moviroo_driver_app/core/models/geo_point.dart';
 import 'package:moviroo_driver_app/theme/app_colors.dart';
 import 'package:moviroo_driver_app/services/background/background_tracking_service.dart';
+import 'package:moviroo_driver_app/services/tracking/tracking_socket_service.dart';
 import 'ride_model.dart';
 import 'tracking_bottom_sheet.dart';
 import 'tracking_map_logic.dart';
@@ -28,6 +29,7 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
   late TrackingPageController _controller;
   late TrackingMapLogic _mapLogic;
   late RideStatus _status;
+  final TrackingSocketService _socketService = TrackingSocketService();
 
   GeoPoint get _pickupPt => widget.ride.pickupLat != null
       ? GeoPoint(widget.ride.pickupLat!, widget.ride.pickupLon!)
@@ -79,6 +81,16 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
       dropoffPt: _dropoffPt,
       onEtaUpdate: (_, __, ___) {},
     );
+
+    // Connect to tracking socket for reroute events
+    _socketService.onReroute = (routeGeometry, sequence) {
+      debugPrint(
+        '🗺️ [TrackingPage] Reroute event received - sequence=$sequence',
+      );
+      _mapLogic.handleReroute(routeGeometry, sequence);
+    };
+
+    _socketService.connect(widget.ride.id);
   }
 
   void _onPositionUpdate(GeoPoint position, double bearing) {
@@ -154,6 +166,9 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
     debugPrint('🗺️ [TrackingPage] Page closing, disposing resources');
     _controller.dispose();
     _mapLogic.dispose();
+
+    // Disconnect tracking socket
+    _socketService.disconnect();
 
     // If the ride reached a terminal state (completed), make sure background
     // tracking is fully stopped. Cancel/end paths already stop it explicitly,
