@@ -71,20 +71,7 @@ class AppLifecycleHandler {
           final sessionMs = _timeTracking.getSessionMs(_state.isOnline);
           _timeTracking.addSessionTime(sessionMs);
           await _persistence.persistTime();
-          // Send session time to backend to update monthly total in database
-          debugPrint(
-            '🚗 [AppLifecycle] Sending session time to backend on detach: $sessionMs ms',
-          );
-          try {
-            await _driver.updateMonthlyOnlineTime(sessionMs);
-            debugPrint(
-              '🚗 [AppLifecycle] ✅ Session time updated in backend on detach',
-            );
-          } catch (e) {
-            debugPrint(
-              '🚗 [AppLifecycle] ⚠️ Failed to update session time in backend on detach: $e',
-            );
-          }
+          // Note: backend session time accumulation happens when goOffline is called below.
         }
         try {
           await _dispatch.goOffline();
@@ -183,15 +170,7 @@ class AppLifecycleHandler {
       _persistence.persistTime().catchError((e) {
         debugPrint('🚗 [AppLifecycle] Failed to persist time on dispose: $e');
       });
-      // Send session time to backend to update monthly total in database
-      debugPrint(
-        '🚗 [AppLifecycle] Sending session time to backend: $sessionMs ms',
-      );
-      _driver.updateMonthlyOnlineTime(sessionMs).catchError((e) {
-        debugPrint(
-          '🚗 [AppLifecycle] Failed to update session time in backend: $e',
-        );
-      });
+      // Note: backend session time accumulation happens when goOffline is called below.
     }
     _heartbeat.stop();
     _timeTracking.dispose();

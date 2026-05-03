@@ -130,19 +130,8 @@ class OnlineToggleHandler {
           final sessionMs = _timeTracking.getSessionMs(_state.isOnline);
           _timeTracking.addSessionTime(sessionMs);
           await _persistence.persistTime();
-          // Send session time to backend to update monthly total in database
-          debugPrint(
-            '🚗 [OnlineToggle] Sending session time to backend: $sessionMs ms',
-          );
-          try {
-            await _driver.updateMonthlyOnlineTime(sessionMs);
-            debugPrint('🚗 [OnlineToggle] ✅ Session time updated in backend');
-          } catch (e) {
-            debugPrint(
-              '🚗 [OnlineToggle] ⚠️ Failed to update session time in backend: $e',
-            );
-            // Non-fatal - local persistence keeps the data safe
-          }
+          // Note: session time accumulation is handled by backend goOffline endpoint
+          // which calls setMyAvailability(OFFLINE) and accumulates to driver_online_history.
         }
         _timeTracking.stopUiTimer();
         _state.isOnline = false;

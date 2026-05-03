@@ -29,6 +29,7 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
   late TrackingPageController _controller;
   late TrackingMapLogic _mapLogic;
   late RideStatus _status;
+  late RideModel _currentRide;
   final TrackingSocketService _socketService = TrackingSocketService();
 
   GeoPoint get _pickupPt => widget.ride.pickupLat != null
@@ -50,6 +51,7 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
     debugPrint(' [TrackingPage] Page opened for ride: ${widget.ride.id}');
 
     _status = widget.ride.status;
+    _currentRide = widget.ride;
 
     _controller = TrackingPageController(
       rideId: widget.ride.id,
@@ -135,7 +137,24 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
   }
 
   Future<void> _onStatusChanged(RideStatus newStatus) async {
-    setState(() => _status = newStatus);
+    setState(() {
+      _status = newStatus;
+      _currentRide = RideModel(
+        id: widget.ride.id,
+        passenger: widget.ride.passenger,
+        pickupAddress: widget.ride.pickupAddress,
+        dropOffAddress: widget.ride.dropOffAddress,
+        distanceKm: widget.ride.distanceKm,
+        etaMinutes: widget.ride.etaMinutes,
+        earningsAmount: widget.ride.earningsAmount,
+        currency: widget.ride.currency,
+        pickupLat: widget.ride.pickupLat,
+        pickupLon: widget.ride.pickupLon,
+        dropoffLat: widget.ride.dropoffLat,
+        dropoffLon: widget.ride.dropoffLon,
+        status: newStatus,
+      );
+    });
     switch (newStatus) {
       case RideStatus.onTheWay:
         if (_controller.driverPosition != null) {
@@ -263,7 +282,7 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
           ),
 
           TrackingBottomSheet(
-            ride: widget.ride,
+            ride: _currentRide,
             onStatusChanged: _onStatusChanged,
           ),
         ],

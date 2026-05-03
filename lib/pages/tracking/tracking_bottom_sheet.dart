@@ -32,11 +32,12 @@ class TrackingBottomSheet extends StatefulWidget {
 }
 
 class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
-  RideStatus _status = RideStatus.assigned;
   bool _isCollapsed = false;
   bool _apiLoading = false;
 
   final TripService _tripService = TripService();
+
+  RideStatus get _status => widget.ride.status;
 
   void _handlePrimaryTap() {
     if (_apiLoading) return;
@@ -56,7 +57,7 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
     }
   }
 
-  /// Calls the correct backend endpoint then advances local state.
+  /// Calls the correct backend endpoint then notifies parent of status change.
   Future<void> _advance() async {
     final next = _status.next;
     if (next == null) return;
@@ -76,11 +77,8 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
         default:
           break;
       }
-      setState(() {
-        _status = next;
-        _apiLoading = false;
-      });
-      widget.onStatusChanged?.call(_status);
+      setState(() => _apiLoading = false);
+      widget.onStatusChanged?.call(next);
     } catch (e) {
       setState(() => _apiLoading = false);
       if (mounted) {
