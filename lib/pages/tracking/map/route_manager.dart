@@ -3,6 +3,7 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:moviroo_driver_app/core/models/geo_point.dart';
 import 'package:moviroo_driver_app/services/mapbox/mapbox_service.dart';
 import '../route_deviation_detector.dart';
+import '../utils/geo_math.dart';
 import 'geojson_helper.dart';
 
 /// Manages route drawing, clearing, and ETA updates on the map.
@@ -15,6 +16,8 @@ class RouteManager {
   bool _pickupRouteDrawn = false;
   bool _dropoffRouteDrawn = false;
   bool _srcReady = false;
+
+  List<double>? _currentGeometry;
 
   final void Function(String eta, String dist, String label) onEtaUpdate;
 
@@ -76,6 +79,7 @@ class RouteManager {
     if (result != null) {
       onEtaUpdate(result.etaText, result.distanceText, 'To Pickup');
       _deviationDetector!.setCurrentRoute(result.geometry, _pickupPt!);
+      _currentGeometry = result.geometry;
       await _map!.style.setStyleSourceProperty(
         'route-src',
         'data',
@@ -110,6 +114,7 @@ class RouteManager {
     if (result != null) {
       onEtaUpdate(result.etaText, result.distanceText, 'To Drop-off');
       _deviationDetector!.setCurrentRoute(result.geometry, _dropoffPt!);
+      _currentGeometry = result.geometry;
       await _map!.style.setStyleSourceProperty(
         'route-src',
         'data',
@@ -136,6 +141,7 @@ class RouteManager {
     );
     _pickupRouteDrawn = false;
     _dropoffRouteDrawn = false;
+    _currentGeometry = null;
     _deviationDetector!.clearRoute();
   }
 
@@ -158,6 +164,7 @@ class RouteManager {
     }
 
     // Update the route on the map with flattened coordinates
+    _currentGeometry = routeGeometry;
     await _map!.style.setStyleSourceProperty(
       'route-src',
       'data',
@@ -174,5 +181,40 @@ class RouteManager {
     debugPrint(
       '✅ [RouteManager] Route updated with sequence $sequence (${routeGeometry.length ~/ 2} points)',
     );
+  }
+
+  // ── Route truncation (remove passed portion behind driver) ─────────────────
+
+  Future<void> truncateRoute(GeoPoint driverPos) async {
+    if (!_srcReady || _currentGeometry == null || _currentGeometry!.length < 4) {
+      return;
+    }
+
+    final truncated = _truncateGeometry(driverPos);
+    if (truncated.length < 4) return;
+
+    await _map!.style.setStyleSourceProperty(
+      'route-src',
+      'data',
+      GeoJsonHelper.geometryToGeoJson(truncated),
+    );
+  }
+
+  List<double> _truncateGeometry(GeoPoint driverPos) {
+    final geometry = _currentGeometry!;
+    double minDist = double.infinity;
+    int closestIdx = 0;
+
+    for (int i = 0; i < geometry.length; i += 2) {
+      final lon = geometry[i];
+      final lat = geometry[i + 1];
+      final d = GeoMath.distanceMeters(GeoPoint(lat, lon), driverPos);
+      if (d < minDist) {
+        minDist = d;
+        closestIdx = i;
+      }
+    }
+
+    return geometry.sublist(closestIdx);
   }
 }

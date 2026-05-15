@@ -22,9 +22,8 @@ class DriverMarkerManager {
     if (_manager == null) return;
     final pt = Point(coordinates: Position(pos.lon, pos.lat));
 
-    // Add 180° offset to bearing because the icon is drawn pointing UP (north)
-    // but we want it to point in the direction of travel
-    final correctedBearing = (bearing + 180) % 360;
+    // Icon is drawn pointing UP (north); rotate it to match the direction of travel
+    final correctedBearing = bearing % 360;
 
     if (_annotation == null) {
       if (_creating) return;

@@ -104,6 +104,10 @@ class TrackingMapLogic {
     _camera.shouldFollowDriver(pos, bearing);
   }
 
+  Future<void> truncateRoute(GeoPoint driverPos) async {
+    await _route.truncateRoute(driverPos);
+  }
+
   // ── Phase 1: Driver → Pickup ──────────────────────────────────────────────
 
   Future<void> drawPhase1Route(GeoPoint driver) async {

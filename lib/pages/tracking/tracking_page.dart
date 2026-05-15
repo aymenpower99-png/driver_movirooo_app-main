@@ -107,6 +107,9 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
       _mapLogic.drawPhase1Route(position);
     }
     _mapLogic.maybeRefreshEta(position, _isPrePickup, _isInTrip);
+
+    // Truncate the route line so the portion behind the driver disappears
+    _mapLogic.truncateRoute(position);
   }
 
   void _onAnimationTick(GeoPoint position, double bearing) {
