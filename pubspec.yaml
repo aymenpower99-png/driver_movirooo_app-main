@@ -54,6 +54,10 @@ dependencies:
   flutter_background_service: ^5.0.10
   flutter_background_service_android: ^6.2.2
 
+  # ── AI Chatbot ────────────────────────────────────────────
+  http: ^1.0.0
+  uuid: ^4.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

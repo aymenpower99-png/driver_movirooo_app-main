@@ -315,5 +315,21 @@
   "dashboard_turn_on_gps": "Activer",
 
   "notification_settings": "Paramètres de notification",
-  "email": "E-mail"
+  "email": "E-mail",
+
+  "settings_ai_assistant": "Assistant IA",
+  "ai_page_title": "Assistant de support",
+  "ai_online": "En ligne",
+  "ai_hero_title": "Comment pouvons-nous vous aider ?",
+  "ai_hero_subtitle": "Décrivez votre problème ou choisissez une action rapide ci-dessous.",
+  "ai_input_hint": "Tapez votre message...",
+  "ai_quick_actions": "ACTIONS RAPIDES",
+  "ai_quick_trip": "Problème de course",
+  "ai_quick_payment": "Problème de paiement",
+  "ai_quick_vehicle": "Problème de véhicule",
+  "ai_quick_account": "Aide compte",
+  "ai_query_trip": "J'ai un problème avec ma course actuelle",
+  "ai_query_payment": "Mon paiement ou ma commission est incorrect",
+  "ai_query_vehicle": "Mon véhicule a un problème technique",
+  "ai_query_account": "J'ai besoin d'aide avec mon compte chauffeur"
 }

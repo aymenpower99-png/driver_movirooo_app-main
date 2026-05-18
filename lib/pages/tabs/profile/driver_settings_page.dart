@@ -91,6 +91,11 @@ class DriverSettingsPage extends StatelessWidget {
             label: t('settings_my_tickets'),
             onTap: () => Navigator.pushNamed(context, '/driver/my-tickets'),
           ),
+          _RowDivider(),
+          _TapRow(
+            label: t('settings_ai_assistant'),
+            onTap: () => Navigator.pushNamed(context, '/driver/ai-chatbot'),
+          ),
 
           const SizedBox(height: 28),
 

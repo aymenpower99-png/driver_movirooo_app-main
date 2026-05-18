@@ -315,5 +315,21 @@
   "dashboard_turn_on_gps": "Turn On",
 
   "notification_settings": "Notification Settings",
-  "email": "Email"
+  "email": "Email",
+
+  "settings_ai_assistant": "AI Assistant",
+  "ai_page_title": "Support Assistant",
+  "ai_online": "Online",
+  "ai_hero_title": "How can we help?",
+  "ai_hero_subtitle": "Describe your issue or choose a quick action below.",
+  "ai_input_hint": "Type your message...",
+  "ai_quick_actions": "QUICK ACTIONS",
+  "ai_quick_trip": "Trip issue",
+  "ai_quick_payment": "Payment issue",
+  "ai_quick_vehicle": "Vehicle problem",
+  "ai_quick_account": "Account help",
+  "ai_query_trip": "I have an issue with my current trip",
+  "ai_query_payment": "My payment or commission is incorrect",
+  "ai_query_vehicle": "My vehicle has a technical problem",
+  "ai_query_account": "I need help with my driver account"
 }

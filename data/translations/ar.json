@@ -317,5 +317,21 @@
   "dashboard_turn_on_gps": "تشغيل",
 
   "notification_settings": "إعدادات الإشعارات",
-  "email": "البريد الإلكتروني"
+  "email": "البريد الإلكتروني",
+
+  "settings_ai_assistant": "مساعد الذكاء الاصطناعي",
+  "ai_page_title": "مساعد الدعم",
+  "ai_online": "متصل",
+  "ai_hero_title": "كيف يمكننا مساعدتك؟",
+  "ai_hero_subtitle": "صف مشكلتك أو اختر إجراءً سريعًا أدناه.",
+  "ai_input_hint": "اكتب رسالتك...",
+  "ai_quick_actions": "إجراءات سريعة",
+  "ai_quick_trip": "مشكلة في الرحلة",
+  "ai_quick_payment": "مشكلة في الدفع",
+  "ai_quick_vehicle": "مشكلة في المركبة",
+  "ai_quick_account": "مساعدة الحساب",
+  "ai_query_trip": "لدي مشكلة في رحلتي الحالية",
+  "ai_query_payment": "دفعتي أو عمولتي غير صحيحة",
+  "ai_query_vehicle": "مركبتي بها مشكلة فنية",
+  "ai_query_account": "أحتاج مساعدة في حساب السائق الخاص بي"
 }

@@ -8,6 +8,7 @@ import 'package:moviroo_driver_app/pages/work_area/work_area_page.dart';
 
 import '../pages/tabs/chat/chat_page.dart';
 import '../pages/tabs/profile/password/passwordrest.dart';
+import '../pages/tabs/profile/settings/ai_chatbot/driver_ai_chatbot_page.dart';
 import '../pages/tabs/profile/rate/rate.dart';
 import '../pages/tabs/active_ride/active_ride_page.dart';
 import '../pages/tabs/dashboard/dashboard_page.dart';
@@ -42,6 +43,7 @@ static const String rest = '/driver/password-reset';
 static const String myTickets = '/driver/my-tickets';
 static const String ticketDetail = '/driver/ticket-detail';
 static const String workArea = '/driver/work-area';
+static const String aiChatbot = '/driver/ai-chatbot';
   static Map<String, WidgetBuilder> get routes => {
     splash:        (_) => const SplashPage(),
     contactSupport: (_) => const ContactSupportPage(),
@@ -59,6 +61,7 @@ rateApp: (_) => RatePage(),
     myTickets: (_) => const MyTicketsPage(),
     ticketDetail: (_) => const TicketDetailPage(),
     workArea: (_) => const WorkAreaPage(),
+    aiChatbot: (_) => const DriverAiChatbotPage(),
   };
 
   static Future<T?> push<T>(
