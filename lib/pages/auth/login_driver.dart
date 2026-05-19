@@ -141,34 +141,13 @@ class _DriverLoginPageState extends State<DriverLoginPage>
 
                   // ── Logo ──────────────────────────────────────────────
                   Center(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(28),
-                      child: Image.asset(
-                        'images/lsnn.png',
-                        width: 120,
-                        height: 120,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // ── Title ─────────────────────────────────────────────
-                  FadeTransition(
-                    opacity: _fadeAnim,
-                    child: SlideTransition(
-                      position: _slideAnim,
-                      child: Center(
-                        child: Text(
-                          'Movirooo',
-                          style: AppTextStyles.pageTitle(context).copyWith(
-                            fontSize: 32,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -0.8,
-                          ),
-                        ),
-                      ),
+                    child: Image.asset(
+                      Theme.of(context).brightness == Brightness.dark
+                          ? 'images/moviroo dark mode.png'
+                          : 'images/moviroo light mode.png',
+                      width: 200,
+                      height: 80,
+                      fit: BoxFit.contain,
                     ),
                   ),
 

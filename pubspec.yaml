@@ -99,6 +99,8 @@ flutter:
     - images/logo.gif
     - images/complete.gif
     - images/logob.png
+    - images/moviroo light mode.png
+    - images/moviroo dark mode.png
     - data/translations/en.json
     - data/translations/fr.json
     - data/translations/ar.json

@@ -75,6 +75,7 @@ class _DashboardPageState extends State<DashboardPage>
       AppRouter.driverDashboard,
       AppRouter.driverEarningsPage,
       AppRouter.driverRides,
+      AppRouter.driverSupport,
       AppRouter.driverProfile,
     ];
 

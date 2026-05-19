@@ -11,16 +11,15 @@ class DashboardHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
       children: [
-        Text(
-          'Moviroo', // brand name, not translated
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            color: AppColors.text(context),
-            letterSpacing: -0.3,
-          ),
+        Image.asset(
+          isDark
+              ? 'images/moviroo dark mode.png'
+              : 'images/moviroo light mode.png',
+          height: 28,
+          fit: BoxFit.contain,
         ),
         const Spacer(),
         AnimatedContainer(

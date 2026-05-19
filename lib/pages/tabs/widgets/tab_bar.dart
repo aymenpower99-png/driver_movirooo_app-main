@@ -13,6 +13,7 @@ class DriverTabBar extends StatelessWidget {
     AppRouter.driverDashboard,
     AppRouter.driverEarningsPage,
     AppRouter.driverRides,
+    AppRouter.driverSupport,
     AppRouter.driverProfile,
   ];
 
@@ -22,6 +23,7 @@ class DriverTabBar extends StatelessWidget {
       t('driver_tab_stats'),
       t('driver_tab_earnings'),
       t('driver_tab_activities'),
+      t('driver_tab_support'),
       t('driver_tab_profile'),
     ];
   }
@@ -45,6 +47,8 @@ class DriverTabBar extends StatelessWidget {
       case 2:
         return active ? Icons.description_rounded : Icons.description_outlined;
       case 3:
+        return active ? Icons.help_rounded : Icons.help_outline_rounded;
+      case 4:
         return active ? Icons.person_rounded : Icons.person_outline_rounded;
       default:
         return Icons.circle;

@@ -1,6 +1,5 @@
-﻿{
+{
   "continue": "متابعة",
-
   "label_email": "البريد الإلكتروني",
   "label_password": "كلمة المرور",
   "hint_email": "أدخل بريدك الإلكتروني",
@@ -16,21 +15,17 @@
   "send_recovery_link": "إرسال رابط الاستعادة",
   "remembered_password": "تذكرت كلمة المرور؟ ",
   "profile_rides": "رحلة",
-
   "driver_tab_stats": "الإحصائيات",
   "driver_tab_earnings": "الأرباح",
   "driver_tab_activities": "النشاطات",
   "driver_tab_profile": "الملف الشخصي",
-
   "settings_section": "الإعدادات",
   "account_tile": "الحساب",
   "push_notification_tile": "الإشعارات الفورية",
   "badge_premium_driver": "سائق مميز",
   "status_online": "متصل",
-
   "cancel": "إلغاء",
   "save": "حفظ",
-
   "chat_message_hint": "رسالة",
   "chat_recording": "تسجيل",
   "chat_no_messages": "لا توجد رسائل",
@@ -45,7 +40,6 @@
   "chat_edit_message_hint": "عدّل رسالتك…",
   "chat_delete_message_title": "حذف الرسالة؟",
   "chat_delete_message_body": "سيتم حذف هذه الرسالة نهائيًا.",
-
   "status_offline": "غير متصل",
   "dashboard_you_are_online": "أنت متصل",
   "dashboard_you_are_offline": "أنت غير متصل",
@@ -59,7 +53,6 @@
   "dashboard_your_rating": "تقييمك",
   "dashboard_streak": "سلسلة",
   "dashboard_driver_level": "مستوى السائق",
-
   "personal_information": "المعلومات الشخصية",
   "update_photo": "تحديث الصورة",
   "field_first_name": "الاسم",
@@ -70,14 +63,12 @@
   "validation_invalid_email": "أدخل بريدًا إلكترونيًا صالحًا",
   "save_changes": "حفظ التغييرات",
   "profile_updated": "تم تحديث الملف الشخصي بنجاح",
-
   "notifications": "الإشعارات",
   "notification_channels": "قنوات الإشعارات",
   "push_notifications": "الإشعارات الفورية",
   "push_notifications_subtitle": "تنبيهات على شاشة جهازك",
   "email_notifications": "إشعارات البريد الإلكتروني",
   "email_notifications_subtitle": "استقبل التحديثات على بريدك الإلكتروني",
-
   "change_password": "تغيير كلمة المرور",
   "password_details": "تفاصيل كلمة المرور",
   "current_password": "كلمة المرور الحالية",
@@ -88,7 +79,6 @@
   "save_new_password": "حفظ وتحديث",
   "password_tips_title": "نصائح كلمة المرور",
   "password_tips_body": "استخدم 8 أحرف على الأقل بمزيج من الحروف والأرقام لحماية أفضل.",
-
   "earnings_tab_weekly": "أسبوعي",
   "earnings_tab_monthly": "شهري",
   "earnings_tab_all_time": "كل الوقت",
@@ -120,16 +110,12 @@
   "retry": "إعادة المحاولة",
   "dashboard_vehicle": "المركبة",
   "dashboard_vehicle_class": "فئة المركبة",
-
   "start_navigation": "بدء الملاحة",
-
   "ride_action_track": "تتبع",
   "ride_action_chat": "محادثة",
   "ride_action_reject": "رفض",
   "ride_action_accept": "قبول الرحلة",
-
   "tap_to_refresh": "اضغط للتحديث",
-
   "rides_page_title": "الرحلات",
   "rides_tab_available": "متاحة",
   "rides_tab_upcoming": "قادمة",
@@ -149,7 +135,6 @@
   "ride_pax": "راكب",
   "ride_passenger_one": "راكب",
   "ride_passengers_many": "ركاب",
-
   "tracking_confirm_title": "هل أنت متأكد؟",
   "tracking_confirm_description": "أنت على وشك بدء الملاحة إلى نقطة التقاط الراكب.",
   "tracking_confirm_go_pickup": "تأكيد — الذهاب للاستلام",
@@ -250,20 +235,17 @@
   "profile_language": "اللغة",
   "profile_logout": "تسجيل الخروج",
   "profile": "الملف الشخصي",
-
   "appearance": "المظهر",
   "theme": "السمة",
   "dark": "داكن",
   "light": "فاتح",
   "system": "النظام",
-
   "language": "اللغة",
   "selectLanguage": "اختر اللغة",
   "english": "الإنجليزية",
   "englishUS": "الإنجليزية (الولايات المتحدة)",
   "french": "الفرنسية",
   "arabic": "العربية",
-
   "completion_loading": "جاري إنهاء الرحلة...",
   "completion_title": "اكتملت الرحلة",
   "completion_duration": "المدة",
@@ -275,7 +257,6 @@
   "completion_report_issue": "الإبلاغ عن مشكلة",
   "completion_back_online": "العودة للاتصال",
   "completion_rate_passenger": "قيّم الراكب",
-
   "cancellation_loading": "جاري معالجة الإلغاء...",
   "cancellation_title": "تم إلغاء الرحلة",
   "cancellation_by_driver": "ألغيت بواسطتك",
@@ -294,7 +275,6 @@
   "russian": "الروسية",
   "turkish": "التركية",
   "chinese": "الصينية",
-
   "earnings_fixed_salary": "الراتب الثابت",
   "earnings_total_rides": "إجمالي الرحلات",
   "earnings_online_time_label": "وقت الاتصال",
@@ -315,10 +295,8 @@
   "dashboard_enable_location": "تفعيل الموقع",
   "dashboard_gps_required_message": "يجب تفعيل نظام تحديد المواقع للاتصال. يرجى تشغيل موقع جهازك لبدء استقبال طلبات الرحلات.",
   "dashboard_turn_on_gps": "تشغيل",
-
   "notification_settings": "إعدادات الإشعارات",
   "email": "البريد الإلكتروني",
-
   "settings_ai_assistant": "مساعد الذكاء الاصطناعي",
   "ai_page_title": "مساعد الدعم",
   "ai_online": "متصل",
@@ -333,5 +311,20 @@
   "ai_query_trip": "لدي مشكلة في رحلتي الحالية",
   "ai_query_payment": "دفعتي أو عمولتي غير صحيحة",
   "ai_query_vehicle": "مركبتي بها مشكلة فنية",
-  "ai_query_account": "أحتاج مساعدة في حساب السائق الخاص بي"
+  "ai_query_account": "أحتاج مساعدة في حساب السائق الخاص بي",
+  "driver_tab_home": "الرئيسية",
+  "driver_tab_bookings": "الحجوزات",
+  "driver_tab_support": "الدعم",
+  "driver_tab_account": "الحساب",
+  "support_title": "المساعدة والدعم",
+  "support_subtitle": "نحن هنا متى احتجتنا",
+  "quick_actions": "إجراءات سريعة",
+  "ai_assistant": "مساعد الذكاء الاصطناعي",
+  "ai_assistant_subtitle": "إجابات فورية لرحلتك",
+  "submit_ticket": "إرسال تذكرة",
+  "submit_ticket_subtitle": "الإبلاغ عن مشكلة في حجزك",
+  "help_center": "مركز المساعدة",
+  "help_center_subtitle": "تصفح الأدلة والمقالات",
+  "messages": "الرسائل",
+  "view_all_messages": "عرض كل الرسائل"
 }

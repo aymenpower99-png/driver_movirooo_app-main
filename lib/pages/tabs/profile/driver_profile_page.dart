@@ -33,7 +33,7 @@ class DriverProfilePage extends StatelessWidget {
     final rating = driver?.ratingAverage ?? 0.0;
     return Scaffold(
       backgroundColor: AppColors.bg(context),
-      bottomNavigationBar: const DriverTabBar(currentIndex: 3),
+      bottomNavigationBar: const DriverTabBar(currentIndex: 4),
       body: SafeArea(
         child: ListView(
           padding: EdgeInsets.zero,

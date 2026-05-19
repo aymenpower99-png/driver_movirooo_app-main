@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../l10n/app_localizations.dart';
-import 'package:moviroo_driver_app/pages/contact_support/contact_support_page.dart';
-import 'package:moviroo_driver_app/pages/help_center/help_center_page.dart';
 
 class DriverSettingsPage extends StatelessWidget {
   const DriverSettingsPage({super.key});
@@ -62,39 +60,6 @@ class DriverSettingsPage extends StatelessWidget {
           _TapRow(
             label: t('settings_work_area'),
             onTap: () => Navigator.pushNamed(context, '/driver/work-area'),
-          ),
-
-          const SizedBox(height: 28),
-
-          // ── SUPPORT ──────────────────────────────────────────────────────
-          _SectionHeader(label: t('settings_support_section')),
-
-          _TapRow(
-            label: t('settings_help_center'),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const HelpCenterPage()),
-            ),
-          ),
-          _RowDivider(),
-
-          _TapRow(
-            label: t('settings_contact_support'),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ContactSupportPage()),
-            ),
-          ),
-          _RowDivider(),
-
-          _TapRow(
-            label: t('settings_my_tickets'),
-            onTap: () => Navigator.pushNamed(context, '/driver/my-tickets'),
-          ),
-          _RowDivider(),
-          _TapRow(
-            label: t('settings_ai_assistant'),
-            onTap: () => Navigator.pushNamed(context, '/driver/ai-chatbot'),
           ),
 
           const SizedBox(height: 28),
