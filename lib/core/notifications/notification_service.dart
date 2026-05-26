@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -11,6 +13,10 @@ const _kRideUpdatesId = 'ride_updates';
 const _kRideUpdatesName = 'Ride Updates';
 const _kRideUpdatesDesc =
     'Ride status changes, cancellations, and confirmations';
+
+const _kSupportId = 'support_messages';
+const _kSupportName = 'Support Messages';
+const _kSupportDesc = 'Support ticket replies and updates';
 
 const _kChatId = 'chat_messages';
 const _kChatName = 'Chat Messages';
@@ -84,6 +90,16 @@ class NotificationService {
       playSound: true,
     );
 
+    // Support ticket messages channel
+    const AndroidNotificationChannel supportChannel =
+        AndroidNotificationChannel(
+          _kSupportId,
+          _kSupportName,
+          description: _kSupportDesc,
+          importance: Importance.high,
+          playSound: true,
+        );
+
     final androidPlugin = _localNotifications
         .resolvePlatformSpecificImplementation<
           AndroidFlutterLocalNotificationsPlugin
@@ -93,6 +109,7 @@ class NotificationService {
     await androidPlugin?.createNotificationChannel(statusChannel);
     await androidPlugin?.createNotificationChannel(rideUpdatesChannel);
     await androidPlugin?.createNotificationChannel(chatChannel);
+    await androidPlugin?.createNotificationChannel(supportChannel);
 
     const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
@@ -144,7 +161,7 @@ class NotificationService {
       message.notification?.title ?? _titleForType(message.data['type']),
       message.notification?.body,
       details,
-      payload: message.data['type'],
+      payload: jsonEncode(message.data),
     );
   }
 
@@ -168,6 +185,10 @@ class NotificationService {
         return 'New Message';
       case 'DRIVER_STATUS_OFFLINE':
         return 'You Went Offline';
+      case 'SUPPORT_TICKET_REPLY':
+        return 'Support Reply';
+      case 'SUPPORT_TICKET_CREATED':
+        return 'New Support Ticket';
       default:
         return 'Moviroo';
     }
@@ -188,6 +209,9 @@ class NotificationService {
         return _kChatId;
       case 'DRIVER_STATUS_OFFLINE':
         return 'driver_status';
+      case 'SUPPORT_TICKET_REPLY':
+      case 'SUPPORT_TICKET_CREATED':
+        return _kSupportId;
       default:
         return _kChannelId;
     }
@@ -209,6 +233,12 @@ class NotificationService {
           name: 'Driver Status',
           desc: 'Driver online/offline status alerts',
         );
+      case _kSupportId:
+        return (
+          id: _kSupportId,
+          name: _kSupportName,
+          desc: _kSupportDesc,
+        );
       default:
         return (id: _kChannelId, name: _kChannelName, desc: _kChannelDesc);
     }
@@ -217,8 +247,17 @@ class NotificationService {
   // ─── Notification tap (local) ─────────────────────────────────────────────
 
   void _onNotificationTap(NotificationResponse response) {
-    final type = response.payload;
-    onNotificationTap?.call(type);
+    final payload = response.payload;
+    if (payload == null) return;
+
+    try {
+      final data = jsonDecode(payload) as Map<String, dynamic>;
+      onNotificationTap?.call(data['type'] as String?);
+      onNotificationDataTap?.call(data);
+    } catch (_) {
+      // Fallback for plain-string payloads
+      onNotificationTap?.call(payload);
+    }
   }
 
   // ─── Listeners ───────────────────────────────────────────────────────────
@@ -237,6 +276,9 @@ class NotificationService {
 
   /// Called when user taps a notification — payload is the notification type.
   void Function(String? type)? onNotificationTap;
+
+  /// Called when user taps a notification — receives the full data payload.
+  void Function(Map<String, dynamic> data)? onNotificationDataTap;
 
   void _listenToMessages() {
     // App is open (foreground)
@@ -275,9 +317,14 @@ class NotificationService {
       case 'CHAT_MESSAGE':
         onChatMessage?.call(data);
         break;
+      case 'SUPPORT_TICKET_REPLY':
+      case 'SUPPORT_TICKET_CREATED':
+        // No special foreground behavior needed; tap routing handles navigation
+        break;
     }
     if (tapped) {
       onNotificationTap?.call(type);
+      onNotificationDataTap?.call(data);
     }
   }
 

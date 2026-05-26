@@ -51,6 +51,21 @@ void main() async {
     }
   };
 
+  // Navigate directly to ticket detail when support notification is tapped
+  NotificationService.instance.onNotificationDataTap = (data) {
+    final ctx = navigatorKey.currentContext;
+    if (ctx == null) return;
+    final type = data['type'] as String?;
+    final ticketId = data['ticketId'] as String?;
+    if ((type == 'SUPPORT_TICKET_REPLY' || type == 'SUPPORT_TICKET_CREATED') &&
+        ticketId != null) {
+      Navigator.of(ctx).pushNamed(
+        AppRouter.ticketDetail,
+        arguments: ticketId,
+      );
+    }
+  };
+
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,
