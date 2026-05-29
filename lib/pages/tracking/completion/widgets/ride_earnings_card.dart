@@ -6,18 +6,14 @@ import 'package:moviroo_driver_app/l10n/app_localizations.dart';
 
 /// Earnings breakdown shown on the ride **completion** screen.
 ///
-/// Displays the full ride price (passenger charge) and the driver's
-/// 70 % share after platform commission.
+/// Displays the driver's actual earnings for this ride
+/// (comes from backend — no frontend calculation).
 class RideEarningsCard extends StatelessWidget {
-  /// Total amount the passenger paid (= [driverEarnings] / 0.70).
-  final double ridePrice;
-
-  /// Amount credited to the driver after commission.
+  /// Amount credited to the driver for this ride.
   final double driverEarnings;
 
   const RideEarningsCard({
     super.key,
-    required this.ridePrice,
     required this.driverEarnings,
   });
 
@@ -47,32 +43,6 @@ class RideEarningsCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-
-          // Ride price row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                AppLocalizations.of(
-                  context,
-                ).translate('completion_ride_price'),
-                style: TextStyle(
-                  fontSize: 13,
-                  color: AppColors.text(context),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              Text(
-                '${ridePrice.toStringAsFixed(0)} TND',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.text(context),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
 
           // Driver earnings row
           Row(

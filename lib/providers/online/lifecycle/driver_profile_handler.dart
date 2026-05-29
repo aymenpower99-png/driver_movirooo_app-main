@@ -1,29 +1,42 @@
 import 'package:flutter/foundation.dart';
 import '../../../services/driver/driver_service.dart';
+import '../../../services/dispatch/dispatch_service.dart';
+import '../../../services/background/background_tracking_service.dart';
 import '../../../core/notifications/notification_service.dart';
 import '../online_state.dart';
 import '../online_time_tracking.dart';
 import '../online_persistence.dart';
+import '../online_heartbeat.dart';
+import '../online_gps.dart';
 
 /// Handles driver profile loading and refreshing.
 /// Manages initial state loading, migration, and profile refresh from backend.
 class DriverProfileHandler {
   final DriverService _driver;
+  final DispatchService _dispatch;
   final OnlineState _state;
   final OnlineTimeTracking _timeTracking;
   final OnlinePersistence _persistence;
+  final OnlineHeartbeat _heartbeat;
+  final OnlineGps _gps;
   final Function() onNotifyListeners;
 
   DriverProfileHandler({
     required DriverService driver,
+    required DispatchService dispatch,
     required OnlineState state,
     required OnlineTimeTracking timeTracking,
     required OnlinePersistence persistence,
+    required OnlineHeartbeat heartbeat,
+    required OnlineGps gps,
     required this.onNotifyListeners,
   }) : _driver = driver,
+       _dispatch = dispatch,
        _state = state,
        _timeTracking = timeTracking,
-       _persistence = persistence;
+       _persistence = persistence,
+       _heartbeat = heartbeat,
+       _gps = gps;
 
   /// Load initial driver state (runs once)
   Future<void> loadDriverProfile({
@@ -36,11 +49,12 @@ class DriverProfileHandler {
     // Register lifecycle observer
     registerLifecycleObserver();
     // Listen for backend-forced offline via FCM
-    NotificationService.instance.onDriverForcedOffline = onForcedOfflineCallback;
+    NotificationService.instance.onDriverForcedOffline =
+        onForcedOfflineCallback;
     try {
       _state.driverProfile = await _driver.getMe();
-      // Keep driver offline by default on app restart
-      _state.isOnline = false;
+      // Sync online status with backend
+      _state.isOnline = _state.driverProfile!.isOnline;
 
       // Seed monthly time from backend
       _timeTracking.backendMonthlyMs = _state.driverProfile!.monthlyOnlineMs;
@@ -64,6 +78,28 @@ class DriverProfileHandler {
         _timeTracking.lastOnlineAt =
             _state.driverProfile!.onlineSince ?? DateTime.now();
         _timeTracking.startUiTimer();
+        // Start heartbeat and background services if driver is online
+        _heartbeat.start();
+        await BackgroundTrackingService.start();
+        // Check for active ride and start GPS tracking if needed
+        try {
+          final rides = await _dispatch.getDriverRides();
+          final activeRides = rides
+              .where(
+                (r) =>
+                    r.status == 'ASSIGNED' ||
+                    r.status == 'EN_ROUTE_TO_PICKUP' ||
+                    r.status == 'ARRIVED' ||
+                    r.status == 'IN_TRIP',
+              )
+              .toList();
+          if (activeRides.isNotEmpty) {
+            _state.activeRideId = activeRides.first.id;
+            BackgroundTrackingService.startTracking(_state.activeRideId!);
+          }
+        } catch (e) {
+          debugPrint('🚗 [DriverProfile] Failed to check for active ride: $e');
+        }
       }
       onNotifyListeners();
     } catch (_) {

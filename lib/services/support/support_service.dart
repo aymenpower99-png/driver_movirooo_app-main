@@ -59,6 +59,24 @@ class SupportService {
     );
     return TicketMessageModel.fromJson(res.data as Map<String, dynamic>);
   }
+
+  /// Updates a message in a ticket.
+  Future<TicketMessageModel> updateMessage(
+    String ticketId,
+    String messageId,
+    String body,
+  ) async {
+    final res = await _dio.patch(
+      Endpoints.ticketMessage(ticketId, messageId),
+      data: {'body': body},
+    );
+    return TicketMessageModel.fromJson(res.data as Map<String, dynamic>);
+  }
+
+  /// Deletes a message from a ticket.
+  Future<void> deleteMessage(String ticketId, String messageId) async {
+    await _dio.delete(Endpoints.ticketMessage(ticketId, messageId));
+  }
 }
 
 class TicketListResult {

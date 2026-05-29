@@ -137,7 +137,6 @@ class _RideCompletionPageState extends State<RideCompletionPage>
               const SizedBox(height: 10),
 
               RideEarningsCard(
-                ridePrice: ride.earningsAmount / 0.70,
                 driverEarnings: ride.earningsAmount,
               ),
               const SizedBox(height: 10),

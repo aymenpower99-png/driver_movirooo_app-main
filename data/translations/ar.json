@@ -15,6 +15,7 @@
   "send_recovery_link": "إرسال رابط الاستعادة",
   "remembered_password": "تذكرت كلمة المرور؟ ",
   "profile_rides": "رحلة",
+  "contact_support_to_change": "اتصل بالدعم الفني للتغيير",
   "driver_tab_stats": "الإحصائيات",
   "driver_tab_earnings": "الأرباح",
   "driver_tab_activities": "النشاطات",
@@ -284,6 +285,7 @@
   "earnings_commission_earned": "العمولة المكتسبة",
   "earnings_net_earnings": "صافي الأرباح",
   "earnings_weekly_rides": "الرحلات الأسبوعية",
+  "earnings_monthly_rides": "الرحلات الشهرية",
   "earnings_rides_per_day": "الرحلات في اليوم",
   "earnings_day_mon": "الإثنين",
   "earnings_day_tue": "الثلاثاء",
@@ -326,5 +328,7 @@
   "help_center": "مركز المساعدة",
   "help_center_subtitle": "تصفح الأدلة والمقالات",
   "messages": "الرسائل",
-  "view_all_messages": "عرض كل الرسائل"
+  "view_all_messages": "عرض كل الرسائل",
+  "customer_support": "دعم العملاء",
+  "ticket_closed": "تم إغلاق التذكرة"
 }

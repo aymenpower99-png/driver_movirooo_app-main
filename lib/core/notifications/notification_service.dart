@@ -189,6 +189,8 @@ class NotificationService {
         return 'Support Reply';
       case 'SUPPORT_TICKET_CREATED':
         return 'New Support Ticket';
+      case 'TIER_UNLOCKED':
+        return 'Tier Unlocked';
       default:
         return 'Moviroo';
     }
@@ -274,6 +276,9 @@ class NotificationService {
   /// Called when a chat message push arrives.
   void Function(Map<String, dynamic> data)? onChatMessage;
 
+  /// Called when a tier unlock push arrives.
+  void Function(Map<String, dynamic> data)? onTierUnlocked;
+
   /// Called when user taps a notification — payload is the notification type.
   void Function(String? type)? onNotificationTap;
 
@@ -316,6 +321,9 @@ class NotificationService {
         break;
       case 'CHAT_MESSAGE':
         onChatMessage?.call(data);
+        break;
+      case 'TIER_UNLOCKED':
+        onTierUnlocked?.call(data);
         break;
       case 'SUPPORT_TICKET_REPLY':
       case 'SUPPORT_TICKET_CREATED':

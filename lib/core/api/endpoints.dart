@@ -35,6 +35,8 @@ class Endpoints {
   static const String tickets = '/support/tickets';
   static String ticket(String id) => '/support/tickets/$id';
   static String ticketReply(String id) => '/support/tickets/$id/reply';
+  static String ticketMessage(String ticketId, String messageId) =>
+      '/support/tickets/$ticketId/messages/$messageId';
 
   // ── Rides ─────────────────────────────────────────────────────────────
   static const String rides = '/rides';

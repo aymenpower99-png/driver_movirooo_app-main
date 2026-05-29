@@ -14,6 +14,7 @@
   "send_recovery_link": "Envoyer le lien de récupération",
   "remembered_password": "Vous vous en souvenez ? ",
   "profile_rides": "courses",
+  "contact_support_to_change": "Contactez le support pour modifier",
   "driver_tab_stats": "Statistiques",
   "driver_tab_earnings": "Gains",
   "driver_tab_activities": "Activités",
@@ -283,6 +284,7 @@
   "earnings_commission_earned": "Commission gagnée",
   "earnings_net_earnings": "Gains nets",
   "earnings_weekly_rides": "Courses hebdomadaires",
+  "earnings_monthly_rides": "Courses mensuelles",
   "earnings_rides_per_day": "Courses par jour",
   "earnings_day_mon": "Lun",
   "earnings_day_tue": "Mar",
@@ -325,5 +327,7 @@
   "help_center": "Centre d'aide",
   "help_center_subtitle": "Parcourir les guides et articles",
   "messages": "Messages",
-  "view_all_messages": "Voir tous les messages"
+  "view_all_messages": "Voir tous les messages",
+  "customer_support": "Support Client",
+  "ticket_closed": "Ticket fermé"
 }

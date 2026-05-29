@@ -31,6 +31,7 @@ class DriverProfilePage extends StatelessWidget {
         : 'Driver';
     final initials = user?.initials ?? '?';
     final rating = driver?.ratingAverage ?? 0.0;
+    final totalTrips = driver?.totalTrips ?? 0;
     return Scaffold(
       backgroundColor: AppColors.bg(context),
       bottomNavigationBar: const DriverTabBar(currentIndex: 4),
@@ -142,7 +143,7 @@ class DriverProfilePage extends StatelessWidget {
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      rating.toStringAsFixed(1),
+                                      '${rating.toStringAsFixed(1)} ($totalTrips rides)',
                                       style: TextStyle(
                                         fontFamily: 'Inter',
                                         fontSize: 14,

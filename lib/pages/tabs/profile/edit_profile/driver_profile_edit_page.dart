@@ -17,9 +17,9 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
   final _formKey = GlobalKey<FormState>();
 
   final _firstNameController = TextEditingController();
-  final _lastNameController  = TextEditingController();
-  final _emailController     = TextEditingController();
-  final _phoneController     = TextEditingController();
+  final _lastNameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
 
   @override
   void initState() {
@@ -29,9 +29,9 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
       final user = context.read<AuthProvider>().user;
       if (user != null) {
         _firstNameController.text = user.firstName;
-        _lastNameController.text  = user.lastName;
-        _emailController.text     = user.email;
-        _phoneController.text     = user.phone ?? '';
+        _lastNameController.text = user.lastName;
+        _emailController.text = user.email;
+        _phoneController.text = user.phone ?? '';
       }
     });
   }
@@ -48,15 +48,18 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
   Future<void> _saveChanges() async {
     if (!_formKey.currentState!.validate()) return;
     final auth = context.read<AuthProvider>();
-    final ok   = await auth.updateProfile(
+    final ok = await auth.updateProfile(
       firstName: _firstNameController.text.trim(),
-      lastName:  _lastNameController.text.trim(),
-      email:     _emailController.text.trim(),
-      phone:     _phoneController.text.trim(),
+      lastName: _lastNameController.text.trim(),
+      email: _emailController.text.trim(),
+      phone: _phoneController.text.trim(),
     );
     if (!mounted) return;
     if (ok) {
-      AppToast.success(context, AppLocalizations.of(context).translate('profile_updated'));
+      AppToast.success(
+        context,
+        AppLocalizations.of(context).translate('profile_updated'),
+      );
       Navigator.pop(context);
     } else if (auth.error != null) {
       AppToast.error(context, auth.error!);
@@ -66,8 +69,8 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
 
   @override
   Widget build(BuildContext context) {
-    final t       = AppLocalizations.of(context).translate;
-    final auth    = context.watch<AuthProvider>();
+    final t = AppLocalizations.of(context).translate;
+    final auth = context.watch<AuthProvider>();
     final loading = auth.loading;
     final initials = auth.user?.initials ?? '?';
 
@@ -144,18 +147,11 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
                   : null,
             ),
             const SizedBox(height: 10),
-            _EditableTile(
+            _ReadOnlyEmailTile(
               icon: Icons.email_outlined,
               label: t('field_email_address'),
               controller: _emailController,
-              keyboardType: TextInputType.emailAddress,
-              validator: (v) {
-                if (v == null || v.trim().isEmpty) {
-                  return t('validation_required');
-                }
-                if (!v.contains('@')) return t('validation_invalid_email');
-                return null;
-              },
+              subtitle: t('contact_support_to_change'),
             ),
             const SizedBox(height: 10),
             _PhoneTile(controller: _phoneController),
@@ -170,8 +166,8 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
                 onPressed: loading ? null : _saveChanges,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryPurple,
-                  disabledBackgroundColor: AppColors.primaryPurple.withValues(alpha:
-                    0.5,
+                  disabledBackgroundColor: AppColors.primaryPurple.withValues(
+                    alpha: 0.5,
                   ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
@@ -295,14 +291,22 @@ class _PhoneTile extends StatelessWidget {
                   context,
                 ).translate('field_phone_number'),
                 labelStyle: AppTextStyles.settingsItemValue(context),
-                prefix: Text(
-                  '+216 ',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: AppColors.text(context),
-                  ),
+                prefix: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Tunisia flag emoji
+                    Text('🇹🇳', style: const TextStyle(fontSize: 18)),
+                    const SizedBox(width: 6),
+                    Text(
+                      '+216 ',
+                      style: TextStyle(
+                        fontFamily: 'Inter',
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                        color: AppColors.text(context),
+                      ),
+                    ),
+                  ],
                 ),
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,
@@ -312,6 +316,130 @@ class _PhoneTile extends StatelessWidget {
                 isDense: true,
                 contentPadding: const EdgeInsets.symmetric(vertical: 10),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Read-only tile for fields that cannot be edited by the user.
+class _ReadOnlyTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final String? subtitle;
+
+  const _ReadOnlyTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+    this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.surface(context),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border(context), width: 1),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: AppColors.subtext(context), size: 22),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: AppTextStyles.settingsItemValue(context)),
+                const SizedBox(height: 4),
+                Text(value, style: AppTextStyles.settingsItem(context)),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle!,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.subtext(context),
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Read-only email tile that displays email from controller but cannot be edited.
+class _ReadOnlyEmailTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final TextEditingController controller;
+  final String subtitle;
+
+  const _ReadOnlyEmailTile({
+    required this.icon,
+    required this.label,
+    required this.controller,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.surface(context),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.border(context), width: 1),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(icon, color: AppColors.subtext(context), size: 22),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextFormField(
+                  controller: controller,
+                  keyboardType: TextInputType.emailAddress,
+                  enabled: false, // Read-only
+                  style: AppTextStyles.settingsItem(context),
+                  decoration: InputDecoration(
+                    labelText: label,
+                    labelStyle: AppTextStyles.settingsItemValue(context),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    errorBorder: InputBorder.none,
+                    focusedErrorBorder: InputBorder.none,
+                    isDense: true,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(left: 12, bottom: 4),
+                  child: Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.subtext(context),
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],

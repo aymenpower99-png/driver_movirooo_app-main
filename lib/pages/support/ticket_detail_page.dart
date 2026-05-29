@@ -7,12 +7,56 @@ import '../../providers/auth_provider.dart';
 import '../../services/support/support_service.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_text_styles.dart';
+import '../../l10n/app_localizations.dart';
 
 class TicketDetailPage extends StatefulWidget {
   const TicketDetailPage({super.key});
 
   @override
   State<TicketDetailPage> createState() => _TicketDetailPageState();
+}
+
+// ── Closed Banner Row ───────────────────────────────────────────────────────
+
+class _ClosedBannerRow extends StatelessWidget {
+  const _ClosedBannerRow();
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context).translate;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: AppColors.surface(context),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.border(context)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.check_circle_rounded,
+                color: AppColors.primaryPurple,
+                size: 16,
+              ),
+              const SizedBox(width: 6),
+              Text(
+                t('ticket_closed'),
+                style: TextStyle(
+                  color: AppColors.subtext(context),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class _TicketDetailPageState extends State<TicketDetailPage> {
@@ -24,6 +68,10 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
   bool _loading = true;
   bool _sending = false;
   String? _error;
+
+  // Editing state
+  String? _editingMessageId;
+  final TextEditingController _editCtrl = TextEditingController();
 
   String get _ticketId => ModalRoute.of(context)!.settings.arguments as String;
 
@@ -37,6 +85,7 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
   void dispose() {
     _replyCtrl.dispose();
     _scrollCtrl.dispose();
+    _editCtrl.dispose();
     super.dispose();
   }
 
@@ -74,6 +123,106 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
     } finally {
       if (mounted) setState(() => _sending = false);
     }
+  }
+
+  Future<void> _updateMessage(String messageId, String newBody) async {
+    if (_sending) return;
+    setState(() => _sending = true);
+    try {
+      await _service.updateMessage(_ticketId, messageId, newBody);
+      setState(() => _editingMessageId = null);
+      _editCtrl.clear();
+      await _loadTicket();
+      if (mounted) AppToast.success(context, 'Message updated');
+    } catch (_) {
+      if (mounted) AppToast.error(context, 'Failed to update message');
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  Future<void> _deleteMessage(String messageId) async {
+    if (_sending) return;
+    setState(() => _sending = true);
+    try {
+      await _service.deleteMessage(_ticketId, messageId);
+      await _loadTicket();
+      if (mounted) AppToast.success(context, 'Message deleted');
+    } catch (_) {
+      if (mounted) AppToast.error(context, 'Failed to delete message');
+    } finally {
+      if (mounted) setState(() => _sending = false);
+    }
+  }
+
+  void _startEdit(String messageId, String currentBody) {
+    setState(() {
+      _editingMessageId = messageId;
+      _editCtrl.text = currentBody;
+    });
+  }
+
+  void _cancelEdit() {
+    setState(() {
+      _editingMessageId = null;
+      _editCtrl.clear();
+    });
+  }
+
+  void _showMessageOptions(TicketMessageModel message) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface(context),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.border(context),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              title: Text(
+                'Edit',
+                style: TextStyle(
+                  color: AppColors.text(context),
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _startEdit(message.id, message.body);
+              },
+            ),
+            ListTile(
+              title: Text(
+                'Delete',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _deleteMessage(message.id);
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
   }
 
   void _scrollToBottom() {
@@ -181,16 +330,79 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
       );
     }
 
+    // Group messages by date
+    final groupedMessages = <String, List<TicketMessageModel>>{};
+    for (final msg in messages) {
+      final dateKey = _getDateKey(msg.createdAt);
+      groupedMessages.putIfAbsent(dateKey, () => []).add(msg);
+    }
+
+    // Sort messages within each date group chronologically (oldest first)
+    for (final key in groupedMessages.keys) {
+      groupedMessages[key]!.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+    }
+
+    final sortedDates = groupedMessages.keys.toList()
+      ..sort((a, b) => a.compareTo(b)); // Oldest first
+
+    final showClosedBanner = _ticket!.status == TicketStatus.resolved;
+    final totalItems = sortedDates.length + (showClosedBanner ? 1 : 0);
+
     return ListView.builder(
       controller: _scrollCtrl,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      itemCount: messages.length,
+      itemCount: totalItems,
       itemBuilder: (context, i) {
-        final msg = messages[i];
-        final isMe = msg.senderId == userId;
-        return _MessageBubble(message: msg, isMe: isMe);
+        // Trailing closed banner when ticket is resolved
+        if (showClosedBanner && i == totalItems - 1) {
+          return const _ClosedBannerRow();
+        }
+
+        final date = sortedDates[i];
+        final dateMessages = groupedMessages[date]!;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Date separator
+            _DateSeparator(date: date),
+            const SizedBox(height: 8),
+            // Messages for this date
+            ...dateMessages.map((msg) {
+              final isMe = msg.senderId == userId;
+              return _MessageBubble(
+                message: msg,
+                isMe: isMe,
+                editingMessageId: _editingMessageId,
+                editCtrl: _editCtrl,
+                sending: _sending,
+                onStartEdit: _startEdit,
+                onCancelEdit: _cancelEdit,
+                onUpdate: _updateMessage,
+                onDelete: _deleteMessage,
+                onShowOptions: _showMessageOptions,
+              );
+            }),
+            const SizedBox(height: 8),
+          ],
+        );
       },
     );
+  }
+
+  String _getDateKey(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final messageDate = DateTime(date.year, date.month, date.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+
+    if (messageDate == today) {
+      return 'Today';
+    } else if (messageDate == yesterday) {
+      return 'Yesterday';
+    } else {
+      return DateFormat('MMM d, yyyy').format(date);
+    }
   }
 
   // ── Reply Bar ─────────────────────────────────────────────────────────────
@@ -288,16 +500,68 @@ class _TicketDetailPageState extends State<TicketDetailPage> {
   }
 }
 
+// ── Date Separator ─────────────────────────────────────────────────────────────
+
+class _DateSeparator extends StatelessWidget {
+  final String date;
+  const _DateSeparator({required this.date});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        decoration: BoxDecoration(
+          color: AppColors.surface(context),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.border(context)),
+        ),
+        child: Text(
+          date,
+          style: TextStyle(
+            color: AppColors.subtext(context),
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 // ── Message Bubble ──────────────────────────────────────────────────────────
 
 class _MessageBubble extends StatelessWidget {
   final TicketMessageModel message;
   final bool isMe;
-  const _MessageBubble({required this.message, required this.isMe});
+  final String? editingMessageId;
+  final TextEditingController editCtrl;
+  final bool sending;
+  final Function(String, String) onStartEdit;
+  final Function() onCancelEdit;
+  final Function(String, String) onUpdate;
+  final Function(String) onDelete;
+  final Function(TicketMessageModel) onShowOptions;
+
+  const _MessageBubble({
+    required this.message,
+    required this.isMe,
+    required this.editingMessageId,
+    required this.editCtrl,
+    required this.sending,
+    required this.onStartEdit,
+    required this.onCancelEdit,
+    required this.onUpdate,
+    required this.onDelete,
+    required this.onShowOptions,
+  });
 
   @override
   Widget build(BuildContext context) {
     final time = DateFormat('HH:mm').format(message.createdAt);
+    final isEditing = editingMessageId == message.id;
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
@@ -322,56 +586,151 @@ class _MessageBubble extends StatelessWidget {
             constraints: BoxConstraints(
               maxWidth: MediaQuery.of(context).size.width * 0.72,
             ),
-            child: IntrinsicWidth(
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  color: isMe
-                      ? AppColors.primaryPurple
-                      : AppColors.surface(context),
-                  borderRadius: BorderRadius.only(
-                    topLeft: const Radius.circular(16),
-                    topRight: const Radius.circular(16),
-                    bottomLeft: Radius.circular(isMe ? 16 : 4),
-                    bottomRight: Radius.circular(isMe ? 4 : 16),
+            child: GestureDetector(
+              onTap: isMe ? () => onShowOptions(message) : null,
+              onLongPress: isMe ? () => onShowOptions(message) : null,
+              child: IntrinsicWidth(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
                   ),
-                  border: isMe
-                      ? null
-                      : Border.all(color: AppColors.border(context)),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      message.body,
-                      style: TextStyle(
-                        color: isMe ? Colors.white : AppColors.text(context),
-                        fontSize: 14,
-                        height: 1.4,
-                      ),
+                  decoration: BoxDecoration(
+                    color: isMe
+                        ? AppColors.primaryPurple
+                        : AppColors.surface(context),
+                    borderRadius: BorderRadius.only(
+                      topLeft: const Radius.circular(16),
+                      topRight: const Radius.circular(16),
+                      bottomLeft: Radius.circular(isMe ? 16 : 4),
+                      bottomRight: Radius.circular(isMe ? 4 : 16),
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const SizedBox(width: 8),
-                        Text(
-                          time,
+                    border: isMe
+                        ? null
+                        : Border.all(color: AppColors.border(context)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isEditing && isMe) ...[
+                        // Inline edit mode
+                        TextField(
+                          controller: editCtrl,
+                          maxLines: 5,
+                          minLines: 1,
                           style: TextStyle(
-                            color: isMe
-                                ? Colors.white70
-                                : AppColors.subtext(context),
-                            fontSize: 10,
+                            color: Colors.black87,
+                            fontSize: 14,
+                            height: 1.4,
+                          ),
+                          decoration: InputDecoration(
+                            isDense: true,
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
+                            filled: true,
+                            fillColor: Colors.white,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                              ),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(
+                                color: Colors.grey.shade300,
+                              ),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(8),
+                              borderSide: BorderSide(
+                                color: AppColors.primaryPurple,
+                                width: 2,
+                              ),
+                            ),
                           ),
                         ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            TextButton(
+                              onPressed: sending ? null : onCancelEdit,
+                              child: Text(
+                                'Cancel',
+                                style: TextStyle(
+                                  color: Colors.white70,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            ElevatedButton(
+                              onPressed: sending
+                                  ? null
+                                  : () => onUpdate(
+                                      message.id,
+                                      editCtrl.text.trim(),
+                                    ),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: AppColors.primaryPurple,
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                minimumSize: Size.zero,
+                              ),
+                              child: sending
+                                  ? SizedBox(
+                                      width: 14,
+                                      height: 14,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: AppColors.primaryPurple,
+                                      ),
+                                    )
+                                  : Text(
+                                      'Save',
+                                      style: TextStyle(fontSize: 12),
+                                    ),
+                            ),
+                          ],
+                        ),
+                      ] else ...[
+                        // Normal display mode
+                        Text(
+                          message.body,
+                          style: TextStyle(
+                            color: isMe
+                                ? Colors.white
+                                : AppColors.text(context),
+                            fontSize: 14,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              time,
+                              style: TextStyle(
+                                color: isMe
+                                    ? Colors.white70
+                                    : AppColors.subtext(context),
+                                fontSize: 10,
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

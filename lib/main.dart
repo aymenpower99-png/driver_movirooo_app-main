@@ -66,6 +66,52 @@ void main() async {
     }
   };
 
+  // Show tier unlock celebration when TIER_UNLOCKED push arrives
+  NotificationService.instance.onTierUnlocked = (data) {
+    final ctx = navigatorKey.currentContext;
+    if (ctx == null) return;
+    final tierName = data['tierName'] as String? ?? 'New Tier';
+    final rateStr = data['commissionRate'] as String? ?? '0.25';
+    final ratePercent = (double.tryParse(rateStr) ?? 0.25) * 100;
+
+    showDialog(
+      context: ctx,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('🎉', style: TextStyle(fontSize: 48)),
+            const SizedBox(height: 12),
+            Text(
+              'You unlocked $tierName!',
+              style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Your commission rate is now ${ratePercent.toStringAsFixed(0)}%.',
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF7C3AED),
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text('Awesome'),
+            ),
+          ],
+        ),
+      ),
+    );
+  };
+
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
     DeviceOrientation.portraitDown,

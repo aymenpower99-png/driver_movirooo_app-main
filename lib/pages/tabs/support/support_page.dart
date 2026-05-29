@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -20,21 +21,42 @@ class SupportPage extends StatefulWidget {
 
 class _SupportPageState extends State<SupportPage> {
   late Future<TicketListResult> _ticketsFuture;
+  // Tracks when the driver last opened a ticket to compute unread state locally
+  final Map<String, DateTime> _lastReadAt = {};
+  Timer? _ticker;
 
   @override
   void initState() {
     super.initState();
     _ticketsFuture = SupportService().listMyTickets();
+    // Rebuild periodically so relative timestamps update automatically
+    _ticker = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _ticker?.cancel();
+    super.dispose();
   }
 
   String _formatRelativeTime(DateTime dateTime) {
     final now = DateTime.now();
-    final diff = now.difference(dateTime);
+    Duration diff = now.difference(dateTime);
+    if (diff.isNegative)
+      diff = Duration.zero; // guard against clock skew / future timestamps
     if (diff.inMinutes < 1) return 'Just now';
-    if (diff.inHours < 1) return '${diff.inMinutes}m ago';
-    if (diff.inDays < 1) return '${diff.inHours}h ago';
+    if (diff.inHours < 1) {
+      final m = diff.inMinutes;
+      return m == 1 ? '1 min ago' : '$m min ago';
+    }
+    if (diff.inDays < 1) {
+      final h = diff.inHours;
+      return h == 1 ? '1 hour ago' : '$h hours ago';
+    }
     if (diff.inDays == 1) return 'Yesterday';
-    return DateFormat('MMM d').format(dateTime);
+    return DateFormat('MMM d, yyyy').format(dateTime);
   }
 
   Future<void> _refreshTickets() async {
@@ -187,18 +209,51 @@ class _SupportPageState extends State<SupportPage> {
           final ticket = entry.value;
           final isLast = i == recentTickets.length - 1;
 
+          // Ensure we truly get the latest message by createdAt (backend order may vary)
           final lastMsg = ticket.messages.isNotEmpty
-              ? ticket.messages.last
+              ? (List<TicketMessageModel>.from(
+                  ticket.messages,
+                )..sort((a, b) => a.createdAt.compareTo(b.createdAt))).last
               : null;
-          final senderName = lastMsg?.senderName ?? 'Moviroo Support';
+
+          // Extract first name from sender name and add role label
+          String senderName = lastMsg?.senderName?.trim() ?? '';
+          // Filter out "Moviroo" if it appears in the name
+          if (senderName.toLowerCase().contains('moviroo')) {
+            senderName = '';
+          }
+          if (senderName.isEmpty) {
+            // Fallback if no sender name available
+            senderName = t('customer_support');
+          } else if (senderName.contains(' ')) {
+            final parts = senderName.split(' ');
+            senderName = '${parts[0]} (${t('customer_support')})';
+          } else {
+            senderName = '$senderName (${t('customer_support')})';
+          }
+
           final preview = ticket.lastMessagePreview;
           final time = _formatRelativeTime(ticket.updatedAt);
 
-          // Unread dot only when the last message was sent by support (not by the driver)
+          // Localized status label for closed tickets (shown on the right side)
+          final String? statusLabel = ticket.status == TicketStatus.resolved
+              ? t('ticket_closed')
+              : null;
+
+          // Prefer backend status to infer unread; fall back to local last-read time.
+          final lastRead = _lastReadAt[ticket.id];
           final unread =
-              lastMsg != null &&
-              lastMsg.senderId != currentUserId &&
-              currentUserId != null;
+              currentUserId != null &&
+              ticket.status == TicketStatus.waitingForUser &&
+              (lastRead == null || ticket.updatedAt.isAfter(lastRead));
+
+          // Debug: verify unread flag at render time
+          // ignore: avoid_print
+          print(
+            'SupportPage unread? ticket=${ticket.id} status=${ticket.status} '
+            'updatedAt=${ticket.updatedAt.toIso8601String()} currentUser=$currentUserId '
+            'lastRead=$lastRead computedUnread=$unread (messagesPresent=${ticket.messages.isNotEmpty})',
+          );
 
           return Column(
             children: [
@@ -207,11 +262,25 @@ class _SupportPageState extends State<SupportPage> {
                 preview: preview,
                 time: time,
                 unread: unread,
-                onTap: () => Navigator.pushNamed(
-                  context,
-                  AppRouter.ticketDetail,
-                  arguments: ticket.id,
-                ),
+                statusLabel: statusLabel,
+                updatedAt: ticket.updatedAt,
+                onTap: () async {
+                  // Capture the moment the conversation was opened.
+                  final openedAt = DateTime.now();
+                  await Navigator.pushNamed(
+                    context,
+                    AppRouter.ticketDetail,
+                    arguments: ticket.id,
+                  );
+                  // Mark as read using the open time to avoid race conditions.
+                  if (mounted) {
+                    setState(() {
+                      _lastReadAt[ticket.id] = openedAt;
+                    });
+                    // Refresh tickets to reflect any server-side updates too
+                    _refreshTickets();
+                  }
+                },
               ),
               if (!isLast)
                 Divider(
@@ -380,6 +449,8 @@ class _MessageRow extends StatelessWidget {
   final String preview;
   final String time;
   final bool unread;
+  final String? statusLabel;
+  final DateTime updatedAt;
   final VoidCallback onTap;
 
   const _MessageRow({
@@ -387,6 +458,8 @@ class _MessageRow extends StatelessWidget {
     required this.preview,
     required this.time,
     required this.unread,
+    this.statusLabel,
+    required this.updatedAt,
     required this.onTap,
   });
 
@@ -401,6 +474,17 @@ class _MessageRow extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
+              if (unread) ...[
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: AppColors.primaryPurple,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 14),
+              ],
               Icon(
                 Icons.chat_bubble_outline_rounded,
                 color: AppColors.primaryPurple,
@@ -412,7 +496,13 @@ class _MessageRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(name, style: AppTextStyles.settingsItem(context)),
+                    Text(
+                      name,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTextStyles.settingsItem(context).copyWith(
+                        fontWeight: unread ? FontWeight.w700 : FontWeight.w500,
+                      ),
+                    ),
                     const SizedBox(height: 2),
                     Text(
                       preview,
@@ -421,7 +511,7 @@ class _MessageRow extends StatelessWidget {
                       style: TextStyle(
                         fontFamily: 'Inter',
                         fontSize: 12,
-                        fontWeight: FontWeight.w400,
+                        fontWeight: unread ? FontWeight.w600 : FontWeight.w400,
                         color: AppColors.subtext(context),
                       ),
                     ),
@@ -432,31 +522,92 @@ class _MessageRow extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    time,
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      fontSize: 11,
-                      fontWeight: FontWeight.w400,
-                      color: AppColors.subtext(context),
-                    ),
-                  ),
-                  if (unread) ...[
-                    const SizedBox(height: 4),
+                  if (statusLabel != null)
                     Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: AppColors.primaryPurple,
-                        shape: BoxShape.circle,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
                       ),
-                    ),
-                  ],
+                      decoration: BoxDecoration(
+                        color: AppColors.surface(context),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.border(context)),
+                      ),
+                      child: Text(
+                        statusLabel!,
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 10,
+                          color: AppColors.subtext(context),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    )
+                  else
+                    _RelativeTimeText(updatedAt: updatedAt),
                 ],
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _RelativeTimeText extends StatefulWidget {
+  final DateTime updatedAt;
+  const _RelativeTimeText({required this.updatedAt});
+
+  @override
+  State<_RelativeTimeText> createState() => _RelativeTimeTextState();
+}
+
+class _RelativeTimeTextState extends State<_RelativeTimeText> {
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  String _format(DateTime dt) {
+    final base = dt.isUtc ? dt.toLocal() : dt;
+    final now = DateTime.now();
+    final diff = now.difference(base);
+    final absSeconds = diff.inSeconds.abs();
+    if (absSeconds < 60) return 'Just now';
+    if (absSeconds < 3600) {
+      final m = diff.inMinutes.abs();
+      return m == 1 ? '1 min ago' : '$m min ago';
+    }
+    if (absSeconds < 86400) {
+      final h = diff.inHours.abs();
+      return h == 1 ? '1 hour ago' : '$h hours ago';
+    }
+    final d = diff.inDays.abs();
+    if (d == 1) return 'Yesterday';
+    return DateFormat('MMM d, yyyy').format(base);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      _format(widget.updatedAt),
+      style: TextStyle(
+        fontFamily: 'Inter',
+        fontSize: 11,
+        fontWeight: FontWeight.w400,
+        color: AppColors.subtext(context),
       ),
     );
   }

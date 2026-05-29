@@ -144,12 +144,12 @@ class _EarningsPageState extends State<EarningsPage> {
                                 _SalaryCard(salary: earnings.salary),
                                 const SizedBox(height: 12),
 
-                                // 2. Total Rides + Online Time
+                                // 2. Monthly Rides + Online Time
                                 Row(
                                   children: [
                                     Expanded(
                                       child: _StatCard(
-                                        label: t('earnings_total_rides'),
+                                        label: t('earnings_monthly_rides'),
                                         value: '${earnings.ridesCompleted}',
                                       ),
                                     ),
@@ -283,14 +283,30 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-/* ── Tier Progress ── */
+/* ── Current Active Tier ── */
 class _TierProgressWidget extends StatelessWidget {
   final EarningsModel earnings;
   const _TierProgressWidget({required this.earnings});
 
   @override
   Widget build(BuildContext context) {
+    final currentTier = earnings.currentTier;
     final completed = earnings.ridesCompleted;
+
+    // Compute tier number (1-based index of current tier in sorted tiers list)
+    final tierNumber = currentTier != null
+        ? earnings.tiers.indexWhere((t) => t.tierId == currentTier.tierId) + 1
+        : 0;
+
+    // Next tier info
+    final nextTierName = earnings.nextTierName;
+    final ridesNeeded = earnings.nextTierRidesNeeded ?? 0;
+    final nextRequired = nextTierName != null && ridesNeeded > 0
+        ? completed + ridesNeeded
+        : null;
+    final progress = nextRequired != null && nextRequired > 0
+        ? (completed / nextRequired).clamp(0.0, 1.0)
+        : 1.0;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -302,73 +318,95 @@ class _TierProgressWidget extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            AppLocalizations.of(context).translate('earnings_commission_tiers'),
-            style: AppTextStyles.bodyMedium(
-              context,
-            ).copyWith(fontWeight: FontWeight.w700),
-          ),
-          const SizedBox(height: 14),
-          ...earnings.tiers.map((tier) {
-            final progress = tier.requiredRides > 0
-                ? (completed / tier.requiredRides).clamp(0.0, 1.0)
-                : 1.0;
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 14),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          tier.tierName,
-                          style: AppTextStyles.bodySmall(context).copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: tier.reached
-                                ? AppColors.text(context)
-                                : AppColors.subtext(context),
-                            fontSize: 13,
-                          ),
-                        ),
+          // Header: tier name + commission rate badge
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      currentTier != null
+                          ? '${currentTier.tierName} (Tier $tierNumber)'
+                          : 'Starting Tier',
+                      style: AppTextStyles.bodyMedium(context).copyWith(
+                        fontWeight: FontWeight.w800,
                       ),
-                      Text(
-                        '$completed / ${tier.requiredRides}',
-                        style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: tier.reached
-                              ? AppColors.primaryPurple
-                              : AppColors.subtext(context),
-                        ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      currentTier != null
+                          ? 'Commission rate: ${(currentTier.commissionRate * 100).toStringAsFixed(0)}%'
+                          : 'Complete rides to unlock your first tier',
+                      style: AppTextStyles.bodySmall(context).copyWith(
+                        color: AppColors.subtext(context),
+                        fontSize: 12,
                       ),
-                    ],
+                    ),
+                  ],
+                ),
+              ),
+              if (currentTier != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryPurple.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
                   ),
-                  const SizedBox(height: 6),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(6),
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      minHeight: 5,
-                      backgroundColor: AppColors.border(context),
-                      valueColor: AlwaysStoppedAnimation(
-                        AppColors.primaryPurple,
+                  child: Text(
+                    '${(currentTier.commissionRate * 100).toStringAsFixed(0)}%',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.primaryPurple,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Progress to next tier
+          if (nextTierName != null && nextRequired != null)
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '$completed / $nextRequired rides',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.text(context),
+                      ),
+                    ),
+                    Text(
+                      '$ridesNeeded to $nextTierName',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.subtext(context),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(6),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 6,
+                    backgroundColor: AppColors.border(context),
+                    valueColor: AlwaysStoppedAnimation(
+                      AppColors.primaryPurple.withValues(
+                        alpha: 0.4 + progress * 0.6,
                       ),
                     ),
                   ),
-                ],
-              ),
-            );
-          }),
-          if (earnings.nextTierName != null)
-            Text(
-              AppLocalizations.of(context)
-                  .translate('earnings_rides_to_next_tier')
-                  .replaceAll('{count}', '${earnings.nextTierRidesNeeded}')
-                  .replaceAll('{tier}', '${earnings.nextTierName}'),
-              style: AppTextStyles.bodySmall(
-                context,
-              ).copyWith(color: AppColors.subtext(context), fontSize: 11),
+                ),
+              ],
             )
           else
             Text(
@@ -376,7 +414,7 @@ class _TierProgressWidget extends StatelessWidget {
               style: AppTextStyles.bodySmall(context).copyWith(
                 color: const Color(0xFF10b981),
                 fontWeight: FontWeight.w700,
-                fontSize: 12,
+                fontSize: 13,
               ),
             ),
         ],

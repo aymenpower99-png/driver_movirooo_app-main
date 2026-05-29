@@ -2,14 +2,14 @@ class TierProgress {
   final String tierId;
   final String tierName;
   final int requiredRides;
-  final double bonusAmount;
+  final double commissionRate;
   final bool reached;
 
   const TierProgress({
     required this.tierId,
     required this.tierName,
     required this.requiredRides,
-    required this.bonusAmount,
+    required this.commissionRate,
     required this.reached,
   });
 
@@ -17,7 +17,7 @@ class TierProgress {
     tierId: json['tierId'] as String? ?? '',
     tierName: json['tierName'] as String? ?? '',
     requiredRides: (json['requiredRides'] as num?)?.toInt() ?? 0,
-    bonusAmount: (json['bonusAmount'] as num?)?.toDouble() ?? 0,
+    commissionRate: (json['commissionRate'] as num?)?.toDouble() ?? 0.25,
     reached: json['reached'] as bool? ?? false,
   );
 }
@@ -34,22 +34,44 @@ class DailyRides {
   );
 }
 
+class CurrentTier {
+  final String tierId;
+  final String tierName;
+  final double commissionRate;
+
+  const CurrentTier({
+    required this.tierId,
+    required this.tierName,
+    required this.commissionRate,
+  });
+
+  factory CurrentTier.fromJson(Map<String, dynamic> json) => CurrentTier(
+    tierId: json['tierId'] as String? ?? '',
+    tierName: json['tierName'] as String? ?? '',
+    commissionRate: (json['commissionRate'] as num?)?.toDouble() ?? 0.25,
+  );
+}
+
 class EarningsModel {
   final double salary;
   final double commission;
   final double netEarnings;
   final int ridesCompleted;
+  final int totalTrips;
+  final CurrentTier? currentTier;
   final List<TierProgress> tiers;
   final String? nextTierName;
   final int? nextTierRidesNeeded;
   final List<DailyRides> dailyRides;
-  final int? onlineTimeMs; // Online time in milliseconds for the selected month
+  final int? onlineTimeMs;
 
   const EarningsModel({
     required this.salary,
     required this.commission,
     required this.netEarnings,
     required this.ridesCompleted,
+    this.totalTrips = 0,
+    this.currentTier,
     this.tiers = const [],
     this.nextTierName,
     this.nextTierRidesNeeded,
@@ -65,12 +87,15 @@ class EarningsModel {
         .map((d) => DailyRides.fromJson(d as Map<String, dynamic>))
         .toList();
     final nextTier = json['nextTier'] as Map<String, dynamic>?;
+    final currentTierRaw = json['currentTier'] as Map<String, dynamic>?;
 
     return EarningsModel(
       salary: (json['salary'] as num?)?.toDouble() ?? 0,
       commission: (json['commission'] as num?)?.toDouble() ?? 0,
       netEarnings: (json['netEarnings'] as num?)?.toDouble() ?? 0,
       ridesCompleted: (json['ridesCompleted'] as num?)?.toInt() ?? 0,
+      totalTrips: (json['totalTrips'] as num?)?.toInt() ?? 0,
+      currentTier: currentTierRaw != null ? CurrentTier.fromJson(currentTierRaw) : null,
       tiers: tiersList,
       nextTierName: nextTier?['name'] as String?,
       nextTierRidesNeeded: (nextTier?['ridesNeeded'] as num?)?.toInt(),

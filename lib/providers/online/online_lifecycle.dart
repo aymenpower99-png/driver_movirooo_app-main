@@ -49,9 +49,12 @@ class OnlineLifecycle {
     );
     _driverProfile = DriverProfileHandler(
       driver: _driver,
+      dispatch: _dispatch,
       state: _state,
       timeTracking: _timeTracking,
       persistence: _persistence,
+      heartbeat: _heartbeat,
+      gps: _gps,
       onNotifyListeners: onNotifyListeners,
     );
     _onlineToggle = OnlineToggleHandler(

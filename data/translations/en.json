@@ -14,6 +14,7 @@
   "send_recovery_link": "Send Recovery Link",
   "remembered_password": "Remembered your password? ",
   "profile_rides": "rides",
+  "contact_support_to_change": "Contact support to change",
   "driver_tab_stats": "Stats",
   "driver_tab_earnings": "Earnings",
   "driver_tab_activities": "Activities",
@@ -283,6 +284,7 @@
   "earnings_commission_earned": "Commission earned",
   "earnings_net_earnings": "Net earnings",
   "earnings_weekly_rides": "Weekly Rides",
+  "earnings_monthly_rides": "Monthly Rides",
   "earnings_rides_per_day": "Rides per day",
   "earnings_day_mon": "Mon",
   "earnings_day_tue": "Tue",
@@ -325,5 +327,7 @@
   "help_center": "Help Center",
   "help_center_subtitle": "Browse guides and articles",
   "messages": "Messages",
-  "view_all_messages": "View All Messages"
+  "view_all_messages": "View All Messages",
+  "customer_support": "Customer Support",
+  "ticket_closed": "Ticket Closed"
 }
