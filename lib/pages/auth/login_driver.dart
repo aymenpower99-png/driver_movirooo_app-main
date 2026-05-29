@@ -143,8 +143,8 @@ class _DriverLoginPageState extends State<DriverLoginPage>
                   Center(
                     child: Image.asset(
                       Theme.of(context).brightness == Brightness.dark
-                          ? 'images/moviroo dark mode.png'
-                          : 'images/moviroo light mode.png',
+                          ? 'images/logo/driver_dark.png'
+                          : 'images/logo/driver_light.png',
                       width: 200,
                       height: 80,
                       fit: BoxFit.contain,

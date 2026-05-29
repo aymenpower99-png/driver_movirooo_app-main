@@ -56,7 +56,12 @@ class _ChatPageState extends State<ChatPage> {
     // Load history (only if not cached)
     setState(() => _loading = true);
     try {
-      await chatProvider.fetchMessages(_rideId!);
+      final locale = Localizations.localeOf(context).languageCode;
+      await chatProvider.fetchMessages(
+        _rideId!,
+        translate: _autoTranslate,
+        targetLang: locale,
+      );
       if (mounted) {
         setState(() => _loading = false);
         _scrollToBottom();
@@ -127,6 +132,18 @@ class _ChatPageState extends State<ChatPage> {
     _scrollToBottom();
   }
 
+  // ── Refetch messages when translation toggle changes ─────────
+  Future<void> _refetchMessages() async {
+    if (_rideId == null) return;
+    final chatProvider = context.read<ChatProvider>();
+    final locale = Localizations.localeOf(context).languageCode;
+    await chatProvider.fetchMessages(
+      _rideId!,
+      translate: _autoTranslate,
+      targetLang: locale,
+    );
+  }
+
   void _scrollToBottom() {
     Future.delayed(const Duration(milliseconds: 100), () {
       if (_scroll.hasClients) {
@@ -166,7 +183,10 @@ class _ChatPageState extends State<ChatPage> {
             _ChatTopBar(passengerName: _passengerName ?? t('chat_passenger')),
             TranslationBanner(
               enabled: _autoTranslate,
-              onToggle: (v) => setState(() => _autoTranslate = v),
+              onToggle: (v) async {
+                setState(() => _autoTranslate = v);
+                await _refetchMessages();
+              },
             ),
             if (_loading)
               const Expanded(child: Center(child: CircularProgressIndicator()))

@@ -133,3 +133,5 @@ flutter:
     - data/terms/terms_patch_it.json
     - data/terms/terms_patch_pt.json
     - data/terms/terms_patch_tr.json
+    - images/logo/driver_dark.png
+    - images/logo/driver_light.png

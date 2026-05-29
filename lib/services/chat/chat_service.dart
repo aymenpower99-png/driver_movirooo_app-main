@@ -146,12 +146,22 @@ class ChatService {
   }
 
   /// Fetch message history via REST using the shared Dio client (handles auth automatically).
-  Future<List<ChatMsg>> fetchHistory(String rideId, {int limit = 50}) async {
+  Future<List<ChatMsg>> fetchHistory(
+    String rideId, {
+    int limit = 50,
+    bool translate = false,
+    String? targetLang,
+  }) async {
     try {
       final dio = ApiClient.instance.dio;
+      final queryParams = <String, dynamic>{'limit': limit};
+      if (translate && targetLang != null) {
+        queryParams['translate'] = 'true';
+        queryParams['lang'] = targetLang;
+      }
       final resp = await dio.get(
         Endpoints.chatMessages(rideId),
-        queryParameters: {'limit': limit},
+        queryParameters: queryParams,
       );
       final List<dynamic> data = resp.data as List<dynamic>;
       return data

@@ -19,15 +19,20 @@ class ChatProvider extends ChangeNotifier {
   }
 
   // Fetch messages only if not cached
-  Future<void> fetchMessages(String rideId) async {
-    if (_chatsByRideId.containsKey(rideId)) {
-      debugPrint('💬 [ChatProvider] Messages already cached for ride: $rideId');
-      return;
-    }
-
-    debugPrint('💬 [ChatProvider] Fetching messages for ride: $rideId');
+  Future<void> fetchMessages(
+    String rideId, {
+    bool translate = false,
+    String? targetLang,
+  }) async {
+    debugPrint(
+      '💬 [ChatProvider] Fetching messages for ride: $rideId (translate=$translate, lang=$targetLang)',
+    );
     final chatService = ChatService();
-    final history = await chatService.fetchHistory(rideId);
+    final history = await chatService.fetchHistory(
+      rideId,
+      translate: translate,
+      targetLang: targetLang,
+    );
 
     final messages = history.map((msg) => _chatMsgToUI(msg)).toList();
     _chatsByRideId[rideId] = messages;

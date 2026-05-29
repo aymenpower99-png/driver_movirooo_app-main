@@ -13,60 +13,75 @@ class DashboardHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        Image.asset(
-          isDark
-              ? 'images/moviroo dark mode.png'
-              : 'images/moviroo light mode.png',
-          height: 28,
-          fit: BoxFit.contain,
-        ),
-        const Spacer(),
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 350),
-          curve: Curves.easeInOut,
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: isOnline
-                ? AppColors.success.withValues(alpha: 0.12)
-                : const Color(0xFF9AA3AD).withValues(alpha: 0.10),
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: isOnline ? AppColors.success : const Color(0xFF9AA3AD),
+        SizedBox(
+          height: 44,
+          child: Center(
+            child: Image.asset(
+              isDark
+                  ? 'images/logo/driver_dark.png'
+                  : 'images/logo/driver_light.png',
+              height: 80,
+              fit: BoxFit.contain,
             ),
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 350),
-                width: 7,
-                height: 7,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
+        ),
+        const Spacer(),
+        SizedBox(
+          height: 44,
+          child: Center(
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 350),
+              curve: Curves.easeInOut,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: isOnline
+                    ? AppColors.success.withValues(alpha: 0.12)
+                    : const Color(0xFF9AA3AD).withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
                   color: isOnline ? AppColors.success : const Color(0xFF9AA3AD),
                 ),
               ),
-              const SizedBox(width: 6),
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 200),
-                child: Text(
-                  isOnline
-                      ? AppLocalizations.of(context).translate('status_online')
-                      : AppLocalizations.of(
-                          context,
-                        ).translate('status_offline'),
-                  key: ValueKey(isOnline),
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: isOnline
-                        ? AppColors.success
-                        : const Color(0xFF9AA3AD),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AnimatedContainer(
+                    duration: const Duration(milliseconds: 350),
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isOnline
+                          ? AppColors.success
+                          : const Color(0xFF9AA3AD),
+                    ),
                   ),
-                ),
+                  const SizedBox(width: 6),
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
+                    child: Text(
+                      isOnline
+                          ? AppLocalizations.of(
+                              context,
+                            ).translate('status_online')
+                          : AppLocalizations.of(
+                              context,
+                            ).translate('status_offline'),
+                      key: ValueKey(isOnline),
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: isOnline
+                            ? AppColors.success
+                            : const Color(0xFF9AA3AD),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ],

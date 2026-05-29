@@ -118,13 +118,6 @@ class _SupportPageState extends State<SupportPage> {
       child: Column(
         children: [
           _QuickActionRow(
-            icon: Icons.auto_awesome_rounded,
-            title: t('ai_assistant'),
-            subtitle: t('ai_assistant_subtitle'),
-            onTap: () => Navigator.pushNamed(context, AppRouter.aiChatbot),
-          ),
-          Divider(height: 1, color: AppColors.border(context), indent: 50),
-          _QuickActionRow(
             icon: Icons.confirmation_number_outlined,
             title: t('submit_ticket'),
             subtitle: t('submit_ticket_subtitle'),
@@ -172,8 +165,15 @@ class _SupportPageState extends State<SupportPage> {
     );
   }
 
-  Widget _buildMessagesCard(BuildContext context, dynamic t, List<TicketModel> tickets) {
+  Widget _buildMessagesCard(
+    BuildContext context,
+    dynamic t,
+    List<TicketModel> tickets,
+  ) {
     final currentUserId = context.read<AuthProvider>().user?.id;
+
+    // Show only the 3 most recent tickets
+    final recentTickets = tickets.take(3).toList();
 
     return Container(
       decoration: BoxDecoration(
@@ -182,18 +182,23 @@ class _SupportPageState extends State<SupportPage> {
         border: Border.all(color: AppColors.border(context)),
       ),
       child: Column(
-        children: tickets.asMap().entries.map((entry) {
+        children: recentTickets.asMap().entries.map((entry) {
           final i = entry.key;
           final ticket = entry.value;
-          final isLast = i == tickets.length - 1;
+          final isLast = i == recentTickets.length - 1;
 
-          final lastMsg = ticket.messages.isNotEmpty ? ticket.messages.last : null;
+          final lastMsg = ticket.messages.isNotEmpty
+              ? ticket.messages.last
+              : null;
           final senderName = lastMsg?.senderName ?? 'Moviroo Support';
           final preview = ticket.lastMessagePreview;
           final time = _formatRelativeTime(ticket.updatedAt);
 
           // Unread dot only when the last message was sent by support (not by the driver)
-          final unread = lastMsg != null && lastMsg.senderId != currentUserId && currentUserId != null;
+          final unread =
+              lastMsg != null &&
+              lastMsg.senderId != currentUserId &&
+              currentUserId != null;
 
           return Column(
             children: [
@@ -208,7 +213,12 @@ class _SupportPageState extends State<SupportPage> {
                   arguments: ticket.id,
                 ),
               ),
-              if (!isLast) Divider(height: 1, color: AppColors.border(context), indent: 50),
+              if (!isLast)
+                Divider(
+                  height: 1,
+                  color: AppColors.border(context),
+                  indent: 50,
+                ),
             ],
           );
         }).toList(),
@@ -338,10 +348,7 @@ class _QuickActionRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      title,
-                      style: AppTextStyles.settingsItem(context),
-                    ),
+                    Text(title, style: AppTextStyles.settingsItem(context)),
                     const SizedBox(height: 2),
                     Text(
                       subtitle,
@@ -405,10 +412,7 @@ class _MessageRow extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      name,
-                      style: AppTextStyles.settingsItem(context),
-                    ),
+                    Text(name, style: AppTextStyles.settingsItem(context)),
                     const SizedBox(height: 2),
                     Text(
                       preview,
