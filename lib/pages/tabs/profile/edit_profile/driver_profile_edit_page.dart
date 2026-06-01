@@ -1,5 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:image_cropper/image_cropper.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
+import 'package:dio/dio.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:cross_file/cross_file.dart';
+import '../../../../../services/driver/driver_service.dart';
+import '../../../../../providers/online_provider.dart';
 import '../../../../../l10n/app_localizations.dart';
 import '../../../../../theme/app_colors.dart';
 import '../../../../../theme/app_text_styles.dart';
@@ -20,6 +28,157 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
+
+  bool _uploading = false;
+
+  Future<void> _pickAndUploadPhoto(ImageSource source) async {
+    if (_uploading) return;
+    setState(() => _uploading = true);
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickImage(source: source, imageQuality: 100);
+      if (picked == null) {
+        setState(() => _uploading = false);
+        return;
+      }
+
+      final pathLower = picked.path.toLowerCase();
+      final allowed =
+          pathLower.endsWith('.jpg') ||
+          pathLower.endsWith('.jpeg') ||
+          pathLower.endsWith('.png') ||
+          pathLower.endsWith('.webp');
+      if (!allowed) {
+        AppToast.error(
+          context,
+          'Unsupported image format. Allowed: jpg, jpeg, png, webp.',
+        );
+        setState(() => _uploading = false);
+        return;
+      }
+
+      // Crop to 1:1
+      final cropped = await ImageCropper().cropImage(
+        sourcePath: picked.path,
+        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+        uiSettings: [
+          AndroidUiSettings(
+            toolbarTitle: 'Crop photo',
+            toolbarColor: AppColors.primaryPurple,
+            toolbarWidgetColor: Colors.white,
+            activeControlsWidgetColor: AppColors.primaryPurple,
+            hideBottomControls: true,
+            lockAspectRatio: true,
+          ),
+          IOSUiSettings(title: 'Crop photo', aspectRatioLockEnabled: true),
+        ],
+      );
+      if (cropped == null) {
+        setState(() => _uploading = false);
+        return;
+      }
+
+      // Compress to JPEG < 1MB
+      final tmpDir = await getTemporaryDirectory();
+      final outPath =
+          '${tmpDir.path}/driver_logo_${DateTime.now().millisecondsSinceEpoch}.jpg';
+
+      XFile? compressed = await FlutterImageCompress.compressAndGetFile(
+        cropped.path,
+        outPath,
+        quality: 85,
+        format: CompressFormat.jpeg,
+      );
+      if (compressed == null) {
+        throw Exception('Compression failed');
+      }
+      int size = await compressed.length();
+      if (size > 1024 * 1024) {
+        compressed = await FlutterImageCompress.compressAndGetFile(
+          cropped.path,
+          outPath,
+          quality: 75,
+          format: CompressFormat.jpeg,
+        );
+        if (compressed == null) {
+          throw Exception('Compression failed');
+        }
+        size = await compressed.length();
+      }
+      if (size > 1024 * 1024) {
+        compressed = await FlutterImageCompress.compressAndGetFile(
+          cropped.path,
+          outPath,
+          quality: 65,
+          format: CompressFormat.jpeg,
+        );
+        if (compressed == null) {
+          throw Exception('Compression failed');
+        }
+        size = await compressed.length();
+      }
+      if (size > 1024 * 1024) {
+        AppToast.error(
+          context,
+          'Photo is too large after compression. Please choose a different image.',
+        );
+        setState(() => _uploading = false);
+        return;
+      }
+
+      // Signature
+      debugPrint('POST /drivers/me/logo/signature (no body)');
+      final sig = await DriverService().getLogoUploadSignature();
+      debugPrint('Signature response: ' + sig.toString());
+
+      // Cloudinary payload log
+      final form = FormData.fromMap({
+        'file': await MultipartFile.fromFile(
+          compressed.path,
+          filename: 'driver_logo.jpg',
+        ),
+        'api_key': sig['apiKey'],
+        'timestamp': sig['timestamp'],
+        'signature': sig['signature'],
+        'folder': sig['folder'],
+        'public_id': sig['publicId'],
+        'overwrite': 'true',
+        'invalidate': 'true',
+      });
+      debugPrint(
+        'Cloudinary upload payload (pre-send): cloud=${sig['cloudName']} folder=${sig['folder']} public_id=${sig['publicId']} ts=${sig['timestamp']} file=${compressed.path} size=${size}',
+      );
+
+      final dio = Dio();
+      final url =
+          'https://api.cloudinary.com/v1_1/${sig['cloudName']}/image/upload';
+      final res = await dio.post(url, data: form);
+      debugPrint(
+        'Cloudinary upload response: status=${res.statusCode} public_id=${res.data['public_id']} secure_url=${res.data['secure_url']}',
+      );
+
+      final secureUrl = (res.data)['secure_url'] as String;
+      final publicId = (res.data)['public_id'] as String;
+
+      // Persist
+      await DriverService().saveLogo(url: secureUrl, publicId: publicId);
+      if (!mounted) return;
+      await context.read<OnlineProvider>().refreshDriverProfile();
+      AppToast.success(context, 'Profile photo updated');
+    } on DioException catch (e) {
+      debugPrint(
+        'Upload error DioException: ${e.response?.statusCode} ${e.response?.data}',
+      );
+      if (!mounted) return;
+      AppToast.error(context, 'Upload failed. Please try again.');
+    } catch (e) {
+      debugPrint('Upload error: $e');
+      if (!mounted) return;
+      AppToast.error(context, 'Upload failed. Please try again.');
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
+  }
 
   @override
   void initState() {
@@ -73,6 +232,8 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
     final auth = context.watch<AuthProvider>();
     final loading = auth.loading;
     final initials = auth.user?.initials ?? '?';
+    final online = context.watch<OnlineProvider>();
+    final logoUrl = online.driverProfile?.logoUrl;
 
     return Scaffold(
       backgroundColor: AppColors.bg(context),
@@ -100,31 +261,119 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
           children: [
             // ── Avatar ──────────────────────────────────────────
             Center(
-              child: Container(
-                width: 90,
-                height: 90,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [Color(0xFFA855F7), Color(0xFF7C3AED)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+              child: Stack(
+                alignment: Alignment.bottomRight,
+                children: [
+                  Container(
+                    width: 96,
+                    height: 96,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        colors: [Color(0xFFA855F7), Color(0xFF7C3AED)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                    ),
+                    clipBehavior: Clip.antiAlias,
+                    child: logoUrl != null && logoUrl.isNotEmpty
+                        ? Image.network(logoUrl, fit: BoxFit.cover)
+                        : Center(
+                            child: Text(
+                              initials,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 30,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
                   ),
-                ),
-                child: Center(
-                  child: Text(
-                    initials,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 30,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.5,
+                  Positioned(
+                    right: 0,
+                    bottom: 0,
+                    child: GestureDetector(
+                      onTap: _uploading
+                          ? null
+                          : () async {
+                              await showModalBottomSheet<void>(
+                                context: context,
+                                builder: (ctx) => SafeArea(
+                                  child: Wrap(
+                                    children: [
+                                      ListTile(
+                                        leading: const Icon(
+                                          Icons.photo_library_outlined,
+                                          color: AppColors.primaryPurple,
+                                        ),
+                                        title: const Text(
+                                          'Choose from gallery',
+                                          style: TextStyle(
+                                            color: AppColors.primaryPurple,
+                                          ),
+                                        ),
+                                        onTap: () {
+                                          Navigator.pop(ctx);
+                                          _pickAndUploadPhoto(
+                                            ImageSource.gallery,
+                                          );
+                                        },
+                                      ),
+                                      ListTile(
+                                        leading: const Icon(
+                                          Icons.photo_camera_outlined,
+                                          color: AppColors.primaryPurple,
+                                        ),
+                                        title: const Text(
+                                          'Take a photo',
+                                          style: TextStyle(
+                                            color: AppColors.primaryPurple,
+                                          ),
+                                        ),
+                                        onTap: () {
+                                          Navigator.pop(ctx);
+                                          _pickAndUploadPhoto(
+                                            ImageSource.camera,
+                                          );
+                                        },
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                      child: Container(
+                        width: 34,
+                        height: 34,
+                        decoration: const BoxDecoration(
+                          color: AppColors.primaryPurple,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black26,
+                              blurRadius: 4,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.edit,
+                          color: Colors.white,
+                          size: 18,
+                        ),
+                      ),
                     ),
                   ),
-                ),
+                ],
               ),
             ),
-            const SizedBox(height: 28),
+            const SizedBox(height: 14),
+            if (_uploading) ...[
+              const SizedBox(height: 10),
+              const LinearProgressIndicator(),
+            ],
+            const SizedBox(height: 20),
 
             // ── Editable Tiles ───────────────────────────────────
             _EditableTile(

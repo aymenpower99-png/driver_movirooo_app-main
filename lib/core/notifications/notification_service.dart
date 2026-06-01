@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 // Channel must match what the backend sends (android.notification.channelId)
@@ -112,7 +113,7 @@ class NotificationService {
     await androidPlugin?.createNotificationChannel(supportChannel);
 
     const AndroidInitializationSettings androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
+        AndroidInitializationSettings('@drawable/ic_stat_notification');
 
     const InitializationSettings initSettings = InitializationSettings(
       android: androidSettings,
@@ -149,17 +150,26 @@ class NotificationService {
           importance: Importance.max,
           priority: Priority.max,
           showWhen: true,
-          icon: '@mipmap/ic_launcher',
+          icon: '@drawable/ic_stat_notification',
+          color: const Color(0xFF6B4EFF),
+          enableVibration: true,
         );
 
     final NotificationDetails details = NotificationDetails(
       android: androidDetails,
     );
 
+    // Get title/body from data block (backend now sends data-only for custom icon)
+    final title =
+        message.data['title'] ??
+        message.notification?.title ??
+        _titleForType(message.data['type']);
+    final body = message.data['body'] ?? message.notification?.body;
+
     await _localNotifications.show(
       DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      message.notification?.title ?? _titleForType(message.data['type']),
-      message.notification?.body,
+      title,
+      body,
       details,
       payload: jsonEncode(message.data),
     );
@@ -236,11 +246,7 @@ class NotificationService {
           desc: 'Driver online/offline status alerts',
         );
       case _kSupportId:
-        return (
-          id: _kSupportId,
-          name: _kSupportName,
-          desc: _kSupportDesc,
-        );
+        return (id: _kSupportId, name: _kSupportName, desc: _kSupportDesc);
       default:
         return (id: _kChannelId, name: _kChannelName, desc: _kChannelDesc);
     }
@@ -362,7 +368,7 @@ class NotificationService {
       channelDescription: 'Driver online/offline status alerts',
       importance: Importance.high,
       priority: Priority.high,
-      icon: '@mipmap/ic_launcher',
+      icon: '@drawable/ic_stat_notification',
     );
     const details = NotificationDetails(android: androidDetails);
     await _localNotifications.show(

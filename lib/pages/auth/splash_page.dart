@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../routing/router.dart';
-import '../../theme/app_colors.dart';
 
 /// Shown at app start while AuthProvider.init() resolves.
 /// Routes to dashboard if authenticated, login otherwise — no flash.
@@ -12,6 +12,15 @@ class SplashPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final auth = context.watch<AuthProvider>();
+
+    // Hide status bar for full-screen splash
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+      ),
+    );
 
     if (auth.status == AuthStatus.authenticated) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -24,18 +33,28 @@ class SplashPage extends StatelessWidget {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.primaryPurple,
+      backgroundColor: Colors.white,
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: Image.asset('images/lsnn.png', width: 90, height: 90),
+            // Logo with shadow
+            Container(
+              decoration: BoxDecoration(
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 30,
+                    spreadRadius: 5,
+                    offset: const Offset(0, 15),
+                  ),
+                ],
+              ),
+              child: Image.asset('images/640WH.png', width: 120, height: 120),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 40),
             const CircularProgressIndicator(
-              color: Colors.white,
+              color: Color(0xFFA855F7),
               strokeWidth: 2.5,
             ),
           ],

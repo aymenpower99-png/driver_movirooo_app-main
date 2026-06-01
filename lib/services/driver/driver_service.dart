@@ -12,6 +12,29 @@ class DriverService {
     return DriverModel.fromJson(res.data as Map<String, dynamic>);
   }
 
+  /// Request a short-lived Cloudinary signature for direct upload
+  Future<Map<String, dynamic>> getLogoUploadSignature() async {
+    final res = await _dio.post(Endpoints.driverLogoSignature);
+    return res.data as Map<String, dynamic>;
+  }
+
+  /// Persist uploaded logo URL/publicId in backend
+  Future<Map<String, dynamic>> saveLogo({
+    required String url,
+    required String publicId,
+  }) async {
+    final res = await _dio.patch(
+      Endpoints.driverLogo,
+      data: {'url': url, 'publicId': publicId},
+    );
+    return res.data as Map<String, dynamic>;
+  }
+
+  /// Delete current logo in backend (revert to initials avatar client-side)
+  Future<void> deleteLogo() async {
+    await _dio.delete(Endpoints.driverLogo);
+  }
+
   Future<void> setAvailability(String status) async {
     await _dio.patch(Endpoints.driverAvailability, data: {'status': status});
   }

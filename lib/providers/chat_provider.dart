@@ -94,9 +94,15 @@ class ChatProvider extends ChangeNotifier {
 
   // Convert ChatMsg to ChatMessage (UI model)
   ChatMessage _chatMsgToUI(ChatMsg m) {
+    // When translation is enabled, backend returns translated text in 'text' and original in 'original_text'
+    // We need to swap them for the UI: text should be original, translatedText should be translated
+    final displayText = m.originalText ?? m.text;
+    final translatedText = m.originalText != null ? m.text : null;
+
     return ChatMessage(
       id: m.id,
-      text: m.text,
+      text: displayText,
+      translatedText: translatedText,
       isMe: m.senderRole == 'driver',
       time: _formatTime(m.createdAt),
       isEdited: m.isEdited,

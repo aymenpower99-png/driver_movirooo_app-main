@@ -80,7 +80,6 @@ class DriverProfileHandler {
         _timeTracking.startUiTimer();
         // Start heartbeat and background services if driver is online
         _heartbeat.start();
-        await BackgroundTrackingService.start();
         // Check for active ride and start GPS tracking if needed
         try {
           final rides = await _dispatch.getDriverRides();

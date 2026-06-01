@@ -1,15 +1,17 @@
 /// Driver profile returned from GET /drivers/me
 class DriverModel {
-  final String  id;
-  final String  userId;
-  final String  availabilityStatus; // PENDING | SETUP_REQUIRED | OFFLINE | ONLINE | ON_TRIP
-  final double  ratingAverage;
-  final int     totalTrips;
-  final int     cancellationCount;
-  final int     rejectedOffersCount;
-  final int     acceptedOffersCount;
+  final String id;
+  final String userId;
+  final String
+  availabilityStatus; // PENDING | SETUP_REQUIRED | OFFLINE | ONLINE | ON_TRIP
+  final double ratingAverage;
+  final int totalTrips;
+  final int cancellationCount;
+  final int rejectedOffersCount;
+  final int acceptedOffersCount;
   final VehicleInfo? vehicle;
   final WorkAreaInfo? workArea;
+  final String? logoUrl;
 
   /// Accumulated online milliseconds for the current calendar month (from backend).
   final int monthlyOnlineMs;
@@ -30,6 +32,7 @@ class DriverModel {
     this.workArea,
     this.monthlyOnlineMs = 0,
     this.onlineSince,
+    this.logoUrl,
   });
 
   bool get isOnline {
@@ -48,25 +51,26 @@ class DriverModel {
   }
 
   factory DriverModel.fromJson(Map<String, dynamic> j) => DriverModel(
-        id:                 j['id']                 as String,
-        userId:             j['userId']             as String,
-        availabilityStatus: j['availabilityStatus'] as String? ?? 'OFFLINE',
-        ratingAverage:      _toDouble(j['ratingAverage']),
-        totalTrips:         (j['totalTrips']        as num?)?.toInt() ?? 0,
-        cancellationCount:   (j['cancellationCount']  as num?)?.toInt() ?? 0,
-        rejectedOffersCount: (j['rejectedOffersCount'] as num?)?.toInt() ?? 0,
-        acceptedOffersCount: (j['acceptedOffersCount'] as num?)?.toInt() ?? 0,
-        monthlyOnlineMs:    _toInt(j['monthlyOnlineMs']),
-        onlineSince: j['onlineSince'] != null
-            ? DateTime.tryParse(j['onlineSince'].toString())
-            : null,
-        vehicle: j['vehicle'] != null
-            ? VehicleInfo.fromJson(j['vehicle'] as Map<String, dynamic>)
-            : null,
-        workArea: j['workArea'] != null
-            ? WorkAreaInfo.fromJson(j['workArea'] as Map<String, dynamic>)
-            : null,
-      );
+    id: j['id'] as String,
+    userId: j['userId'] as String,
+    availabilityStatus: j['availabilityStatus'] as String? ?? 'OFFLINE',
+    ratingAverage: _toDouble(j['ratingAverage']),
+    totalTrips: (j['totalTrips'] as num?)?.toInt() ?? 0,
+    cancellationCount: (j['cancellationCount'] as num?)?.toInt() ?? 0,
+    rejectedOffersCount: (j['rejectedOffersCount'] as num?)?.toInt() ?? 0,
+    acceptedOffersCount: (j['acceptedOffersCount'] as num?)?.toInt() ?? 0,
+    monthlyOnlineMs: _toInt(j['monthlyOnlineMs']),
+    onlineSince: j['onlineSince'] != null
+        ? DateTime.tryParse(j['onlineSince'].toString())
+        : null,
+    vehicle: j['vehicle'] != null
+        ? VehicleInfo.fromJson(j['vehicle'] as Map<String, dynamic>)
+        : null,
+    workArea: j['workArea'] != null
+        ? WorkAreaInfo.fromJson(j['workArea'] as Map<String, dynamic>)
+        : null,
+    logoUrl: j['logoUrl'] as String?,
+  );
 
   static double _toDouble(dynamic v) {
     if (v == null) return 5.0;
@@ -81,25 +85,29 @@ class DriverModel {
     return int.tryParse(v.toString()) ?? 0;
   }
 
-  DriverModel copyWith({String? availabilityStatus, int? monthlyOnlineMs, DateTime? onlineSince}) => DriverModel(
-        id:                  id,
-        userId:              userId,
-        availabilityStatus:  availabilityStatus ?? this.availabilityStatus,
-        ratingAverage:       ratingAverage,
-        totalTrips:          totalTrips,
-        cancellationCount:   cancellationCount,
-        rejectedOffersCount: rejectedOffersCount,
-        acceptedOffersCount: acceptedOffersCount,
-        vehicle:             vehicle,
-        workArea:            workArea,
-        monthlyOnlineMs:     monthlyOnlineMs ?? this.monthlyOnlineMs,
-        onlineSince:         onlineSince,
-      );
+  DriverModel copyWith({
+    String? availabilityStatus,
+    int? monthlyOnlineMs,
+    DateTime? onlineSince,
+  }) => DriverModel(
+    id: id,
+    userId: userId,
+    availabilityStatus: availabilityStatus ?? this.availabilityStatus,
+    ratingAverage: ratingAverage,
+    totalTrips: totalTrips,
+    cancellationCount: cancellationCount,
+    rejectedOffersCount: rejectedOffersCount,
+    acceptedOffersCount: acceptedOffersCount,
+    vehicle: vehicle,
+    workArea: workArea,
+    monthlyOnlineMs: monthlyOnlineMs ?? this.monthlyOnlineMs,
+    onlineSince: onlineSince,
+  );
 }
 
 class VehicleInfo {
-  final String  id;
-  final String  plateNumber;
+  final String id;
+  final String plateNumber;
   final String? make;
   final String? model;
   final String? color;
@@ -122,12 +130,13 @@ class VehicleInfo {
   factory VehicleInfo.fromJson(Map<String, dynamic> j) {
     final cls = j['vehicleClass'] as Map<String, dynamic>?;
     return VehicleInfo(
-      id:          j['id']          as String,
-      plateNumber: j['licensePlate'] as String? ?? j['plateNumber'] as String? ?? '',
-      make:        j['make']        as String?,
-      model:       j['model']       as String?,
-      color:       j['color']       as String?,
-      className:   cls?['name']     as String?,
+      id: j['id'] as String,
+      plateNumber:
+          j['licensePlate'] as String? ?? j['plateNumber'] as String? ?? '',
+      make: j['make'] as String?,
+      model: j['model'] as String?,
+      color: j['color'] as String?,
+      className: cls?['name'] as String?,
     );
   }
 }
@@ -146,8 +155,8 @@ class WorkAreaInfo {
   String get displayName => '$ville, $country';
 
   factory WorkAreaInfo.fromJson(Map<String, dynamic> j) => WorkAreaInfo(
-        id:      j['id']      as String,
-        country: j['country'] as String? ?? '',
-        ville:   j['ville']   as String? ?? '',
-      );
+    id: j['id'] as String,
+    country: j['country'] as String? ?? '',
+    ville: j['ville'] as String? ?? '',
+  );
 }

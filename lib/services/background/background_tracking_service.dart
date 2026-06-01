@@ -256,12 +256,9 @@ Future<void> backgroundServiceOnStart(ServiceInstance service) async {
     await BackgroundGpsHandler.stopSession(session);
     session = null;
     currentRideId = null;
-    // Update notification back to idle state
+    // Stop the foreground service entirely when no active ride
     if (service is AndroidServiceInstance) {
-      service.setForegroundNotificationInfo(
-        title: 'Moviroo Driver',
-        content: 'Online — waiting for ride',
-      );
+      await service.stopSelf();
     }
     debugPrint('🚗 [BgTrack:isolate] === STOP_TRACKING COMMAND COMPLETE ===');
   });
@@ -291,12 +288,16 @@ Future<void> backgroundServiceOnStart(ServiceInstance service) async {
   //      (e.g. app crashed, lost WebSocket, FCM dropped).
   Timer.periodic(const Duration(seconds: 30), (_) async {
     if (service is AndroidServiceInstance) {
-      service.setForegroundNotificationInfo(
-        title: 'Moviroo Driver',
-        content: currentRideId != null
-            ? 'Tracking active ride'
-            : 'Online — waiting for ride',
-      );
+      if (currentRideId != null) {
+        service.setForegroundNotificationInfo(
+          title: 'Moviroo Driver',
+          content: 'Tracking active ride',
+        );
+      } else {
+        // Ensure service is stopped if we are idle
+        await service.stopSelf();
+        return;
+      }
     }
 
     final rideId = currentRideId;

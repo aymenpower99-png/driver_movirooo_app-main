@@ -13,6 +13,7 @@ class ChatMsg {
   final String senderId;
   final String senderRole;
   final String text;
+  final String? originalText;
   final bool isVoice;
   final bool isEdited;
   final DateTime createdAt;
@@ -23,6 +24,7 @@ class ChatMsg {
     required this.senderId,
     required this.senderRole,
     required this.text,
+    this.originalText,
     this.isVoice = false,
     this.isEdited = false,
     required this.createdAt,
@@ -35,6 +37,7 @@ class ChatMsg {
       senderId: json['sender_id'] ?? '',
       senderRole: json['sender_role'] ?? 'passenger',
       text: json['text'] ?? '',
+      originalText: json['original_text']?.toString(),
       isVoice: json['is_voice'] == true,
       isEdited: json['is_edited'] == true,
       createdAt: json['created_at'] != null

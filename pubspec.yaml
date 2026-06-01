@@ -30,6 +30,8 @@ dependencies:
   # ── API & Networking ─────────────────────────────────────
   dio: ^5.7.0
   pretty_dio_logger: ^1.4.0
+  image_cropper: ^8.0.0
+  flutter_image_compress: ^2.1.0
 
   # ── Secure Token Storage ─────────────────────────────────
   flutter_secure_storage: ^9.2.2
@@ -68,21 +70,18 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: "images/driver.png" # ← change this
+  image_path: "images/640WH.png" # ← change this
   adaptive_icon_background: "#ffffff"
-  adaptive_icon_foreground: "images/driver.png" # ← change this
+  adaptive_icon_foreground: "images/640WH.png" # ← change this
 
 flutter_native_splash:
-  color: "#ffffff"
-  image: images/logo6.png
-  android: true
-  ios: true
-  android_gravity: center
-  ios_content_mode: scaleAspectFit
+  color: "#FFFFFF"
+  image: images/640WH.png
   fullscreen: true
-  android_12:
-    color: "#ffffff"
-    image: images/logo6.png
+
+android_12:
+  color: "#FFFFFF"
+  image: images/640WH.png
 
 flutter:
   uses-material-design: true
@@ -136,3 +135,4 @@ flutter:
     - images/logo/driver_dark.png
     - images/logo/driver_light.png
     - images/driver.png
+    - images/640WH.png

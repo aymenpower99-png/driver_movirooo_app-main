@@ -212,8 +212,6 @@ class OnlineToggleHandler {
         // Start periodic monthly time refresh to keep Earnings page in sync
         startMonthlyRefreshTimer();
 
-        await BackgroundTrackingService.start();
-
         // Check if driver has an active ride from backend
         debugPrint(
           '🚗 [OnlineToggle] 🔍 Checking for active ride from backend...',
