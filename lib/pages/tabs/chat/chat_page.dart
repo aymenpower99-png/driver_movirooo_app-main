@@ -206,7 +206,11 @@ class _ChatPageState extends State<ChatPage> {
                           )
                         : ListView.builder(
                             controller: _scroll,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            padding: const EdgeInsets.only(
+                              left: 16,
+                              right: 16,
+                              top: 16,
+                            ),
                             itemCount: messages.length,
                             itemBuilder: (context, i) {
                               final msg = messages[i];

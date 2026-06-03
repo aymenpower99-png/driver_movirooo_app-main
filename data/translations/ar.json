@@ -277,7 +277,7 @@
   "turkish": "التركية",
   "chinese": "الصينية",
   "earnings_fixed_salary": "الراتب",
-  "earnings_total_rides": "إجمالي الرحلات",
+  "earnings_total_rides": "إجمالي الرحلات (مكتملة)",
   "earnings_online_time_label": "وقت الاتصال",
   "earnings_commission_tiers": "مستويات العمولة",
   "earnings_rides_to_next_tier": "{count} رحلة إضافية للوصول إلى {tier}",

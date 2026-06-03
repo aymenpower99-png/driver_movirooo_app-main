@@ -142,6 +142,11 @@ class NotificationService {
     final channelId = _channelForType(message.data['type']);
     final channelInfo = _channelDetails(channelId);
 
+    // Use driver_logo.png for chat messages, ic_stat_notification for others
+    final icon = message.data['type'] == 'CHAT_MESSAGE'
+        ? '@drawable/driver_logo'
+        : '@drawable/ic_stat_notification';
+
     final AndroidNotificationDetails androidDetails =
         AndroidNotificationDetails(
           channelInfo.id,
@@ -150,7 +155,7 @@ class NotificationService {
           importance: Importance.max,
           priority: Priority.max,
           showWhen: true,
-          icon: '@drawable/ic_stat_notification',
+          icon: icon,
           color: const Color(0xFF6B4EFF),
           enableVibration: true,
         );

@@ -28,6 +28,7 @@ class DriverModel {
     this.cancellationCount = 0,
     this.rejectedOffersCount = 0,
     this.acceptedOffersCount = 0,
+    this.acceptanceRate = 0,
     this.vehicle,
     this.workArea,
     this.monthlyOnlineMs = 0,
@@ -40,15 +41,9 @@ class DriverModel {
     return s == 'online' || s == 'on_trip';
   }
 
-  /// Acceptance rate as percentage (0–100).
-  /// accepted = offers explicitly accepted (incremented each time driver taps Accept).
-  /// rejected = offers explicitly rejected (incremented each time driver taps Reject).
-  /// Rate = accepted / (accepted + rejected), so accept → rate ↑, reject → rate ↓.
-  int get acceptanceRate {
-    final total = acceptedOffersCount + rejectedOffersCount;
-    if (total == 0) return 100;
-    return ((acceptedOffersCount / total) * 100).round().clamp(0, 100);
-  }
+  /// Acceptance rate as percentage (0–100), computed by the backend from
+  /// dispatch_offers (accepted / (accepted + rejected) * 100).
+  final int acceptanceRate;
 
   factory DriverModel.fromJson(Map<String, dynamic> j) => DriverModel(
     id: j['id'] as String,
@@ -59,6 +54,7 @@ class DriverModel {
     cancellationCount: (j['cancellationCount'] as num?)?.toInt() ?? 0,
     rejectedOffersCount: (j['rejectedOffersCount'] as num?)?.toInt() ?? 0,
     acceptedOffersCount: (j['acceptedOffersCount'] as num?)?.toInt() ?? 0,
+    acceptanceRate: (j['acceptanceRate'] as num?)?.toInt() ?? 0,
     monthlyOnlineMs: _toInt(j['monthlyOnlineMs']),
     onlineSince: j['onlineSince'] != null
         ? DateTime.tryParse(j['onlineSince'].toString())
@@ -98,6 +94,7 @@ class DriverModel {
     cancellationCount: cancellationCount,
     rejectedOffersCount: rejectedOffersCount,
     acceptedOffersCount: acceptedOffersCount,
+    acceptanceRate: acceptanceRate,
     vehicle: vehicle,
     workArea: workArea,
     monthlyOnlineMs: monthlyOnlineMs ?? this.monthlyOnlineMs,

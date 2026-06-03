@@ -276,7 +276,7 @@
   "turkish": "Turkish",
   "chinese": "Chinese",
   "earnings_fixed_salary": "Salary",
-  "earnings_total_rides": "Total Rides",
+  "earnings_total_rides": "Total Rides (Completed)",
   "earnings_online_time_label": "Online Time",
   "earnings_commission_tiers": "Commission Tiers",
   "earnings_rides_to_next_tier": "{count} more rides to reach {tier}",

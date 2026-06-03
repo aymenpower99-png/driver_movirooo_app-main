@@ -383,7 +383,7 @@ class _DashboardPageState extends State<DashboardPage>
                             onlineTime: online.todayOnlineFormatted,
                             vehicleName: driver?.vehicle?.displayName ?? '—',
                             vehicleClass: driver?.vehicle?.className ?? '—',
-                            acceptanceRate: driver?.acceptanceRate ?? 100,
+                            acceptanceRate: driver?.acceptanceRate ?? 0,
                             cancellations: driver?.cancellationCount ?? 0,
                           ),
                         ),

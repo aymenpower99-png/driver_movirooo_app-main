@@ -144,7 +144,7 @@ class _EarningsPageState extends State<EarningsPage> {
                                 _SalaryCard(salary: earnings.salary),
                                 const SizedBox(height: 12),
 
-                                // 2. Monthly Rides + Online Time
+                                // 2. Monthly Rides + Online Time + Total Rides
                                 Row(
                                   children: [
                                     Expanded(
@@ -162,6 +162,13 @@ class _EarningsPageState extends State<EarningsPage> {
                                             : formatOnlineTime(
                                                 earnings.onlineTimeMs,
                                               ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: _StatCard(
+                                        label: t('earnings_total_rides'),
+                                        value: '${earnings.totalTrips}',
                                       ),
                                     ),
                                   ],
