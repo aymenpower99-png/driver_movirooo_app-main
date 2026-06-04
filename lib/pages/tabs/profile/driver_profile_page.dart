@@ -30,6 +30,7 @@ class DriverProfilePage extends StatelessWidget {
         ? '${user.firstName} ${user.lastName}'.trim()
         : 'Driver';
     final initials = user?.initials ?? '?';
+    final logoUrl = driver?.logoUrl;
     final rating = driver?.ratingAverage ?? 0.0;
     final totalTrips = driver?.totalTrips ?? 0;
     return Scaffold(
@@ -92,17 +93,26 @@ class DriverProfilePage extends StatelessWidget {
                                     width: 2,
                                   ),
                                 ),
-                                child: Center(
-                                  child: Text(
-                                    initials,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.w800,
-                                      letterSpacing: 0.5,
-                                    ),
-                                  ),
-                                ),
+                                child: (logoUrl != null && logoUrl.isNotEmpty)
+                                    ? ClipOval(
+                                        child: Image.network(
+                                          logoUrl,
+                                          fit: BoxFit.cover,
+                                          width: 64,
+                                          height: 64,
+                                        ),
+                                      )
+                                    : Center(
+                                        child: Text(
+                                          initials,
+                                          style: const TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 22,
+                                            fontWeight: FontWeight.w800,
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                      ),
                               ),
                               Positioned(
                                 bottom: 2,

@@ -1,6 +1,4 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../l10n/app_localizations.dart';
@@ -10,7 +8,6 @@ import '../../services/support/support_service.dart';
 import '../../core/widgets/app_toast.dart';
 import 'widgets/labeled_dropdown_field.dart';
 import 'widgets/labeled_input_field.dart';
-import 'widgets/photo_grid.dart';
 import 'widgets/section_header.dart';
 
 class ContactSupportPage extends StatefulWidget {
@@ -25,7 +22,6 @@ class _ContactSupportPageState extends State<ContactSupportPage> {
   final _subjectController = TextEditingController();
   final _messageController = TextEditingController();
   String? _selectedCategory;
-  final List<File> _attachments = [];
   bool _submitting = false;
 
   @override
@@ -34,80 +30,6 @@ class _ContactSupportPageState extends State<ContactSupportPage> {
     _messageController.dispose();
     super.dispose();
   }
-
-  // ── Photo picking ──────────────────────────────────────────────────────────
-
-  Future<void> _pickPhoto(ImageSource source) async {
-    final picker = ImagePicker();
-    final xFile = await picker.pickImage(
-      source: source,
-      imageQuality: 80,
-      maxWidth: 1200,
-    );
-    if (xFile != null) {
-      setState(() => _attachments.add(File(xFile.path)));
-    }
-  }
-
-  void _showPhotoSourceSheet() {
-    final t = AppLocalizations.of(context).translate;
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.surface(context),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 8),
-            Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.border(context),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 8),
-            ListTile(
-              leading: const Icon(
-                Icons.camera_alt_outlined,
-                color: AppColors.primaryPurple,
-              ),
-              title: Text(
-                t('photo_take'),
-                style: TextStyle(color: AppColors.text(context)),
-              ),
-              onTap: () {
-                Navigator.pop(sheetContext);
-                _pickPhoto(ImageSource.camera);
-              },
-            ),
-            ListTile(
-              leading: const Icon(
-                Icons.photo_library_outlined,
-                color: AppColors.primaryPurple,
-              ),
-              title: Text(
-                t('photo_gallery'),
-                style: TextStyle(color: AppColors.text(context)),
-              ),
-              onTap: () {
-                Navigator.pop(sheetContext);
-                _pickPhoto(ImageSource.gallery);
-              },
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _removeAttachment(int index) =>
-      setState(() => _attachments.removeAt(index));
 
   // ── Submit ─────────────────────────────────────────────────────────────────
 
@@ -218,7 +140,7 @@ class _ContactSupportPageState extends State<ContactSupportPage> {
                     v == null ? t('support_validate_category') : null,
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 32),
 
               // Subject
               LabeledInputField(
@@ -230,7 +152,7 @@ class _ContactSupportPageState extends State<ContactSupportPage> {
                     : null,
               ),
 
-              const SizedBox(height: 20),
+              const SizedBox(height: 32),
 
               // Message
               LabeledInputField(
@@ -243,18 +165,7 @@ class _ContactSupportPageState extends State<ContactSupportPage> {
                     : null,
               ),
 
-              // ── ATTACHMENTS ────────────────────────────────────────────────
-              const SizedBox(height: 28),
-              SectionHeader(label: t('support_section_attachments')),
-              const SizedBox(height: 16),
-
-              PhotoGrid(
-                photos: _attachments,
-                onAdd: _showPhotoSourceSheet,
-                onRemove: _removeAttachment,
-              ),
-
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
 
               // Submit
               SizedBox(

@@ -144,7 +144,7 @@ class _EarningsPageState extends State<EarningsPage> {
                                 _SalaryCard(salary: earnings.salary),
                                 const SizedBox(height: 12),
 
-                                // 2. Monthly Rides + Online Time + Total Rides
+                                // 2. Monthly Rides + Online Time
                                 Row(
                                   children: [
                                     Expanded(
@@ -162,13 +162,6 @@ class _EarningsPageState extends State<EarningsPage> {
                                             : formatOnlineTime(
                                                 earnings.onlineTimeMs,
                                               ),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Expanded(
-                                      child: _StatCard(
-                                        label: t('earnings_total_rides'),
-                                        value: '${earnings.totalTrips}',
                                       ),
                                     ),
                                   ],
@@ -336,9 +329,9 @@ class _TierProgressWidget extends StatelessWidget {
                       currentTier != null
                           ? '${currentTier.tierName} (Tier $tierNumber)'
                           : 'Starting Tier',
-                      style: AppTextStyles.bodyMedium(context).copyWith(
-                        fontWeight: FontWeight.w800,
-                      ),
+                      style: AppTextStyles.bodyMedium(
+                        context,
+                      ).copyWith(fontWeight: FontWeight.w800),
                     ),
                     const SizedBox(height: 2),
                     Text(
@@ -355,7 +348,10 @@ class _TierProgressWidget extends StatelessWidget {
               ),
               if (currentTier != null)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.primaryPurple.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),

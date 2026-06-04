@@ -90,6 +90,7 @@ class _ChatPageState extends State<ChatPage> {
       isMe: msg.senderRole == 'driver',
       time: _formatTime(msg.createdAt),
       isEdited: msg.isEdited,
+      createdAt: msg.createdAt,
     );
     chatProvider.addMessage(_rideId!, uiMsg);
     _scrollToBottom();
@@ -164,6 +165,46 @@ class _ChatPageState extends State<ChatPage> {
     return '$hour:$m $period';
   }
 
+  String _formatDateLabel(DateTime dt) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final messageDate = DateTime(dt.year, dt.month, dt.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+
+    if (messageDate == today) {
+      return 'Today';
+    } else if (messageDate == yesterday) {
+      return 'Yesterday';
+    } else {
+      return '${dt.day}/${dt.month}/${dt.year}';
+    }
+  }
+
+  Widget _buildDateChip(String label) {
+    if (label.isEmpty) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            color: AppColors.surface(context),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.border(context)),
+          ),
+          child: Text(
+            label,
+            style: AppTextStyles.bodySmall(context).copyWith(
+              color: AppColors.subtext(context),
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _chatService.disconnect();
@@ -188,6 +229,7 @@ class _ChatPageState extends State<ChatPage> {
                 await _refetchMessages();
               },
             ),
+            const SizedBox(height: 8),
             if (_loading)
               const Expanded(child: Center(child: CircularProgressIndicator()))
             else
@@ -195,34 +237,79 @@ class _ChatPageState extends State<ChatPage> {
                 child: Consumer<ChatProvider>(
                   builder: (context, chatProvider, _) {
                     final messages = chatProvider.getMessages(_rideId!);
-                    return messages.isEmpty
-                        ? Center(
-                            child: Text(
-                              t('chat_no_messages'),
-                              style: AppTextStyles.bodySmall(
-                                context,
-                              ).copyWith(color: AppColors.subtext(context)),
-                            ),
-                          )
-                        : ListView.builder(
+                    if (messages.isEmpty) {
+                      return Center(
+                        child: Text(
+                          t('chat_no_messages'),
+                          style: AppTextStyles.bodySmall(
+                            context,
+                          ).copyWith(color: AppColors.subtext(context)),
+                        ),
+                      );
+                    }
+
+                    final firstDateLabel = messages.first.createdAt != null
+                        ? _formatDateLabel(messages.first.createdAt!)
+                        : '';
+
+                    return Column(
+                      children: [
+                        // Date chip right below the banner (always visible)
+                        _buildDateChip(firstDateLabel),
+                        const SizedBox(height: 4),
+                        Expanded(
+                          child: ListView.builder(
                             controller: _scroll,
-                            padding: const EdgeInsets.only(
-                              left: 16,
-                              right: 16,
-                              top: 16,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
                             ),
                             itemCount: messages.length,
                             itemBuilder: (context, i) {
                               final msg = messages[i];
-                              return ChatBubble(
-                                message: msg,
-                                showTranslation: _autoTranslate,
-                                onDelete: () => _deleteMessage(msg.id),
-                                onEdit: (newText) =>
-                                    _editMessage(msg.id, newText),
+
+                              // Inline date separators when day changes
+                              bool showDateSep = false;
+                              String dateLabel = '';
+                              if (i > 0) {
+                                final prev = messages[i - 1];
+                                if (msg.createdAt != null &&
+                                    prev.createdAt != null) {
+                                  final currDate = DateTime(
+                                    msg.createdAt!.year,
+                                    msg.createdAt!.month,
+                                    msg.createdAt!.day,
+                                  );
+                                  final prevDate = DateTime(
+                                    prev.createdAt!.year,
+                                    prev.createdAt!.month,
+                                    prev.createdAt!.day,
+                                  );
+                                  if (currDate != prevDate) {
+                                    showDateSep = true;
+                                    dateLabel = _formatDateLabel(
+                                      msg.createdAt!,
+                                    );
+                                  }
+                                }
+                              }
+
+                              return Column(
+                                children: [
+                                  if (showDateSep) _buildDateChip(dateLabel),
+                                  ChatBubble(
+                                    message: msg,
+                                    showTranslation: _autoTranslate,
+                                    onDelete: () => _deleteMessage(msg.id),
+                                    onEdit: (newText) =>
+                                        _editMessage(msg.id, newText),
+                                  ),
+                                ],
                               );
                             },
-                          );
+                          ),
+                        ),
+                      ],
+                    );
                   },
                 ),
               ),

@@ -6,6 +6,7 @@ import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:cross_file/cross_file.dart';
+import 'dart:io';
 import '../../../../../services/driver/driver_service.dart';
 import '../../../../../providers/online_provider.dart';
 import '../../../../../l10n/app_localizations.dart';
@@ -58,21 +59,33 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
       }
 
       // Crop to 1:1
-      final cropped = await ImageCropper().cropImage(
-        sourcePath: picked.path,
-        aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
-        uiSettings: [
-          AndroidUiSettings(
-            toolbarTitle: 'Crop photo',
-            toolbarColor: AppColors.primaryPurple,
-            toolbarWidgetColor: Colors.white,
-            activeControlsWidgetColor: AppColors.primaryPurple,
-            hideBottomControls: true,
-            lockAspectRatio: true,
-          ),
-          IOSUiSettings(title: 'Crop photo', aspectRatioLockEnabled: true),
-        ],
-      );
+      CroppedFile? cropped;
+      if (Platform.isAndroid) {
+        // Temporarily skip native cropper on Android to avoid plugin crash.
+        // Use original selection and keep square aspect via avatar mask.
+        cropped = CroppedFile(picked.path);
+      } else {
+        try {
+          cropped = await ImageCropper().cropImage(
+            sourcePath: picked.path,
+            aspectRatio: const CropAspectRatio(ratioX: 1, ratioY: 1),
+            uiSettings: [
+              AndroidUiSettings(
+                toolbarTitle: 'Crop photo',
+                toolbarColor: AppColors.primaryPurple,
+                toolbarWidgetColor: Colors.white,
+                activeControlsWidgetColor: AppColors.primaryPurple,
+                lockAspectRatio: true,
+              ),
+              IOSUiSettings(title: 'Crop photo', aspectRatioLockEnabled: true),
+            ],
+          );
+        } catch (e) {
+          debugPrint('Crop failed (iOS): $e');
+          // If crop fails, use original image
+          cropped = CroppedFile(picked.path);
+        }
+      }
       if (cropped == null) {
         setState(() => _uploading = false);
         return;
@@ -290,89 +303,148 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
                             ),
                           ),
                   ),
-                  Positioned(
-                    right: 0,
-                    bottom: 0,
-                    child: GestureDetector(
-                      onTap: _uploading
-                          ? null
-                          : () async {
-                              await showModalBottomSheet<void>(
-                                context: context,
-                                builder: (ctx) => SafeArea(
-                                  child: Wrap(
-                                    children: [
-                                      ListTile(
-                                        leading: const Icon(
-                                          Icons.photo_library_outlined,
-                                          color: AppColors.primaryPurple,
-                                        ),
-                                        title: const Text(
-                                          'Choose from gallery',
-                                          style: TextStyle(
-                                            color: AppColors.primaryPurple,
-                                          ),
-                                        ),
-                                        onTap: () {
-                                          Navigator.pop(ctx);
-                                          _pickAndUploadPhoto(
-                                            ImageSource.gallery,
-                                          );
-                                        },
-                                      ),
-                                      ListTile(
-                                        leading: const Icon(
-                                          Icons.photo_camera_outlined,
-                                          color: AppColors.primaryPurple,
-                                        ),
-                                        title: const Text(
-                                          'Take a photo',
-                                          style: TextStyle(
-                                            color: AppColors.primaryPurple,
-                                          ),
-                                        ),
-                                        onTap: () {
-                                          Navigator.pop(ctx);
-                                          _pickAndUploadPhoto(
-                                            ImageSource.camera,
-                                          );
-                                        },
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
+                  if (_uploading)
+                    Positioned.fill(
                       child: Container(
-                        width: 34,
-                        height: 34,
-                        decoration: const BoxDecoration(
-                          color: AppColors.primaryPurple,
-                          shape: BoxShape.circle,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black26,
-                              blurRadius: 4,
-                              offset: Offset(0, 2),
+                        color: Colors.black26,
+                        child: const Center(
+                          child: SizedBox(
+                            width: 28,
+                            height: 28,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 3,
+                              color: Colors.white,
                             ),
-                          ],
-                        ),
-                        child: const Icon(
-                          Icons.edit,
-                          color: Colors.white,
-                          size: 18,
+                          ),
                         ),
                       ),
                     ),
-                  ),
+                  if (!_uploading)
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: GestureDetector(
+                        onTap: _uploading
+                            ? null
+                            : () async {
+                                await showModalBottomSheet<void>(
+                                  context: context,
+                                  builder: (ctx) => SafeArea(
+                                    child: Wrap(
+                                      children: [
+                                        ListTile(
+                                          leading: const Icon(
+                                            Icons.photo_library_outlined,
+                                            color: AppColors.primaryPurple,
+                                          ),
+                                          title: const Text(
+                                            'Choose from gallery',
+                                            style: TextStyle(
+                                              color: AppColors.primaryPurple,
+                                            ),
+                                          ),
+                                          onTap: () {
+                                            Navigator.pop(ctx);
+                                            _pickAndUploadPhoto(
+                                              ImageSource.gallery,
+                                            );
+                                          },
+                                        ),
+                                        ListTile(
+                                          leading: const Icon(
+                                            Icons.photo_camera_outlined,
+                                            color: AppColors.primaryPurple,
+                                          ),
+                                          title: const Text(
+                                            'Take a photo',
+                                            style: TextStyle(
+                                              color: AppColors.primaryPurple,
+                                            ),
+                                          ),
+                                          onTap: () {
+                                            Navigator.pop(ctx);
+                                            _pickAndUploadPhoto(
+                                              ImageSource.camera,
+                                            );
+                                          },
+                                        ),
+                                        if (logoUrl != null &&
+                                            logoUrl.isNotEmpty)
+                                          const Divider(height: 1),
+                                        if (logoUrl != null &&
+                                            logoUrl.isNotEmpty)
+                                          ListTile(
+                                            leading: const Icon(
+                                              Icons.delete_outline,
+                                              color: Colors.redAccent,
+                                            ),
+                                            title: const Text(
+                                              'Remove photo',
+                                              style: TextStyle(
+                                                color: Colors.redAccent,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
+                                            onTap: () async {
+                                              Navigator.pop(ctx);
+                                              if (_uploading) return;
+                                              setState(() => _uploading = true);
+                                              try {
+                                                await DriverService()
+                                                    .deleteLogo();
+                                                if (!mounted) return;
+                                                await context
+                                                    .read<OnlineProvider>()
+                                                    .refreshDriverProfile();
+                                                AppToast.success(
+                                                  context,
+                                                  'Profile photo removed',
+                                                );
+                                              } catch (e) {
+                                                if (!mounted) return;
+                                                AppToast.error(
+                                                  context,
+                                                  'Failed to remove photo. Please try again.',
+                                                );
+                                              } finally {
+                                                if (mounted)
+                                                  setState(
+                                                    () => _uploading = false,
+                                                  );
+                                              }
+                                            },
+                                          ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                        child: Container(
+                          width: 34,
+                          height: 34,
+                          decoration: const BoxDecoration(
+                            color: AppColors.primaryPurple,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black26,
+                                blurRadius: 4,
+                                offset: Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.edit,
+                            color: Colors.white,
+                            size: 18,
+                          ),
+                        ),
+                      ),
+                    ),
                 ],
               ),
             ),
             const SizedBox(height: 14),
-            if (_uploading) ...[
-              const SizedBox(height: 10),
-              const LinearProgressIndicator(),
-            ],
             const SizedBox(height: 20),
 
             // ── Editable Tiles ───────────────────────────────────

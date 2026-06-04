@@ -6,27 +6,27 @@ import '../../../../theme/app_colors.dart';
 // ACTIVITY CARD  —  4 performance stats only, no demand/last ride/peak
 // ─────────────────────────────────────────────────────────────────────────────
 class ActivityCard extends StatelessWidget {
-  final bool   isOnline;
+  final bool isOnline;
   final String onlineTime;
-  final String vehicleName;    // e.g. "Toyota Camry" or "—"
-  final String vehicleClass;   // e.g. "Business" or "—"
-  final int    acceptanceRate;
-  final int    cancellations;
+  final String vehicleName; // e.g. "Toyota Camry" or "—"
+  final String vehicleClass; // e.g. "Business" or "—"
+  final int acceptanceRate;
+  final int cancellations;
 
   const ActivityCard({
     super.key,
     required this.isOnline,
-    this.vehicleName    = '—',
-    this.vehicleClass   = '—',
-    this.onlineTime     = '0m',
+    this.vehicleName = '—',
+    this.vehicleClass = '—',
+    this.onlineTime = '0m',
     this.acceptanceRate = 0,
-    this.cancellations  = 0,
+    this.cancellations = 0,
   });
 
   @override
   Widget build(BuildContext context) {
     const rateColor = AppColors.success; // always green
-    const cancelColor = AppColors.error;  // always red
+    const cancelColor = AppColors.error; // always red
 
     return Container(
       width: double.infinity,
@@ -84,7 +84,9 @@ class ActivityCard extends StatelessWidget {
           _ActivityRow(
             icon: Icons.workspace_premium_rounded,
             iconColor: AppColors.primaryPurple,
-            label: AppLocalizations.of(context).translate('dashboard_vehicle_class'),
+            label: AppLocalizations.of(
+              context,
+            ).translate('dashboard_vehicle_class'),
             value: vehicleClass,
           ),
           const SizedBox(height: 10),
@@ -102,7 +104,7 @@ class ActivityCard extends StatelessWidget {
             iconColor: rateColor,
             label: AppLocalizations.of(
               context,
-            ).translate('dashboard_acceptance_rate'),
+            ).translate('dashboard_effective_acceptance'),
             value: '$acceptanceRate%',
             valueColor: rateColor,
           ),

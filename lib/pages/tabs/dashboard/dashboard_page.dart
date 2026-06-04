@@ -378,13 +378,37 @@ class _DashboardPageState extends State<DashboardPage>
                         opacity: _cardFade,
                         child: SlideTransition(
                           position: _cardSlide,
-                          child: ActivityCard(
-                            isOnline: isOnline,
-                            onlineTime: online.todayOnlineFormatted,
-                            vehicleName: driver?.vehicle?.displayName ?? '—',
-                            vehicleClass: driver?.vehicle?.className ?? '—',
-                            acceptanceRate: driver?.acceptanceRate ?? 0,
-                            cancellations: driver?.cancellationCount ?? 0,
+                          child: Builder(
+                            builder: (context) {
+                              // Effective Acceptance = completed / offers_total
+                              final accepted = driver?.acceptedOffersCount ?? 0;
+                              final rejected = driver?.rejectedOffersCount ?? 0;
+                              final offersTotal = accepted + rejected;
+                              final completed = driver?.totalTrips ?? 0;
+
+                              int effectivePercent;
+                              if (offersTotal > 0) {
+                                effectivePercent =
+                                    ((completed / offersTotal) * 100).round();
+                              } else {
+                                // Fallback to backend-provided acceptanceRate if available
+                                final ar = driver?.acceptanceRate ?? 0;
+                                effectivePercent = ar <= 1
+                                    ? (ar * 100).round()
+                                    : ar;
+                              }
+                              effectivePercent = effectivePercent.clamp(0, 100);
+
+                              return ActivityCard(
+                                isOnline: isOnline,
+                                onlineTime: online.todayOnlineFormatted,
+                                vehicleName:
+                                    driver?.vehicle?.displayName ?? '—',
+                                vehicleClass: driver?.vehicle?.className ?? '—',
+                                acceptanceRate: effectivePercent,
+                                cancellations: driver?.cancellationCount ?? 0,
+                              );
+                            },
                           ),
                         ),
                       ),

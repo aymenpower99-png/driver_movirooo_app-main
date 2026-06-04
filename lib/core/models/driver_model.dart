@@ -7,17 +7,16 @@ class DriverModel {
   final double ratingAverage;
   final int totalTrips;
   final int cancellationCount;
+  final int assignedRidesCount;
+  final int cancellationRate;
   final int rejectedOffersCount;
   final int acceptedOffersCount;
+  final int acceptanceRate;
+  final int monthlyOnlineMs;
+  final DateTime? onlineSince;
   final VehicleInfo? vehicle;
   final WorkAreaInfo? workArea;
   final String? logoUrl;
-
-  /// Accumulated online milliseconds for the current calendar month (from backend).
-  final int monthlyOnlineMs;
-
-  /// When the current online session started (null when offline).
-  final DateTime? onlineSince;
 
   const DriverModel({
     required this.id,
@@ -26,6 +25,8 @@ class DriverModel {
     required this.ratingAverage,
     required this.totalTrips,
     this.cancellationCount = 0,
+    this.assignedRidesCount = 0,
+    this.cancellationRate = 0,
     this.rejectedOffersCount = 0,
     this.acceptedOffersCount = 0,
     this.acceptanceRate = 0,
@@ -36,15 +37,6 @@ class DriverModel {
     this.logoUrl,
   });
 
-  bool get isOnline {
-    final s = availabilityStatus.toLowerCase();
-    return s == 'online' || s == 'on_trip';
-  }
-
-  /// Acceptance rate as percentage (0–100), computed by the backend from
-  /// dispatch_offers (accepted / (accepted + rejected) * 100).
-  final int acceptanceRate;
-
   factory DriverModel.fromJson(Map<String, dynamic> j) => DriverModel(
     id: j['id'] as String,
     userId: j['userId'] as String,
@@ -52,6 +44,8 @@ class DriverModel {
     ratingAverage: _toDouble(j['ratingAverage']),
     totalTrips: (j['totalTrips'] as num?)?.toInt() ?? 0,
     cancellationCount: (j['cancellationCount'] as num?)?.toInt() ?? 0,
+    assignedRidesCount: (j['assignedRidesCount'] as num?)?.toInt() ?? 0,
+    cancellationRate: (j['cancellationRate'] as num?)?.toInt() ?? 0,
     rejectedOffersCount: (j['rejectedOffersCount'] as num?)?.toInt() ?? 0,
     acceptedOffersCount: (j['acceptedOffersCount'] as num?)?.toInt() ?? 0,
     acceptanceRate: (j['acceptanceRate'] as num?)?.toInt() ?? 0,
@@ -67,6 +61,11 @@ class DriverModel {
         : null,
     logoUrl: j['logoUrl'] as String?,
   );
+
+  bool get isOnline {
+    final s = availabilityStatus.toLowerCase();
+    return s == 'online' || s == 'on_trip';
+  }
 
   static double _toDouble(dynamic v) {
     if (v == null) return 5.0;
@@ -92,6 +91,8 @@ class DriverModel {
     ratingAverage: ratingAverage,
     totalTrips: totalTrips,
     cancellationCount: cancellationCount,
+    assignedRidesCount: assignedRidesCount,
+    cancellationRate: cancellationRate,
     rejectedOffersCount: rejectedOffersCount,
     acceptedOffersCount: acceptedOffersCount,
     acceptanceRate: acceptanceRate,

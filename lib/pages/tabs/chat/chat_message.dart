@@ -12,6 +12,7 @@ class ChatMessage {
   final String time;
   final bool isArabic;
   final bool isEdited;
+  final DateTime? createdAt;
 
   const ChatMessage({
     required this.id,
@@ -21,6 +22,7 @@ class ChatMessage {
     required this.time,
     this.isArabic = false,
     this.isEdited = false,
+    this.createdAt,
   });
 
   ChatMessage copyWith({String? text, String? translatedText, bool? isEdited}) {
@@ -32,6 +34,7 @@ class ChatMessage {
       time: time,
       isArabic: isArabic,
       isEdited: isEdited ?? this.isEdited,
+      createdAt: createdAt,
     );
   }
 }

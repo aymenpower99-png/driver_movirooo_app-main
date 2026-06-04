@@ -50,7 +50,11 @@ class SplashPage extends StatelessWidget {
                   ),
                 ],
               ),
-              child: Image.asset('images/640WH.png', width: 120, height: 120),
+              child: Image.asset(
+                'images/logo/driver_light.png',
+                width: 300,
+                height: 300,
+              ),
             ),
             const SizedBox(height: 40),
             const CircularProgressIndicator(
