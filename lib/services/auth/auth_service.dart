@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../../core/api/api_client.dart';
 import '../../core/api/endpoints.dart';
 import '../../core/models/user_model.dart';
@@ -80,5 +81,19 @@ class AuthService {
     } finally {
       await TokenStorage.clear();
     }
+  }
+
+  // ── Update language ────────────────────────────────────────────────────────
+  Future<void> updateLanguage(String languageCode) async {
+    debugPrint('🌐 [AuthService] Updating language to: $languageCode');
+    debugPrint('🌐 [AuthService] Calling PATCH /auth/me');
+
+    final res = await _dio.patch(
+      Endpoints.me,
+      data: {'language': languageCode},
+    );
+
+    debugPrint('🌐 [AuthService] Response status: ${res.statusCode}');
+    debugPrint('🌐 [AuthService] Language updated successfully');
   }
 }

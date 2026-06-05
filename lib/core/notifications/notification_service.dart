@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 // Channel must match what the backend sends (android.notification.channelId)
@@ -29,6 +30,29 @@ class NotificationService {
 
   final FlutterLocalNotificationsPlugin _localNotifications =
       FlutterLocalNotificationsPlugin();
+
+  String _currentLanguage = 'en';
+  Map<String, String> _translations = {};
+
+  /// Set the current language and load translations
+  Future<void> setLanguage(String languageCode) async {
+    if (_currentLanguage == languageCode) return;
+
+    _currentLanguage = languageCode;
+    try {
+      final jsonStr = await rootBundle.loadString(
+        'data/translations/$languageCode.json',
+      );
+      final Map<String, dynamic> data = json.decode(jsonStr);
+      _translations = data.map((k, v) => MapEntry(k, v.toString()));
+      debugPrint('🔔 Driver loaded translations for language: $languageCode');
+    } catch (e) {
+      debugPrint('❌ Failed to load driver translations for $languageCode: $e');
+    }
+  }
+
+  /// Get localized string for a key
+  String _translate(String key) => _translations[key] ?? key;
 
   // ─── Init ────────────────────────────────────────────────────────────────
 
@@ -164,12 +188,31 @@ class NotificationService {
       android: androidDetails,
     );
 
-    // Get title/body from data block (backend now sends data-only for custom icon)
-    final title =
-        message.data['title'] ??
-        message.notification?.title ??
-        _titleForType(message.data['type']);
-    final body = message.data['body'] ?? message.notification?.body;
+    // Get title/body - use localized strings if available
+    String title =
+        message.data['title'] ?? message.notification?.title ?? 'Moviroo';
+    String body = message.data['body'] ?? message.notification?.body ?? '';
+
+    final notificationType = message.data['type']?.toString() ?? '';
+    if (notificationType.isNotEmpty && _translations.isNotEmpty) {
+      String translationKey = notificationType.toLowerCase();
+
+      // Special handling for RIDE_STATUS_CHANGED with status field
+      if (notificationType == 'RIDE_STATUS_CHANGED') {
+        final status = message.data['status']?.toString() ?? '';
+        if (status.isNotEmpty) {
+          translationKey = 'ride_status_${status.toLowerCase()}';
+        }
+      }
+
+      title = _translate('notif_${translationKey}_title');
+      body = _translate('notif_${translationKey}_body');
+    }
+
+    // Fallback to _titleForType if translations not loaded
+    if (title == 'Moviroo' && notificationType.isNotEmpty) {
+      title = _titleForType(notificationType);
+    }
 
     await _localNotifications.show(
       DateTime.now().millisecondsSinceEpoch ~/ 1000,

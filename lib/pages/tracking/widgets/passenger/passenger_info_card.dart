@@ -14,8 +14,15 @@ class PassengerInfoCard extends StatelessWidget {
   final PassengerModel passenger;
   final String pickupAddress;
   final String dropOffAddress;
-  final double distanceKm;
-  final int etaMinutes;
+  /// Booking estimate — used as fallback when no live data exists.
+  final double? distanceKm;
+  final int? etaMinutes;
+  /// Live Mapbox "remaining distance" text (e.g. "2.3 km").
+  final String liveDistanceText;
+  /// Live Mapbox "remaining time" text (e.g. "4 min").
+  final String liveEtaText;
+  /// Label for the live ETA badge (e.g. "To Pickup").
+  final String liveEtaLabel;
   final bool showContactButtons;
   final bool showMetaTile;
   final bool showActions;
@@ -23,14 +30,19 @@ class PassengerInfoCard extends StatelessWidget {
   final VoidCallback? onCall;
   final VoidCallback? onMessage;
   final VoidCallback? onCancelRide;
+  final String? vehicleMaker;
+  final String? vehicleModel;
 
   const PassengerInfoCard({
     super.key,
     required this.passenger,
     required this.pickupAddress,
     required this.dropOffAddress,
-    required this.distanceKm,
-    required this.etaMinutes,
+    this.distanceKm,
+    this.etaMinutes,
+    this.liveDistanceText = '',
+    this.liveEtaText = '',
+    this.liveEtaLabel = '',
     required this.showContactButtons,
     this.showMetaTile = false,
     this.showActions = true,
@@ -38,6 +50,8 @@ class PassengerInfoCard extends StatelessWidget {
     this.onCall,
     this.onMessage,
     this.onCancelRide,
+    this.vehicleMaker,
+    this.vehicleModel,
   });
 
   @override
@@ -68,6 +82,18 @@ class PassengerInfoCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     StarRating(rating: passenger.rating),
+                    if (vehicleMaker != null && vehicleModel != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 4),
+                        child: Text(
+                          '${vehicleMaker!.toUpperCase()} ${vehicleModel!.toUpperCase()}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.subtext(context),
+                          ),
+                        ),
+                      ),
                   ],
                 ),
               ),
@@ -133,7 +159,11 @@ class PassengerInfoCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     RideMetaBadge(
                       icon: Icons.route_rounded,
-                      value: '${distanceKm.toStringAsFixed(1)} km',
+                      value: liveDistanceText.isNotEmpty
+                          ? liveDistanceText
+                          : (distanceKm != null
+                              ? '${distanceKm!.toStringAsFixed(1)} km'
+                              : '-- km'),
                     ),
                   ],
                 ],
@@ -194,7 +224,9 @@ class PassengerInfoCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     RideMetaBadge(
                       icon: Icons.schedule_rounded,
-                      value: '$etaMinutes min',
+                      value: liveEtaText.isNotEmpty
+                          ? liveEtaText
+                          : (etaMinutes != null ? '$etaMinutes min' : '-- min'),
                     ),
                   ],
                 ],

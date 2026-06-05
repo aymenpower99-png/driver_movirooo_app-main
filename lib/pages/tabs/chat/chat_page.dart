@@ -27,6 +27,8 @@ class _ChatPageState extends State<ChatPage> {
   String? _rideId;
   String? _myUserId;
   String? _passengerName;
+  String? _vehicleMaker;
+  String? _vehicleModel;
 
   @override
   void didChangeDependencies() {
@@ -36,6 +38,8 @@ class _ChatPageState extends State<ChatPage> {
       if (args is Map) {
         _rideId = args['rideId']?.toString();
         _passengerName = args['passengerName']?.toString();
+        _vehicleMaker = args['vehicleMaker']?.toString();
+        _vehicleModel = args['vehicleModel']?.toString();
       }
       _myUserId = context.read<AuthProvider>().user?.id;
       if (_rideId != null) _initChat();
@@ -221,7 +225,11 @@ class _ChatPageState extends State<ChatPage> {
       body: SafeArea(
         child: Column(
           children: [
-            _ChatTopBar(passengerName: _passengerName ?? t('chat_passenger')),
+            _ChatTopBar(
+              passengerName: _passengerName ?? t('chat_passenger'),
+              vehicleMaker: _vehicleMaker,
+              vehicleModel: _vehicleModel,
+            ),
             TranslationBanner(
               enabled: _autoTranslate,
               onToggle: (v) async {
@@ -260,9 +268,7 @@ class _ChatPageState extends State<ChatPage> {
                         Expanded(
                           child: ListView.builder(
                             controller: _scroll,
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
                             itemCount: messages.length,
                             itemBuilder: (context, i) {
                               final msg = messages[i];
@@ -323,7 +329,13 @@ class _ChatPageState extends State<ChatPage> {
 
 class _ChatTopBar extends StatelessWidget {
   final String passengerName;
-  const _ChatTopBar({required this.passengerName});
+  final String? vehicleMaker;
+  final String? vehicleModel;
+  const _ChatTopBar({
+    required this.passengerName,
+    this.vehicleMaker,
+    this.vehicleModel,
+  });
 
   String get _initials {
     final parts = passengerName
@@ -367,11 +379,23 @@ class _ChatTopBar extends StatelessWidget {
           ),
           const SizedBox(width: 10),
           Expanded(
-            child: Text(
-              passengerName,
-              style: AppTextStyles.bodyMedium(
-                context,
-              ).copyWith(fontWeight: FontWeight.w700),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  passengerName,
+                  style: AppTextStyles.bodyMedium(
+                    context,
+                  ).copyWith(fontWeight: FontWeight.w700),
+                ),
+                if (vehicleMaker != null && vehicleModel != null)
+                  Text(
+                    '${vehicleMaker!.toUpperCase()} ${vehicleModel!.toUpperCase()}',
+                    style: AppTextStyles.bodySmall(
+                      context,
+                    ).copyWith(color: AppColors.subtext(context), fontSize: 12),
+                  ),
+              ],
             ),
           ),
         ],

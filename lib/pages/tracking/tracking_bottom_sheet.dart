@@ -16,15 +16,27 @@ import 'package:moviroo_driver_app/pages/tracking/widgets/actions/cancel_reason_
 import 'package:moviroo_driver_app/providers/ride_provider.dart';
 import 'package:moviroo_driver_app/providers/online_provider.dart';
 import 'package:moviroo_driver_app/services/background/background_tracking_service.dart';
+import 'package:moviroo_driver_app/services/tracking/tracking_socket_service.dart';
 
 class TrackingBottomSheet extends StatefulWidget {
   final RideModel ride;
   final ValueChanged<RideStatus>? onStatusChanged;
+  final TrackingSocketService socketService;
+
+  /// Live Mapbox "remaining" data (refreshed every 30s) so the driver sees
+  /// current ETA to target instead of the stale booking estimate.
+  final String liveEtaText;
+  final String liveDistanceText;
+  final String liveEtaLabel;
 
   const TrackingBottomSheet({
     super.key,
     required this.ride,
     this.onStatusChanged,
+    required this.socketService,
+    this.liveEtaText = '',
+    this.liveDistanceText = '',
+    this.liveEtaLabel = '',
   });
 
   @override
@@ -88,18 +100,48 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
   }
 
   /// Calls endTrip on backend then navigates to completion page.
+  /// Parses real distance/duration from the backend response so the
+  /// completion card shows accurate values instead of stale estimates.
   Future<void> _completeRide() async {
     setState(() => _apiLoading = true);
     try {
-      await _tripService.endTrip(widget.ride.id);
+      final endTripData = await _tripService.endTrip(widget.ride.id);
       // Stop GPS streaming + foreground service immediately so the
       // notification disappears and no more waypoints are emitted.
       BackgroundTrackingService.stopTracking();
       await BackgroundTrackingService.stop();
+
+      // Disconnect WebSocket to prevent further GPS emissions
+      widget.socketService.disconnect();
+
+      // Extract real values from backend response
+      final realDistance = _toDouble(endTripData['distanceKmReal']);
+      final realDuration = _toDouble(endTripData['durationMinReal']);
+
+      final completedRide = RideModel(
+        id: widget.ride.id,
+        passenger: widget.ride.passenger,
+        pickupAddress: widget.ride.pickupAddress,
+        dropOffAddress: widget.ride.dropOffAddress,
+        distanceKm: widget.ride.distanceKm,
+        etaMinutes: widget.ride.etaMinutes,
+        earningsAmount: widget.ride.earningsAmount,
+        currency: widget.ride.currency,
+        pickupLat: widget.ride.pickupLat,
+        pickupLon: widget.ride.pickupLon,
+        dropoffLat: widget.ride.dropoffLat,
+        dropoffLon: widget.ride.dropoffLon,
+        status: RideStatus.completed,
+        vehicleMaker: widget.ride.vehicleMaker,
+        vehicleModel: widget.ride.vehicleModel,
+        distanceKmReal: realDistance,
+        durationMinReal: realDuration,
+      );
+
       setState(() => _apiLoading = false);
       if (mounted) {
         AppToast.success(context, 'Ride completed');
-        Navigator.of(context).push(RideCompletionPage.route(widget.ride));
+        Navigator.of(context).push(RideCompletionPage.route(completedRide));
       }
     } catch (e) {
       setState(() => _apiLoading = false);
@@ -107,6 +149,12 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
         AppToast.error(context, 'Failed to complete ride: $e');
       }
     }
+  }
+
+  static double? _toDouble(dynamic v) {
+    if (v == null) return null;
+    if (v is num) return v.toDouble();
+    return double.tryParse(v.toString());
   }
 
   @override
@@ -179,14 +227,25 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
                         rideId: ride.id,
                         pickupAddress: ride.pickupAddress,
                         dropOffAddress: ride.dropOffAddress,
-                        distanceKm: ride.distanceKm,
-                        etaMinutes: ride.etaMinutes,
+                        // Use live Mapbox data for active rides; fallback to
+                        // booking estimate only when no live data exists yet.
+                        distanceKm: widget.liveDistanceText.isNotEmpty
+                            ? null // signals "use live text"
+                            : ride.distanceKm,
+                        liveDistanceText: widget.liveDistanceText,
+                        etaMinutes: widget.liveEtaText.isNotEmpty
+                            ? null // signals "use live text"
+                            : ride.etaMinutes,
+                        liveEtaText: widget.liveEtaText,
+                        liveEtaLabel: widget.liveEtaLabel,
                         showContactButtons: _status != RideStatus.assigned,
                         showMetaTile: _status != RideStatus.assigned,
                         showActions: _status != RideStatus.startRide,
                         onCall: _callPassenger,
                         onMessage: _openChat,
                         onCancelRide: () => _showCancelDialog(context),
+                        vehicleMaker: ride.vehicleMaker,
+                        vehicleModel: ride.vehicleModel,
                       ),
                     ],
                   ),
@@ -253,25 +312,29 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
     // notification disappears and no more waypoints are emitted.
     BackgroundTrackingService.stopTracking();
     await BackgroundTrackingService.stop();
-    if (mounted) {
-      // Small delay to ensure backend transaction commits before refresh
-      await Future.delayed(const Duration(milliseconds: 500));
-      // Refresh rides list so cancelled ride appears in Cancelled tab
-      context.read<RideProvider>().loadDriverRides();
-      // Refresh driver profile stats (cancellationCount / acceptanceRate)
-      context.read<OnlineProvider>().refreshDriverProfile();
-      if (success) {
-        AppToast.success(context, 'Ride cancelled');
-      } else {
-        AppToast.error(context, 'Failed to cancel ride');
-      }
-      Navigator.of(context).push(
-        RideCancellationPage.route(
-          ride: widget.ride,
-          cancelledBy: CancelledBy.driver,
-        ),
-      );
+
+    // Disconnect WebSocket to prevent further GPS emissions
+    widget.socketService.disconnect();
+
+    if (!mounted) return;
+    // Small delay to ensure backend transaction commits before refresh
+    await Future.delayed(const Duration(milliseconds: 500));
+    if (!mounted) return;
+    // Refresh rides list so cancelled ride appears in Cancelled tab
+    context.read<RideProvider>().loadDriverRides();
+    // Refresh driver profile stats (cancellationCount / acceptanceRate)
+    context.read<OnlineProvider>().refreshDriverProfile();
+    if (success) {
+      AppToast.success(context, 'Ride cancelled');
+    } else {
+      AppToast.error(context, 'Failed to cancel ride');
     }
+    Navigator.of(context).push(
+      RideCancellationPage.route(
+        ride: widget.ride,
+        cancelledBy: CancelledBy.driver,
+      ),
+    );
   }
 
   Future<void> _callPassenger() async {
@@ -294,6 +357,8 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
       arguments: {
         'rideId': widget.ride.id,
         'passengerName': widget.ride.passenger.name,
+        'vehicleMaker': widget.ride.vehicleMaker,
+        'vehicleModel': widget.ride.vehicleModel,
       },
     );
   }

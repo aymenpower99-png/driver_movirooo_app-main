@@ -90,6 +90,16 @@ class RideModel {
   final double? dropoffLat;
   final double? dropoffLon;
   final RideStatus status;
+  final String? vehicleMaker;
+  final String? vehicleModel;
+
+  /// Real distance driven (km) — computed by backend from GPS waypoints.
+  /// Only populated after the ride is completed.
+  final double? distanceKmReal;
+
+  /// Real trip duration (minutes) — computed by backend from timestamps.
+  /// Only populated after the ride is completed.
+  final double? durationMinReal;
 
   const RideModel({
     required this.id,
@@ -105,5 +115,9 @@ class RideModel {
     this.dropoffLat,
     this.dropoffLon,
     this.status = RideStatus.assigned,
+    this.vehicleMaker,
+    this.vehicleModel,
+    this.distanceKmReal,
+    this.durationMinReal,
   });
 }

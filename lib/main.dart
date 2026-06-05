@@ -59,10 +59,7 @@ void main() async {
     final ticketId = data['ticketId'] as String?;
     if ((type == 'SUPPORT_TICKET_REPLY' || type == 'SUPPORT_TICKET_CREATED') &&
         ticketId != null) {
-      Navigator.of(ctx).pushNamed(
-        AppRouter.ticketDetail,
-        arguments: ticketId,
-      );
+      Navigator.of(ctx).pushNamed(AppRouter.ticketDetail, arguments: ticketId);
     }
   };
 

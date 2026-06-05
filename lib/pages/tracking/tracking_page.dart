@@ -12,6 +12,7 @@ import 'tracking_map_logic.dart';
 import 'controllers/tracking_page_controller.dart';
 import 'widgets/status/status_step_indicator.dart';
 import 'widgets/map/tracking_map_btn.dart';
+import 'widgets/skeleton/tracking_skeleton.dart';
 
 class TrackPassengerPage extends StatefulWidget {
   final RideModel ride;
@@ -31,6 +32,14 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
   late RideStatus _status;
   late RideModel _currentRide;
   final TrackingSocketService _socketService = TrackingSocketService();
+  bool _isLoading = true;
+
+  // Live Mapbox route data (remaining distance/time to target).
+  // Updated by _mapLogic every 30s so the driver sees current ETAs,
+  // not the stale booking estimate.
+  String _liveEtaText = '';
+  String _liveDistanceText = '';
+  String _liveEtaLabel = '';
 
   GeoPoint get _pickupPt => widget.ride.pickupLat != null
       ? GeoPoint(widget.ride.pickupLat!, widget.ride.pickupLon!)
@@ -63,6 +72,14 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
 
     _controller.initialize(this);
 
+    // Simulate loading completion after a short delay
+    // In production, this would be set to false when actual data arrives
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    });
+
     // Start background tracking service
     debugPrint(
       '🗺️ [TrackingPage] Requesting GPS tracking for ride: ${widget.ride.id}',
@@ -81,7 +98,15 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
     _mapLogic = TrackingMapLogic(
       pickupPt: _pickupPt,
       dropoffPt: _dropoffPt,
-      onEtaUpdate: (_, __, ___) {},
+      onEtaUpdate: (eta, dist, label) {
+        if (mounted) {
+          setState(() {
+            _liveEtaText = eta;
+            _liveDistanceText = dist;
+            _liveEtaLabel = label;
+          });
+        }
+      },
     );
 
     // Connect to tracking socket for reroute events
@@ -156,6 +181,11 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
         dropoffLat: widget.ride.dropoffLat,
         dropoffLon: widget.ride.dropoffLon,
         status: newStatus,
+        vehicleMaker: widget.ride.vehicleMaker,
+        vehicleModel: widget.ride.vehicleModel,
+        // Carry over real fields if they were already populated
+        distanceKmReal: widget.ride.distanceKmReal,
+        durationMinReal: widget.ride.durationMinReal,
       );
     });
     switch (newStatus) {
@@ -214,79 +244,104 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
       backgroundColor: AppColors.bg(context),
       body: Stack(
         children: [
-          Positioned.fill(
-            child: MapWidget(
-              styleUri: isDark
-                  ? MapboxStyles.DARK
-                  : MapboxStyles.MAPBOX_STREETS,
-              cameraOptions: CameraOptions(
-                center: Point(
-                  coordinates: Position(
-                    (_controller.driverPosition ?? _pickupPt).lon,
-                    (_controller.driverPosition ?? _pickupPt).lat,
+          // Skeleton loading overlay
+          AnimatedOpacity(
+            opacity: _isLoading ? 1.0 : 0.0,
+            duration: const Duration(milliseconds: 300),
+            child: _isLoading
+                ? const TrackingSkeleton()
+                : const SizedBox.shrink(),
+          ),
+
+          // Real content
+          AnimatedOpacity(
+            opacity: _isLoading ? 0.0 : 1.0,
+            duration: const Duration(milliseconds: 300),
+            child: IgnorePointer(
+              ignoring: _isLoading,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: MapWidget(
+                      styleUri: isDark
+                          ? MapboxStyles.DARK
+                          : MapboxStyles.MAPBOX_STREETS,
+                      cameraOptions: CameraOptions(
+                        center: Point(
+                          coordinates: Position(
+                            (_controller.driverPosition ?? _pickupPt).lon,
+                            (_controller.driverPosition ?? _pickupPt).lat,
+                          ),
+                        ),
+                        zoom: 14.0,
+                      ),
+                      onMapCreated: _onMapCreated,
+                      onStyleLoadedListener: (StyleLoadedEventData _) =>
+                          _onStyleLoaded(),
+                      onCameraChangeListener: (CameraChangedEventData data) {
+                        // Only disable follow mode when user manually interacts with the map
+                        // (not during programmatic camera moves like following the driver)
+                        if (!_mapLogic.camera.isProgrammaticMove) {
+                          _mapLogic.disableFollowMode();
+                        }
+                      },
+                    ),
                   ),
-                ),
-                zoom: 14.0,
+
+                  Positioned(
+                    right: 16,
+                    bottom: 320,
+                    child: Column(
+                      children: [
+                        TrackingMapBtn(
+                          icon: Icons.my_location_rounded,
+                          onTap: () {
+                            if (_controller.driverPosition != null) {
+                              _mapLogic.animateToDriver(
+                                _controller.driverPosition!,
+                                bearing: _controller.driverBearing,
+                              );
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 8),
+                        TrackingMapBtn(
+                          icon: Icons.zoom_out_map_rounded,
+                          onTap: () {
+                            _mapLogic.fitBothMarkers();
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  Positioned(
+                    top: top + 12,
+                    left: 12,
+                    child: TrackingMapBtn(
+                      icon: Icons.arrow_back_ios_new_rounded,
+                      onTap: () => Navigator.of(context).pop(),
+                    ),
+                  ),
+
+                  Positioned(
+                    top: top + 12,
+                    left: 62,
+                    right: 16,
+                    child: StatusStepIndicator(current: _status),
+                  ),
+
+                  TrackingBottomSheet(
+                    ride: _currentRide,
+                    socketService: _socketService,
+                    liveEtaText: _liveEtaText,
+                    liveDistanceText: _liveDistanceText,
+                    liveEtaLabel: _liveEtaLabel,
+                    onStatusChanged: _onStatusChanged,
+                  ),
+                ],
               ),
-              onMapCreated: _onMapCreated,
-              onStyleLoadedListener: (StyleLoadedEventData _) =>
-                  _onStyleLoaded(),
-              onCameraChangeListener: (CameraChangedEventData data) {
-                // Only disable follow mode when user manually interacts with the map
-                // (not during programmatic camera moves like following the driver)
-                if (!_mapLogic.camera.isProgrammaticMove) {
-                  _mapLogic.disableFollowMode();
-                }
-              },
             ),
-          ),
-
-          Positioned(
-            right: 16,
-            bottom: 320,
-            child: Column(
-              children: [
-                TrackingMapBtn(
-                  icon: Icons.my_location_rounded,
-                  onTap: () {
-                    if (_controller.driverPosition != null) {
-                      _mapLogic.animateToDriver(
-                        _controller.driverPosition!,
-                        bearing: _controller.driverBearing,
-                      );
-                    }
-                  },
-                ),
-                const SizedBox(height: 8),
-                TrackingMapBtn(
-                  icon: Icons.zoom_out_map_rounded,
-                  onTap: () {
-                    _mapLogic.fitBothMarkers();
-                  },
-                ),
-              ],
-            ),
-          ),
-
-          Positioned(
-            top: top + 12,
-            left: 12,
-            child: TrackingMapBtn(
-              icon: Icons.arrow_back_ios_new_rounded,
-              onTap: () => Navigator.of(context).pop(),
-            ),
-          ),
-
-          Positioned(
-            top: top + 12,
-            left: 62,
-            right: 16,
-            child: StatusStepIndicator(current: _status),
-          ),
-
-          TrackingBottomSheet(
-            ride: _currentRide,
-            onStatusChanged: _onStatusChanged,
           ),
         ],
       ),

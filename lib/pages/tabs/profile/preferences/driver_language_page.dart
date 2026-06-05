@@ -3,6 +3,8 @@ import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../main.dart';
 import '../../../../l10n/app_localizations.dart';
+import '../../../../services/auth/auth_service.dart';
+import '../../../../core/notifications/notification_service.dart';
 
 class DriverLanguagePage extends StatefulWidget {
   const DriverLanguagePage({super.key});
@@ -13,6 +15,7 @@ class DriverLanguagePage extends StatefulWidget {
 
 class _DriverLanguagePageState extends State<DriverLanguagePage> {
   late String _selectedLanguage;
+  bool _isUpdating = false;
 
   @override
   void initState() {
@@ -20,10 +23,34 @@ class _DriverLanguagePageState extends State<DriverLanguagePage> {
     _selectedLanguage = localeProvider.locale.languageCode;
   }
 
-  void _selectLanguage(String languageCode) {
-    setState(() => _selectedLanguage = languageCode);
-    localeProvider.setLocaleByCode(languageCode);
-    Navigator.pop(context, languageCode);
+  Future<void> _selectLanguage(String languageCode) async {
+    if (_isUpdating) return;
+
+    final previousLanguage = _selectedLanguage;
+    setState(() {
+      _selectedLanguage = languageCode;
+      _isUpdating = true;
+    });
+
+    try {
+      localeProvider.setLocaleByCode(languageCode);
+      await NotificationService.instance.setLanguage(languageCode);
+      await AuthService().updateLanguage(languageCode);
+      if (mounted) Navigator.pop(context, languageCode);
+    } catch (e) {
+      localeProvider.setLocaleByCode(localeProvider.locale.languageCode);
+      setState(() => _selectedLanguage = previousLanguage);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to update language. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isUpdating = false);
+    }
   }
 
   @override

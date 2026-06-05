@@ -22,8 +22,10 @@ class TripService {
   }
 
   /// IN_TRIP → COMPLETED
-  Future<void> endTrip(String rideId) async {
-    await _dio.patch(Endpoints.tripEnd(rideId));
+  /// Returns the backend response containing real distance / duration.
+  Future<Map<String, dynamic>> endTrip(String rideId) async {
+    final res = await _dio.patch(Endpoints.tripEnd(rideId));
+    return res.data as Map<String, dynamic>;
   }
 
   /// Cancel active ride with an optional reason
@@ -49,9 +51,9 @@ class TripService {
         'rideId': rideId,
         'issueType': issueType,
         'description': description,
-        ?'pickupAddress': pickupAddress,
-        ?'dropOffAddress': dropOffAddress,
-        ?'passengerName': passengerName,
+        if (pickupAddress != null) ...{'pickupAddress': pickupAddress},
+        if (dropOffAddress != null) ...{'dropOffAddress': dropOffAddress},
+        if (passengerName != null) ...{'passengerName': passengerName},
       },
     );
   }
