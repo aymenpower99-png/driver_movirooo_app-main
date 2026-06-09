@@ -351,5 +351,14 @@
   "notif_chat_message_title": "Nouveau message",
   "notif_chat_message_body": "Vous avez un nouveau message du passager",
   "notif_tier_unlocked_title": "Niveau débloqué",
-  "notif_tier_unlocked_body": "Vous avez débloqué un nouveau niveau de commission"
+  "notif_tier_unlocked_body": "Vous avez débloqué un nouveau niveau de commission",
+  "rule_min_length": "Minimum 8 caractères",
+  "rule_uppercase": "Une lettre majuscule",
+  "rule_lowercase": "Une lettre minuscule",
+  "rule_special": "Un caractère spécial",
+  "rule_number": "Un chiffre",
+  "password_rules_error": "Le mot de passe ne respecte pas les exigences",
+  "passwords_no_match": "Les mots de passe ne correspondent pas",
+  "password_updated": "Mot de passe mis à jour avec succès",
+  "rides": "courses"
 }

@@ -203,7 +203,10 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
         _firstNameController.text = user.firstName;
         _lastNameController.text = user.lastName;
         _emailController.text = user.email;
-        _phoneController.text = user.phone ?? '';
+        final rawPhone = user.phone ?? '';
+        _phoneController.text = rawPhone.startsWith('+216')
+            ? rawPhone.substring(4)
+            : rawPhone;
       }
     });
   }
@@ -220,11 +223,15 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
   Future<void> _saveChanges() async {
     if (!_formKey.currentState!.validate()) return;
     final auth = context.read<AuthProvider>();
+    final phoneDigits = _phoneController.text.trim();
+    final fullPhone = phoneDigits.startsWith('+216')
+        ? phoneDigits
+        : '+216$phoneDigits';
     final ok = await auth.updateProfile(
       firstName: _firstNameController.text.trim(),
       lastName: _lastNameController.text.trim(),
       email: _emailController.text.trim(),
-      phone: _phoneController.text.trim(),
+      phone: fullPhone,
     );
     if (!mounted) return;
     if (ok) {

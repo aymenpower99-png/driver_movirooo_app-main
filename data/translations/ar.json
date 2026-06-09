@@ -353,5 +353,14 @@
   "notif_chat_message_title": "رسالة جديدة",
   "notif_chat_message_body": "لديك رسالة جديدة من الراكب",
   "notif_tier_unlocked_title": "تم فتح المستوى",
-  "notif_tier_unlocked_body": "لقد فتحت مستوى عمولة جديد"
+  "notif_tier_unlocked_body": "لقد فتحت مستوى عمولة جديد",
+  "rule_min_length": "8 أحرف على الأقل",
+  "rule_uppercase": "حرف كبير واحد",
+  "rule_lowercase": "حرف صغير واحد",
+  "rule_special": "حرف خاص واحد",
+  "rule_number": "رقم واحد",
+  "password_rules_error": "كلمة المرور لا تستوفي المتطلبات",
+  "passwords_no_match": "كلمات المرور غير متطابقة",
+  "password_updated": "تم تحديث كلمة المرور بنجاح",
+  "rides": "رحلة"
 }

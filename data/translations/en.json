@@ -84,6 +84,14 @@
   "save_new_password": "Save & Update",
   "password_tips_title": "Password tips",
   "password_tips_body": "Use at least 8 characters with a mix of letters and numbers for better protection.",
+  "rule_min_length": "At least 8 characters",
+  "rule_uppercase": "One uppercase letter",
+  "rule_lowercase": "One lowercase letter",
+  "rule_special": "One special character",
+  "rule_number": "One number",
+  "password_rules_error": "Password does not meet requirements",
+  "passwords_no_match": "Passwords do not match",
+  "password_updated": "Password updated successfully",
   "earnings_tab_weekly": "Weekly",
   "earnings_tab_monthly": "Monthly",
   "earnings_tab_all_time": "All-Time",
@@ -352,5 +360,6 @@
   "notif_chat_message_title": "New Message",
   "notif_chat_message_body": "You have a new message from the passenger",
   "notif_tier_unlocked_title": "Tier Unlocked",
-  "notif_tier_unlocked_body": "You unlocked a new commission tier"
+  "notif_tier_unlocked_body": "You unlocked a new commission tier",
+  "rides": "rides"
 }

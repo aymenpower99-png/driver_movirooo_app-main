@@ -6,6 +6,7 @@ import '../../../../providers/auth_provider.dart';
 import '../../../../theme/app_colors.dart';
 import '../../../../theme/app_text_styles.dart';
 import '../../../../core/widgets/app_toast.dart';
+import '../../../../widgets/password_strength_indicator.dart';
 
 class PasswordResetPage extends StatefulWidget {
   const PasswordResetPage({super.key});
@@ -24,6 +25,31 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
   bool _obscureConfirm = true;
   bool _saving = false;
 
+  bool get _hasMinLength => _newCtrl.text.length >= 8;
+  bool get _hasUppercase => _newCtrl.text.contains(RegExp(r'[A-Z]'));
+  bool get _hasLowercase => _newCtrl.text.contains(RegExp(r'[a-z]'));
+  bool get _hasNumber => _newCtrl.text.contains(RegExp(r'[0-9]'));
+  bool get _hasSpecial =>
+      _newCtrl.text.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
+
+  bool get _allRulesMet =>
+      _hasMinLength &&
+      _hasUppercase &&
+      _hasLowercase &&
+      _hasNumber &&
+      _hasSpecial;
+
+  bool get _passwordsMatch =>
+      _newCtrl.text == _confirmCtrl.text && _confirmCtrl.text.isNotEmpty;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentCtrl.addListener(() => setState(() {}));
+    _newCtrl.addListener(() => setState(() {}));
+    _confirmCtrl.addListener(() => setState(() {}));
+  }
+
   @override
   void dispose() {
     _currentCtrl.dispose();
@@ -32,24 +58,15 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
     super.dispose();
   }
 
+  bool get _canSubmit =>
+      _currentCtrl.text.isNotEmpty && _allRulesMet && _passwordsMatch;
+
   Future<void> _save() async {
+    if (!_canSubmit) return;
+
     final t = AppLocalizations.of(context).translate;
     final current = _currentCtrl.text.trim();
     final newPass = _newCtrl.text.trim();
-    final confirm = _confirmCtrl.text.trim();
-
-    if (current.isEmpty || newPass.isEmpty || confirm.isEmpty) {
-      AppToast.error(context, t('fill_all_fields'));
-      return;
-    }
-    if (newPass != confirm) {
-      AppToast.error(context, t('passwords_do_not_match'));
-      return;
-    }
-    if (newPass.length < 8) {
-      AppToast.error(context, t('password_too_short'));
-      return;
-    }
 
     setState(() => _saving = true);
     final auth = context.read<AuthProvider>();
@@ -73,8 +90,8 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
     required String hint,
     required bool obscure,
     required VoidCallback onToggle,
+    bool hasError = false,
   }) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
     return InputDecoration(
       hintText: hint,
       hintStyle: AppTextStyles.bodyMedium(
@@ -82,7 +99,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
       ).copyWith(color: AppColors.subtext(context)),
       prefixIcon: Icon(
         Icons.lock_outline_rounded,
-        color: AppColors.subtext(context),
+        color: AppColors.primaryPurple,
         size: 20,
       ),
       suffixIcon: IconButton(
@@ -95,25 +112,22 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
       ),
       filled: true,
       fillColor: AppColors.surface(context),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: isDark
-            ? BorderSide.none
-            : BorderSide(color: AppColors.border(context)),
+        borderSide: BorderSide(color: AppColors.border(context)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: isDark
-            ? BorderSide.none
-            : BorderSide(color: AppColors.border(context)),
+        borderSide: BorderSide(color: AppColors.border(context)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: isDark
-            ? BorderSide.none
-            : BorderSide(color: AppColors.border(context)),
+        borderSide: BorderSide(
+          color: hasError ? AppColors.error : AppColors.primaryPurple,
+          width: 2,
+        ),
       ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     );
   }
 
@@ -135,10 +149,12 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
           width: double.infinity,
           height: 56,
           child: ElevatedButton(
-            onPressed: _saving ? null : _save,
+            onPressed: _saving || !_canSubmit ? null : _save,
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primaryPurple,
-              disabledBackgroundColor: AppColors.primaryPurple.withValues(alpha: 0.5),
+              disabledBackgroundColor: AppColors.primaryPurple.withValues(
+                alpha: 0.5,
+              ),
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(30),
@@ -154,14 +170,14 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                     ),
                   )
                 : Text(
-              t('save_new_password'),
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w800,
-                fontSize: 16,
-                letterSpacing: 0.3,
-              ),
-            ),
+                    t('save_new_password'),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
           ),
         ),
       ),
@@ -229,6 +245,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                       style: AppTextStyles.bodyMedium(context),
                       autocorrect: false,
                       enableSuggestions: false,
+                      keyboardType: TextInputType.visiblePassword,
                       textInputAction: TextInputAction.next,
                       decoration: _fieldDecoration(
                         context,
@@ -236,9 +253,33 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                         obscure: _obscureNew,
                         onToggle: () =>
                             setState(() => _obscureNew = !_obscureNew),
+                        hasError: _newCtrl.text.isNotEmpty && !_allRulesMet,
                       ),
                     ),
                   ),
+                ),
+
+                PasswordStrengthBar(password: _newCtrl.text),
+
+                if (_newCtrl.text.isNotEmpty && !_allRulesMet) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    t('password_rules_error'),
+                    style: AppTextStyles.bodySmall(
+                      context,
+                    ).copyWith(color: AppColors.error),
+                  ),
+                ],
+
+                const SizedBox(height: 12),
+
+                // Password rules checklist
+                _PasswordRules(
+                  hasMinLength: _hasMinLength,
+                  hasUppercase: _hasUppercase,
+                  hasLowercase: _hasLowercase,
+                  hasSpecial: _hasSpecial,
+                  hasNumber: _hasNumber,
                 ),
 
                 const SizedBox(height: 12),
@@ -259,6 +300,7 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                       style: AppTextStyles.bodyMedium(context),
                       autocorrect: false,
                       enableSuggestions: false,
+                      keyboardType: TextInputType.visiblePassword,
                       textInputAction: TextInputAction.done,
                       onSubmitted: (_) => FocusScope.of(context).unfocus(),
                       decoration: _fieldDecoration(
@@ -267,57 +309,22 @@ class _PasswordResetPageState extends State<PasswordResetPage> {
                         obscure: _obscureConfirm,
                         onToggle: () =>
                             setState(() => _obscureConfirm = !_obscureConfirm),
+                        hasError:
+                            _confirmCtrl.text.isNotEmpty && !_passwordsMatch,
                       ),
                     ),
                   ),
                 ),
 
-                const SizedBox(height: 12),
-
-                // Password tips card
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryPurple.withValues(alpha: 0.07),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: AppColors.primaryPurple.withValues(alpha: 0.20),
-                    ),
+                if (_confirmCtrl.text.isNotEmpty && !_passwordsMatch) ...[
+                  const SizedBox(height: 6),
+                  Text(
+                    t('passwords_no_match'),
+                    style: AppTextStyles.bodySmall(
+                      context,
+                    ).copyWith(color: AppColors.error),
                   ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Icon(
-                        Icons.info_outline_rounded,
-                        color: AppColors.primaryPurple,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              t('password_tips_title'),
-                              style: AppTextStyles.bodySmall(context).copyWith(
-                                color: AppColors.primaryPurple,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 3),
-                            Text(
-                              t('password_tips_body'),
-                              style: AppTextStyles.bodySmall(context).copyWith(
-                                color: AppColors.subtext(context),
-                                height: 1.4,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+                ],
               ],
             ),
           ),
@@ -367,6 +374,79 @@ class _FieldTile extends StatelessWidget {
           child,
         ],
       ),
+    );
+  }
+}
+
+class _PasswordRules extends StatelessWidget {
+  final bool hasMinLength;
+  final bool hasUppercase;
+  final bool hasLowercase;
+  final bool hasSpecial;
+  final bool hasNumber;
+
+  const _PasswordRules({
+    required this.hasMinLength,
+    required this.hasUppercase,
+    required this.hasLowercase,
+    required this.hasSpecial,
+    required this.hasNumber,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context).translate;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.surface(context),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.border(context)),
+      ),
+      child: Column(
+        children: [
+          _RuleRow(met: hasMinLength, label: t('rule_min_length')),
+          const SizedBox(height: 6),
+          _RuleRow(met: hasUppercase, label: t('rule_uppercase')),
+          const SizedBox(height: 6),
+          _RuleRow(met: hasLowercase, label: t('rule_lowercase')),
+          const SizedBox(height: 6),
+          _RuleRow(met: hasSpecial, label: t('rule_special')),
+          const SizedBox(height: 6),
+          _RuleRow(met: hasNumber, label: t('rule_number')),
+        ],
+      ),
+    );
+  }
+}
+
+class _RuleRow extends StatelessWidget {
+  final bool met;
+  final String label;
+
+  const _RuleRow({required this.met, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = met ? AppColors.success : AppColors.subtext(context);
+
+    return Row(
+      children: [
+        Container(
+          width: 7,
+          height: 7,
+          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          label,
+          style: AppTextStyles.bodySmall(context).copyWith(
+            color: color,
+            fontWeight: met ? FontWeight.w600 : FontWeight.w400,
+          ),
+        ),
+      ],
     );
   }
 }

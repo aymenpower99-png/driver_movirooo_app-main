@@ -1,13 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
 import '../../providers/auth_provider.dart';
 import '../../routing/router.dart';
 
 /// Shown at app start while AuthProvider.init() resolves.
 /// Routes to dashboard if authenticated, login otherwise — no flash.
-class SplashPage extends StatelessWidget {
+class SplashPage extends StatefulWidget {
   const SplashPage({super.key});
+
+  @override
+  State<SplashPage> createState() => _SplashPageState();
+}
+
+class _SplashPageState extends State<SplashPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Remove native splash immediately
+    FlutterNativeSplash.remove();
+  }
 
   @override
   Widget build(BuildContext context) {

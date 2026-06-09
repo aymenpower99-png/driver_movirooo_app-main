@@ -153,7 +153,7 @@ class DriverProfilePage extends StatelessWidget {
                                     ),
                                     const SizedBox(width: 4),
                                     Text(
-                                      '${rating.toStringAsFixed(1)} ($totalTrips rides)',
+                                      '${rating.toStringAsFixed(1)} ($totalTrips ${AppLocalizations.of(context).translate('rides')})',
                                       style: TextStyle(
                                         fontFamily: 'Inter',
                                         fontSize: 14,
