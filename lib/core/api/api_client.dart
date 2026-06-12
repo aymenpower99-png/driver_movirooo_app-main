@@ -62,6 +62,16 @@ class _AuthInterceptor extends QueuedInterceptorsWrapper {
     DioException err,
     ErrorInterceptorHandler handler,
   ) async {
+    // Check for blocked account (403 with "blocked" message)
+    if (err.response?.statusCode == 403) {
+      final msg = (err.response?.data['message'] ?? '').toString().toLowerCase();
+      if (msg.contains('blocked')) {
+        await _forceLogoutBlocked();
+        handler.next(err);
+        return;
+      }
+    }
+
     if (err.response?.statusCode != 401) {
       handler.next(err);
       return;
@@ -111,6 +121,33 @@ class _AuthInterceptor extends QueuedInterceptorsWrapper {
 
   Future<void> _forceLogout() async {
     await TokenStorage.clear();
+    navigatorKey.currentState?.pushNamedAndRemoveUntil(
+      '/driver/login',
+      (_) => false,
+    );
+  }
+
+  Future<void> _forceLogoutBlocked() async {
+    await TokenStorage.clear();
+    final ctx = navigatorKey.currentContext;
+    if (ctx != null && ctx.mounted) {
+      await showDialog(
+        context: ctx,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          title: const Text('Account Blocked'),
+          content: const Text(
+            'Your account has been blocked by an administrator. Please contact support for assistance.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
     navigatorKey.currentState?.pushNamedAndRemoveUntil(
       '/driver/login',
       (_) => false,

@@ -1,5 +1,7 @@
-import 'package:flutter/foundation.dart';
+import 'dart:async';
+import 'package:flutter/material.dart';
 import '../core/models/user_model.dart';
+import '../core/api/api_client.dart';
 import '../core/storage/token_storage.dart';
 import '../services/auth/auth_service.dart';
 
@@ -15,6 +17,7 @@ class AuthProvider extends ChangeNotifier {
   String? _error;
   bool _loading = false;
   String? _preAuthToken; // held between login step 1 & OTP step 2
+  Timer? _statusTimer;
 
   // ── Getters ───────────────────────────────────────────────────────────────
   AuthStatus get status => _status;
@@ -33,6 +36,7 @@ class AuthProvider extends ChangeNotifier {
         _user = UserModel.fromJsonString(cached);
         _status = AuthStatus.authenticated;
         notifyListeners(); // splash disappears immediately
+        startAccountStatusCheck();
 
         // Refresh user from backend silently in background
         _auth
@@ -51,6 +55,7 @@ class AuthProvider extends ChangeNotifier {
         _user = await _auth.getMe();
         await TokenStorage.saveUser(_user!.toJsonString());
         _status = AuthStatus.authenticated;
+        startAccountStatusCheck();
       } catch (_) {
         _status = AuthStatus.unauthenticated;
       }
@@ -156,6 +161,7 @@ class AuthProvider extends ChangeNotifier {
 
   // ── Logout ────────────────────────────────────────────────────────────────
   Future<void> logout() async {
+    stopAccountStatusCheck();
     await _auth.logout();
     _user = null;
     _preAuthToken = null;
@@ -186,6 +192,54 @@ class AuthProvider extends ChangeNotifier {
     _loading = false;
     _error = null;
     notifyListeners();
+    startAccountStatusCheck();
+  }
+
+  void startAccountStatusCheck() {
+    _statusTimer?.cancel();
+    _statusTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
+      try {
+        final status = await _auth.getAccountStatus();
+        if (status != null && status['status'] == 'blocked') {
+          await _forceLogoutBlocked();
+          stopAccountStatusCheck();
+        }
+      } catch (_) {
+        // Ignore network errors
+      }
+    });
+  }
+
+  void stopAccountStatusCheck() {
+    _statusTimer?.cancel();
+    _statusTimer = null;
+  }
+
+  Future<void> _forceLogoutBlocked() async {
+    await TokenStorage.clear();
+    final ctx = navigatorKey.currentContext;
+    if (ctx != null && ctx.mounted) {
+      await showDialog(
+        context: ctx,
+        barrierDismissible: false,
+        builder: (_) => AlertDialog(
+          title: const Text('Account Blocked'),
+          content: const Text(
+            'Your account has been blocked by an administrator. Please contact support for assistance.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+    }
+    navigatorKey.currentState?.pushNamedAndRemoveUntil(
+      '/driver/login',
+      (_) => false,
+    );
   }
 
   void _setLoading(bool v) {

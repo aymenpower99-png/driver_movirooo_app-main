@@ -96,4 +96,17 @@ class AuthService {
     debugPrint('🌐 [AuthService] Response status: ${res.statusCode}');
     debugPrint('🌐 [AuthService] Language updated successfully');
   }
+
+  // ── Get account status (lightweight polling endpoint) ─────────────────────
+  Future<Map<String, dynamic>?> getAccountStatus() async {
+    try {
+      final res = await _dio.get('/auth/me/status');
+      if (res.statusCode == 200) {
+        return res.data as Map<String, dynamic>;
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
 }
