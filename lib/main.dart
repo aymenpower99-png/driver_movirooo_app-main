@@ -36,7 +36,14 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
+  // Wait for locale to load from preferences
+  while (!localeProvider.isLoaded) {
+    await Future.delayed(const Duration(milliseconds: 50));
+  }
+
   await NotificationService.instance.init();
+  // Initialize notification service with current language
+  await NotificationService.instance.setLanguage(localeProvider.locale.languageCode);
   await BackgroundTrackingService.initialize();
 
   // Navigate to Rides tab when driver taps a notification
