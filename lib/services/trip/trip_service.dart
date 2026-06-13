@@ -68,7 +68,7 @@ class TripService {
   Future<void> submitRating(String rideId, int rating) async {
     await _dio.post(
       Endpoints.tripRate(rideId),
-      data: {'rating': rating},
+      data: {'driver_rating': rating},
     );
   }
 }
