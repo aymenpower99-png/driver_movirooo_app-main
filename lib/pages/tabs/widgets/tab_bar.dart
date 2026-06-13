@@ -68,13 +68,19 @@ class DriverTabBar extends StatelessWidget {
         ? const Color(0xFF6B6B75)
         : const Color(0xFF9B9BAA);
 
-    return Container(
-      height: 72,
-      decoration: BoxDecoration(
-        color: bgColor,
-        border: Border(top: BorderSide(color: topBorder, width: 1)),
-      ),
-      child: Row(
+    return SafeArea(
+      top: false,
+      left: false,
+      right: false,
+      bottom: true,
+      minimum: EdgeInsets.zero,
+      child: Container(
+        height: 72,
+        decoration: BoxDecoration(
+          color: bgColor,
+          border: Border(top: BorderSide(color: topBorder, width: 1)),
+        ),
+        child: Row(
         children: List.generate(_labels(context).length, (i) {
           final selected = i == currentIndex;
           final color = selected ? activeColor : unselectedColor;
@@ -102,6 +108,7 @@ class DriverTabBar extends StatelessWidget {
           );
         }),
       ),
+    ),
     );
   }
 }

@@ -117,6 +117,9 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
       // Extract real values from backend response
       final realDistance = _toDouble(endTripData['distanceKmReal']);
       final realDuration = _toDouble(endTripData['durationMinReal']);
+      final priceFinal = _toDouble(endTripData['priceFinal']);
+      final commissionAmount = _toDouble(endTripData['commissionAmount']);
+      final driverEarnings = _toDouble(endTripData['driverEarnings']);
 
       final completedRide = RideModel(
         id: widget.ride.id,
@@ -136,6 +139,9 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
         vehicleModel: widget.ride.vehicleModel,
         distanceKmReal: realDistance,
         durationMinReal: realDuration,
+        priceFinal: priceFinal,
+        commissionAmount: commissionAmount,
+        driverEarnings: driverEarnings,
       );
 
       setState(() => _apiLoading = false);

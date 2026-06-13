@@ -6,15 +6,18 @@ import 'package:moviroo_driver_app/l10n/app_localizations.dart';
 
 /// Earnings breakdown shown on the ride **completion** screen.
 ///
-/// Displays the driver's actual earnings for this ride
-/// (comes from backend — no frontend calculation).
+/// Displays the full commission breakdown:
+/// Ride Price → Commission → Net Earnings
 class RideEarningsCard extends StatelessWidget {
-  /// Amount credited to the driver for this ride.
-  final double driverEarnings;
+  final double? priceFinal;
+  final double? commissionAmount;
+  final double? driverEarnings;
 
   const RideEarningsCard({
     super.key,
-    required this.driverEarnings,
+    this.priceFinal,
+    this.commissionAmount,
+    this.driverEarnings,
   });
 
   @override
@@ -22,6 +25,7 @@ class RideEarningsCard extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardColor = isDark ? AppColors.darkSurface : Colors.white;
     final borderColor = isDark ? AppColors.darkBorder : const Color(0xFFE5E7EB);
+    final t = AppLocalizations.of(context).translate;
 
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
@@ -34,7 +38,7 @@ class RideEarningsCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            AppLocalizations.of(context).translate('completion_earnings'),
+            t('completion_earnings'),
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w700,
@@ -44,47 +48,69 @@ class RideEarningsCard extends StatelessWidget {
           ),
           const SizedBox(height: 10),
 
-          // Driver earnings row
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    AppLocalizations.of(
-                      context,
-                    ).translate('completion_you_earn'),
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: AppColors.text(context),
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  const SizedBox(height: 1),
-                  Text(
-                    AppLocalizations.of(
-                      context,
-                    ).translate('completion_after_commission'),
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: AppColors.subtext(context),
-                    ),
-                  ),
-                ],
-              ),
-              Text(
-                '+${driverEarnings.toStringAsFixed(0)} TND',
-                style: const TextStyle(
-                  fontSize: 19,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.success,
-                ),
-              ),
-            ],
+          // Ride price (gross)
+          _buildRow(
+            context,
+            label: t('completion_ride_price'),
+            value: '${(priceFinal ?? 0).toStringAsFixed(2)} TND',
+            isNegative: false,
+          ),
+          const SizedBox(height: 6),
+
+          // Commission
+          _buildRow(
+            context,
+            label: t('completion_commission'),
+            value: '-${(commissionAmount ?? 0).toStringAsFixed(2)} TND',
+            isNegative: true,
+          ),
+          const SizedBox(height: 6),
+          Divider(height: 1, color: borderColor),
+          const SizedBox(height: 6),
+
+          // Net earnings
+          _buildRow(
+            context,
+            label: t('completion_net_earnings'),
+            value: '${(driverEarnings ?? 0).toStringAsFixed(2)} TND',
+            isNegative: false,
+            isBold: true,
+            valueColor: AppColors.success,
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildRow(
+    BuildContext context, {
+    required String label,
+    required String value,
+    bool isNegative = false,
+    bool isBold = false,
+    Color? valueColor,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 13,
+            color: AppColors.text(context),
+            fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: isBold ? 17 : 14,
+            fontWeight: isBold ? FontWeight.w800 : FontWeight.w600,
+            color: valueColor ??
+                (isNegative ? AppColors.error : AppColors.text(context)),
+          ),
+        ),
+      ],
     );
   }
 }

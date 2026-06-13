@@ -63,4 +63,12 @@ class TripService {
     final res = await _dio.get(Endpoints.tripStatus(rideId));
     return res.data as Map<String, dynamic>;
   }
+
+  /// Submit driver rating for the passenger
+  Future<void> submitRating(String rideId, int rating) async {
+    await _dio.post(
+      Endpoints.tripRate(rideId),
+      data: {'rating': rating},
+    );
+  }
 }

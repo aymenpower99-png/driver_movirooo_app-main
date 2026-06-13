@@ -252,9 +252,9 @@ class PassengerInfoCard extends StatelessWidget {
                             rideId: rideId ?? '',
                             pickupAddress: pickupAddress,
                             dropOffAddress: dropOffAddress,
-                            onSubmit: (issue, note, photos) {
+                            onSubmit: (issue, note) {
                               debugPrint(
-                                'Report: ${issue.label} | $note | ${photos.length} photo(s)',
+                                'Report: ${issue.label} | $note',
                               );
                             },
                           ),

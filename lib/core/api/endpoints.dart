@@ -50,6 +50,7 @@ class Endpoints {
   static String tripEnd(String rideId) => '/trips/$rideId/end';
   static String tripCancel(String rideId) => '/trips/$rideId/cancel';
   static String tripStatus(String rideId) => '/trips/$rideId';
+  static String tripRate(String rideId) => '/trips/$rideId/rate';
 
   // ── Help Center ──────────────────────────────────────────────────────
   static const String helpCenter = '/help-center';

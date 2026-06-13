@@ -15,11 +15,9 @@ class MetaFooter extends StatelessWidget {
     // For completed rides show the ACTUAL distance/duration computed by the
     // backend from GPS waypoints + timestamps.  Fallback to the original
     // booking estimate only when real values are missing.
-    final durationValue = ride.durationMinReal != null && ride.durationMinReal! > 0
-        ? _formatDuration(ride.durationMinReal!)
-        : '${ride.etaMinutes} min';
+    final durationValue = _formatDuration(context, ride.durationMinReal);
     final distanceValue = ride.distanceKmReal != null && ride.distanceKmReal! > 0
-        ? '${ride.distanceKmReal!.toStringAsFixed(1)} km'
+        ? _formatDistance(ride.distanceKmReal!)
         : '${ride.distanceKm.toStringAsFixed(1)} km';
 
     return IntrinsicHeight(
@@ -45,13 +43,28 @@ class MetaFooter extends StatelessWidget {
     );
   }
 
-  String _formatDuration(double minutes) {
+  String _formatDuration(BuildContext context, double? minutes) {
+    if (minutes == null || minutes <= 0) {
+      return AppLocalizations.of(context).translate('duration_less_than_min');
+    }
     if (minutes >= 60) {
       final h = minutes ~/ 60;
       final m = (minutes % 60).round();
       if (m > 0) return '${h}h ${m}min';
       return '${h}h';
     }
+    if (minutes < 1) {
+      final seconds = (minutes * 60).round();
+      return '${seconds}s';
+    }
     return '${minutes.round()} min';
+  }
+
+  String _formatDistance(double km) {
+    if (km < 1) {
+      final meters = (km * 1000).round();
+      return '${meters} m';
+    }
+    return '${km.toStringAsFixed(1)} km';
   }
 }

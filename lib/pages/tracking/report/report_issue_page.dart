@@ -1,14 +1,11 @@
 // lib/pages/tracking/report/report_issue_page.dart
 
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:moviroo_driver_app/l10n/app_localizations.dart';
 import 'package:moviroo_driver_app/theme/app_colors.dart';
 import 'package:moviroo_driver_app/services/support/support_service.dart';
 import 'package:moviroo_driver_app/core/models/ticket_model.dart';
 import 'package:moviroo_driver_app/core/widgets/app_toast.dart';
-import 'package:moviroo_driver_app/pages/tracking/widgets/photo/photo_grid.dart';
 import '../models/ride_issue.dart';
 import '../widgets/shared/section_label.dart';
 import 'issue_tile.dart';
@@ -21,7 +18,7 @@ class ReportIssuePage extends StatefulWidget {
   final String rideId;
   final String pickupAddress;
   final String dropOffAddress;
-  final void Function(RideIssue issue, String note, List<File> photos) onSubmit;
+  final void Function(RideIssue issue, String note) onSubmit;
 
   const ReportIssuePage({
     super.key,
@@ -40,7 +37,6 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
   RideIssue? _selected;
   final _noteController = TextEditingController();
   final _noteFocus = FocusNode();
-  final List<File> _photos = [];
   bool _submitting = false;
 
   @override
@@ -49,79 +45,6 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
     _noteFocus.dispose();
     super.dispose();
   }
-
-  // ── Photo picking ───────────────────────────────────────────────────────────
-
-  Future<void> _pickPhoto(ImageSource source) async {
-    final picker = ImagePicker();
-    final xFile = await picker.pickImage(
-      source: source,
-      imageQuality: 80,
-      maxWidth: 1200,
-    );
-    if (xFile != null) {
-      setState(() => _photos.add(File(xFile.path)));
-    }
-  }
-
-  void _showPhotoSourceSheet() {
-    final t = AppLocalizations.of(context).translate;
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: AppColors.surface(context),
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (sheetContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 8),
-            Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: AppColors.border(context),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            const SizedBox(height: 8),
-            ListTile(
-              leading: const Icon(
-                Icons.camera_alt_outlined,
-                color: AppColors.primaryPurple,
-              ),
-              title: Text(
-                t('photo_take'),
-                style: TextStyle(color: AppColors.text(context)),
-              ),
-              onTap: () {
-                Navigator.pop(sheetContext);
-                _pickPhoto(ImageSource.camera);
-              },
-            ),
-            ListTile(
-              leading: const Icon(
-                Icons.photo_library_outlined,
-                color: AppColors.primaryPurple,
-              ),
-              title: Text(
-                t('photo_gallery'),
-                style: TextStyle(color: AppColors.text(context)),
-              ),
-              onTap: () {
-                Navigator.pop(sheetContext);
-                _pickPhoto(ImageSource.gallery);
-              },
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _removePhoto(int index) => setState(() => _photos.removeAt(index));
 
   // ── Submit ──────────────────────────────────────────────────────────────────
 
@@ -162,7 +85,7 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
     } catch (_) {
       // submit best-effort
     }
-    widget.onSubmit(_selected!, _noteController.text.trim(), List.of(_photos));
+    widget.onSubmit(_selected!, _noteController.text.trim());
     if (mounted) {
       setState(() => _submitting = false);
       if (success) {
@@ -300,16 +223,6 @@ class _ReportIssuePageState extends State<ReportIssuePage> {
                   fontSize: 11,
                 ),
               ),
-            ),
-
-            // ── Photo grid ────────────────────────────────────────
-            const SizedBox(height: 24),
-            SectionLabel(label: t('report_attach_photos')),
-            const SizedBox(height: 10),
-            PhotoGrid(
-              photos: _photos,
-              onAdd: _showPhotoSourceSheet,
-              onRemove: _removePhoto,
             ),
 
             // ── Submit button ─────────────────────────────────────

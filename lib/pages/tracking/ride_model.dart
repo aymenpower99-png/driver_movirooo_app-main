@@ -101,6 +101,15 @@ class RideModel {
   /// Only populated after the ride is completed.
   final double? durationMinReal;
 
+  /// Final ride price (gross) — populated after completion.
+  final double? priceFinal;
+
+  /// Commission amount deducted — populated after completion.
+  final double? commissionAmount;
+
+  /// Net driver earnings — populated after completion.
+  final double? driverEarnings;
+
   const RideModel({
     required this.id,
     required this.passenger,
@@ -119,5 +128,8 @@ class RideModel {
     this.vehicleModel,
     this.distanceKmReal,
     this.durationMinReal,
+    this.priceFinal,
+    this.commissionAmount,
+    this.driverEarnings,
   });
 }

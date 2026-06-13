@@ -4,10 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:moviroo_driver_app/theme/app_colors.dart';
 import 'package:moviroo_driver_app/pages/tracking/ride_model.dart';
 import 'package:moviroo_driver_app/l10n/app_localizations.dart';
+import 'package:moviroo_driver_app/core/widgets/app_toast.dart';
+import 'package:moviroo_driver_app/services/trip/trip_service.dart';
+import 'package:moviroo_driver_app/services/earnings/earnings_service.dart';
+import 'package:moviroo_driver_app/core/models/earnings_model.dart';
 import 'widgets/ride_status_header.dart';
 import 'widgets/ride_summary_card.dart';
-import 'widgets/ride_earnings_card.dart';
 import 'widgets/ride_rating_card.dart';
+import 'widgets/commission_tier_card.dart';
 
 class RideCompletionPage extends StatefulWidget {
   final RideModel ride;
@@ -25,6 +29,9 @@ class _RideCompletionPageState extends State<RideCompletionPage>
     with TickerProviderStateMixin {
   bool _loading = true;
   int _selectedStars = 5;
+  bool _submittingRating = false;
+  EarningsModel? _earnings;
+  bool _earningsLoading = true;
 
   late final AnimationController _fadeCtrl;
   late final AnimationController _scaleCtrl;
@@ -56,6 +63,23 @@ class _RideCompletionPageState extends State<RideCompletionPage>
         _scaleCtrl.forward();
       });
     });
+
+    // Fetch earnings/tier data in background (same endpoint as Earnings screen)
+    _loadEarnings();
+  }
+
+  Future<void> _loadEarnings() async {
+    try {
+      final earnings = await EarningsService().getMyEarnings();
+      if (mounted) {
+        setState(() {
+          _earnings = earnings;
+          _earningsLoading = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) setState(() => _earningsLoading = false);
+    }
   }
 
   @override
@@ -71,6 +95,32 @@ class _RideCompletionPageState extends State<RideCompletionPage>
     _fadeCtrl.stop();
     _scaleCtrl.stop();
     Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+
+  Future<void> _submitRating() async {
+    if (_submittingRating) return;
+    setState(() => _submittingRating = true);
+    try {
+      await TripService().submitRating(widget.ride.id, _selectedStars);
+      if (mounted) {
+        AppToast.success(
+          context,
+          AppLocalizations.of(context).translate('rating_submitted'),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        AppToast.error(
+          context,
+          AppLocalizations.of(context).translate('rating_failed'),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _submittingRating = false);
+      }
+    }
+    _backToOnline();
   }
 
   @override
@@ -112,8 +162,7 @@ class _RideCompletionPageState extends State<RideCompletionPage>
   // ── Completion ──────────────────────────────────────────────────
   Widget _buildCompletion(BuildContext context) {
     final ride = widget.ride;
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final reportColor = isDark ? Colors.white : AppColors.subtext(context);
+    final t = AppLocalizations.of(context).translate;
 
     return FadeTransition(
       opacity: _fade,
@@ -125,9 +174,7 @@ class _RideCompletionPageState extends State<RideCompletionPage>
             children: [
               RideStatusHeader(
                 scale: _scale,
-                title: AppLocalizations.of(
-                  context,
-                ).translate('completion_title'),
+                title: t('completion_title'),
                 icon: Icons.check_rounded,
                 iconColor: AppColors.success,
                 iconBgColor: AppColors.success.withValues(alpha: 0.12),
@@ -136,8 +183,9 @@ class _RideCompletionPageState extends State<RideCompletionPage>
               RideSummaryCard(ride: ride),
               const SizedBox(height: 10),
 
-              RideEarningsCard(
-                driverEarnings: ride.earningsAmount,
+              // Commission Tier card (replaces the removed GAINS card)
+              CommissionTierCard(
+                earnings: _earningsLoading ? null : _earnings,
               ),
               const SizedBox(height: 10),
 
@@ -148,52 +196,76 @@ class _RideCompletionPageState extends State<RideCompletionPage>
 
               const Spacer(),
 
-              // ── Report Issue ──────────────────────────────────
-              Center(
-                child: TextButton.icon(
-                  onPressed: () {},
-                  icon: Image.asset(
-                    'images/icons/warning.png',
-                    width: 14,
-                    height: 14,
-                    color: reportColor,
-                  ),
-                  label: Text(
-                    AppLocalizations.of(
-                      context,
-                    ).translate('completion_report_issue'),
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: reportColor,
-                      fontWeight: FontWeight.w500,
+              // ── Bottom buttons ──────────────────────────────────
+              Row(
+                children: [
+                  // Back online (skip rating) — outlined purple
+                  Expanded(
+                    child: SizedBox(
+                      height: 52,
+                      child: OutlinedButton(
+                        onPressed: _backToOnline,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primaryPurple,
+                          side: const BorderSide(
+                            color: AppColors.primaryPurple,
+                            width: 1.5,
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: Text(
+                          t('completion_back_online'),
+                          style: const TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
-              const SizedBox(height: 6),
-
-              SizedBox(
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: _backToOnline,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryPurple,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
+                  const SizedBox(width: 12),
+                  // Submit rating — filled purple
+                  Expanded(
+                    child: SizedBox(
+                      height: 52,
+                      child: ElevatedButton(
+                        onPressed: _submittingRating ? null : _submitRating,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryPurple,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          side: const BorderSide(
+                            color: AppColors.primaryPurple,
+                            width: 2,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        child: _submittingRating
+                            ? const SizedBox(
+                                width: 22,
+                                height: 22,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : Text(
+                                t('completion_submit_rating'),
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                      ),
                     ),
                   ),
-                  child: Text(
-                    AppLocalizations.of(
-                      context,
-                    ).translate('completion_back_online'),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ),
+                ],
               ),
             ],
           ),
