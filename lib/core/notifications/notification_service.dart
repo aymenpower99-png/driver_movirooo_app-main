@@ -201,7 +201,13 @@ class NotificationService {
       if (notificationType == 'RIDE_STATUS_CHANGED') {
         final status = message.data['status']?.toString() ?? '';
         if (status.isNotEmpty) {
-          translationKey = 'ride_status_${status.toLowerCase()}';
+          final statusKey = status.toLowerCase();
+          // Map backend enum values to translation keys
+          if (statusKey == 'en_route_to_pickup') {
+            translationKey = 'ride_status_en_route';
+          } else {
+            translationKey = 'ride_status_$statusKey';
+          }
         }
       }
 
