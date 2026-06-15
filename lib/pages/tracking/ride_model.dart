@@ -62,14 +62,14 @@ extension RideStatusX on RideStatus {
 
 class PassengerModel {
   final String name;
-  final double rating;
+  final double? rating;
   final String avatarInitial;
   final String? avatarUrl;
   final String? phone;
 
   const PassengerModel({
     required this.name,
-    required this.rating,
+    this.rating,
     required this.avatarInitial,
     this.avatarUrl,
     this.phone,
@@ -110,6 +110,14 @@ class RideModel {
   /// Net driver earnings — populated after completion.
   final double? driverEarnings;
 
+  /* ── Local timestamps (captured on device for cross-checking backend) ── */
+
+  /// Timestamp when driver tapped "Start Ride" (device time).
+  final DateTime? startRideAt;
+
+  /// Timestamp when driver tapped "Complete Ride" (device time).
+  final DateTime? completedAt;
+
   const RideModel({
     required this.id,
     required this.passenger,
@@ -131,5 +139,7 @@ class RideModel {
     this.priceFinal,
     this.commissionAmount,
     this.driverEarnings,
+    this.startRideAt,
+    this.completedAt,
   });
 }

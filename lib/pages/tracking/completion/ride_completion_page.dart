@@ -28,7 +28,7 @@ class RideCompletionPage extends StatefulWidget {
 class _RideCompletionPageState extends State<RideCompletionPage>
     with TickerProviderStateMixin {
   bool _loading = true;
-  int _selectedStars = 5;
+  int _selectedStars = 0;
   bool _submittingRating = false;
   EarningsModel? _earnings;
   bool _earningsLoading = true;

@@ -229,7 +229,7 @@ class _UpcomingTab extends StatelessWidget {
       id: r.id,
       passenger: tracking.PassengerModel(
         name: r.passengerName ?? 'Passenger',
-        rating: 4.8,
+        rating: r.passengerRating,
         avatarInitial: initial,
         phone: r.passengerPhone,
       ),

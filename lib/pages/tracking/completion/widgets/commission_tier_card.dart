@@ -80,35 +80,9 @@ class CommissionTierCard extends StatelessWidget {
                         color: AppColors.text(context),
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      currentTier != null
-                          ? '${t('commission_rate_label')}: ${(currentTier.commissionRate * 100).toStringAsFixed(0)}%'
-                          : t('commission_tier_hint'),
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: AppColors.subtext(context),
-                      ),
-                    ),
                   ],
                 ),
               ),
-              if (currentTier != null)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryPurple.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '${(currentTier.commissionRate * 100).toStringAsFixed(0)}%',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.primaryPurple,
-                    ),
-                  ),
-                ),
             ],
           ),
           const SizedBox(height: 16),

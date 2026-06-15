@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:moviroo_driver_app/theme/app_colors.dart';
 import 'package:moviroo_driver_app/pages/tracking/ride_model.dart';
 import 'package:moviroo_driver_app/l10n/app_localizations.dart';
+import 'package:moviroo_driver_app/core/widgets/app_toast.dart';
+import 'package:moviroo_driver_app/services/trip/trip_service.dart';
 import 'widgets/ride_status_header.dart';
 import 'widgets/ride_summary_card.dart';
 import 'widgets/cancel_earnings_card.dart';
@@ -68,7 +70,8 @@ class RideCancellationPage extends StatefulWidget {
 class _RideCancellationPageState extends State<RideCancellationPage>
     with TickerProviderStateMixin {
   bool _loading = true;
-  int _selectedStars = 5;
+  int _selectedStars = 0;
+  bool _submittingRating = false;
 
   late final AnimationController _fadeCtrl;
   late final AnimationController _scaleCtrl;
@@ -115,6 +118,34 @@ class _RideCancellationPageState extends State<RideCancellationPage>
     _fadeCtrl.stop();
     _scaleCtrl.stop();
     Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+
+  Future<void> _submitRatingAndGoBack() async {
+    if (_submittingRating) return;
+
+    // Only submit if rating card is visible and driver selected a rating
+    if (_showRating && _selectedStars > 0) {
+      setState(() => _submittingRating = true);
+      try {
+        await TripService().submitRating(widget.ride.id, _selectedStars);
+        if (mounted) {
+          AppToast.success(
+            context,
+            AppLocalizations.of(context).translate('rating_submitted'),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          AppToast.error(
+            context,
+            AppLocalizations.of(context).translate('rating_failed'),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _submittingRating = false);
+      }
+    }
+    _backToOnline();
   }
 
   void _showRideDetailsDialog(BuildContext context) {
@@ -263,7 +294,7 @@ class _RideCancellationPageState extends State<RideCancellationPage>
               SizedBox(
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: _backToOnline,
+                  onPressed: _submittingRating ? null : _submitRatingAndGoBack,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryPurple,
                     foregroundColor: Colors.white,
@@ -272,15 +303,24 @@ class _RideCancellationPageState extends State<RideCancellationPage>
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: Text(
-                    AppLocalizations.of(
-                      context,
-                    ).translate('completion_back_online'),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
+                  child: _submittingRating
+                      ? const SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: Colors.white,
+                          ),
+                        )
+                      : Text(
+                          AppLocalizations.of(
+                            context,
+                          ).translate('completion_back_online'),
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
                 ),
               ),
               const SizedBox(height: 8),

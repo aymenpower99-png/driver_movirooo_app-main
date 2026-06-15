@@ -44,7 +44,9 @@ class PassengerRow extends StatelessWidget {
                     ),
                     const SizedBox(width: 3),
                     Text(
-                      ride.passenger.rating.toStringAsFixed(1),
+                      (ride.passenger.rating != null && ride.passenger.rating! > 0)
+                          ? ride.passenger.rating!.toStringAsFixed(1)
+                          : '5.0',
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w500,

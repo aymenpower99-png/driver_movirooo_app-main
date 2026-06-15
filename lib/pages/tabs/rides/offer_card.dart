@@ -247,7 +247,7 @@ class OfferCard extends StatelessWidget {
                           id: offer.rideId,
                           passenger: tracking.PassengerModel(
                             name: rideData.passengerName ?? 'Passenger',
-                            rating: 4.8,
+                            rating: rideData.passengerRating,
                             avatarInitial: initial,
                             phone: rideData.passengerPhone,
                           ),

@@ -19,6 +19,7 @@ class RideModel {
   final double? dropoffLat;
   final double? dropoffLon;
   final int passengerCount;
+  final double? passengerRating;
 
   const RideModel({
     required this.id,
@@ -40,6 +41,7 @@ class RideModel {
     this.dropoffLat,
     this.dropoffLon,
     this.passengerCount = 1,
+    this.passengerRating,
   });
 
   // ── Display helpers ───────────────────────────────────────────────
@@ -94,6 +96,13 @@ class RideModel {
       dropoffLat: _toDouble(j['dropoffLat']),
       dropoffLon: _toDouble(j['dropoffLon']),
       passengerCount: (j['passengerCount'] ?? j['passenger_count'] ?? 1) as int,
+      passengerRating: _toDouble(
+        j['passengerRating'] ??
+        j['passenger_rating'] ??
+        passenger?['ratingAverage'] ??
+        passenger?['rating_average'] ??
+        passenger?['rating'],
+      ),
     );
   }
 

@@ -85,6 +85,7 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
           break;
         case RideStatus.arrived:
           await _tripService.startTrip(widget.ride.id);
+          _localStartRideAt = DateTime.now();
           break;
         default:
           break;
@@ -102,12 +103,17 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
     }
   }
 
+  /// Local timestamp captured when the driver taps "Start Ride".
+  /// Used to cross-check backend duration and provide a fallback.
+  DateTime? _localStartRideAt;
+
   /// Calls endTrip on backend then navigates to completion page.
   /// Parses real distance/duration from the backend response so the
   /// completion card shows accurate values instead of stale estimates.
   Future<void> _completeRide() async {
     setState(() => _apiLoading = true);
     try {
+      final localCompletedAt = DateTime.now();
       final endTripData = await _tripService.endTrip(widget.ride.id);
       // Stop GPS streaming + foreground service immediately so the
       // notification disappears and no more waypoints are emitted.
@@ -117,12 +123,22 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
       // Disconnect WebSocket to prevent further GPS emissions
       widget.socketService.disconnect();
 
-      // Extract real values from backend response
-      final realDistance = _toDouble(endTripData['distanceKmReal']);
-      final realDuration = _toDouble(endTripData['durationMinReal']);
-      final priceFinal = _toDouble(endTripData['priceFinal']);
-      final commissionAmount = _toDouble(endTripData['commissionAmount']);
-      final driverEarnings = _toDouble(endTripData['driverEarnings']);
+      // Extract real values from backend response (with snake_case fallback)
+      final realDistance = _toDouble(endTripData['distanceKmReal'] ?? endTripData['distance_km_real']);
+      final realDuration = _toDouble(endTripData['durationMinReal'] ?? endTripData['duration_min_real']);
+      final priceFinal = _toDouble(endTripData['priceFinal'] ?? endTripData['price_final']);
+      final commissionAmount = _toDouble(endTripData['commissionAmount'] ?? endTripData['commission_amount']);
+      final driverEarnings = _toDouble(endTripData['driverEarnings'] ?? endTripData['driver_earnings']);
+
+      // Compute local duration as fallback / cross-check
+      final localDurationMin = _localStartRideAt != null
+          ? localCompletedAt.difference(_localStartRideAt!).inMinutes.toDouble()
+          : null;
+
+      // If backend duration is missing or suspicious, use local duration
+      final effectiveDuration = (realDuration != null && realDuration > 0)
+          ? realDuration
+          : localDurationMin;
 
       final completedRide = RideModel(
         id: widget.ride.id,
@@ -141,10 +157,12 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
         vehicleMaker: widget.ride.vehicleMaker,
         vehicleModel: widget.ride.vehicleModel,
         distanceKmReal: realDistance,
-        durationMinReal: realDuration,
+        durationMinReal: effectiveDuration,
         priceFinal: priceFinal,
         commissionAmount: commissionAmount,
         driverEarnings: driverEarnings,
+        startRideAt: _localStartRideAt,
+        completedAt: localCompletedAt,
       );
 
       setState(() => _apiLoading = false);
@@ -155,6 +173,14 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
         );
         Navigator.of(context).push(RideCompletionPage.route(completedRide));
       }
+
+      // Refresh rides list so completed ride appears in Completed tab
+      // (small delay to ensure backend transaction commits)
+      Future.delayed(const Duration(milliseconds: 800), () {
+        if (mounted) {
+          context.read<RideProvider>().loadDriverRides();
+        }
+      });
     } catch (e) {
       setState(() => _apiLoading = false);
       if (mounted) {

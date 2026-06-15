@@ -4,13 +4,16 @@ import 'package:flutter/material.dart';
 import 'package:moviroo_driver_app/theme/app_colors.dart';
 
 class StarRating extends StatelessWidget {
-  final double rating;
-  const StarRating({required this.rating});
+  final double? rating;
+  const StarRating({this.rating});
 
   @override
   Widget build(BuildContext context) {
-    final full = rating.floor();
-    final half = (rating - full) >= 0.5;
+    // Default to 5.0 for unrated passengers (null or 0).
+    // Show actual rating only when it is > 0.
+    final effectiveRating = (rating != null && rating! > 0) ? rating! : 5.0;
+    final full = effectiveRating.floor();
+    final half = (effectiveRating - full) >= 0.5;
     return Row(
       children: [
         ...List.generate(5, (i) {
@@ -26,7 +29,7 @@ class StarRating extends StatelessWidget {
         }),
         const SizedBox(width: 4),
         Text(
-          rating.toStringAsFixed(1),
+          effectiveRating.toStringAsFixed(1),
           style: TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.w600,
