@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:moviroo_driver_app/theme/app_colors.dart';
 import 'package:moviroo_driver_app/core/models/earnings_model.dart';
+import 'package:moviroo_driver_app/l10n/app_localizations.dart';
 
 /// Commission tier progress card shown on the ride completion screen.
 /// Mirrors the style of the Earnings screen tier card.
@@ -13,6 +14,7 @@ class CommissionTierCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context).translate;
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final cardColor = isDark ? AppColors.darkSurface : Colors.white;
     final borderColor = isDark ? AppColors.darkBorder : const Color(0xFFE5E7EB);
@@ -70,8 +72,8 @@ class CommissionTierCard extends StatelessWidget {
                   children: [
                     Text(
                       currentTier != null
-                          ? '${currentTier.tierName} (Tier $tierNumber)'
-                          : 'Commission Tier',
+                          ? '${currentTier.tierName} (${t('commission_tier_title')} $tierNumber)'
+                          : t('commission_tier_title'),
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
@@ -81,8 +83,8 @@ class CommissionTierCard extends StatelessWidget {
                     const SizedBox(height: 2),
                     Text(
                       currentTier != null
-                          ? 'Commission rate: ${(currentTier.commissionRate * 100).toStringAsFixed(0)}%'
-                          : 'Complete rides to improve your commission rate',
+                          ? '${t('commission_rate_label')}: ${(currentTier.commissionRate * 100).toStringAsFixed(0)}%'
+                          : t('commission_tier_hint'),
                       style: TextStyle(
                         fontSize: 12,
                         color: AppColors.subtext(context),
@@ -120,7 +122,9 @@ class CommissionTierCard extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      '$completed / $nextRequired rides',
+                      t('commission_progress_rides')
+                          .replaceAll('{completed}', '$completed')
+                          .replaceAll('{nextRequired}', '$nextRequired'),
                       style: TextStyle(
                         fontSize: 13,
                         fontWeight: FontWeight.w700,
@@ -128,7 +132,9 @@ class CommissionTierCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '$ridesNeeded to $nextTierName',
+                      t('commission_to_next')
+                          .replaceAll('{ridesNeeded}', '$ridesNeeded')
+                          .replaceAll('{nextTierName}', nextTierName),
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -155,7 +161,7 @@ class CommissionTierCard extends StatelessWidget {
             )
           else
             Text(
-              'All tiers reached! 🎉',
+              t('commission_all_tiers'),
               style: TextStyle(
                 fontSize: 13,
                 color: const Color(0xFF10b981),

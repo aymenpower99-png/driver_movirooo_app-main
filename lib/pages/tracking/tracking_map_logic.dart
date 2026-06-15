@@ -170,7 +170,7 @@ class TrackingMapLogic {
         pickupPt.lat,
         pickupPt.lon,
       );
-      if (r != null) onEtaUpdate(r.etaText, r.distanceText, 'To Pickup');
+      if (r != null) onEtaUpdate(r.etaText, r.distanceText, 'tracking_eta_to_pickup');
     } else if (isInTrip) {
       final r = await MapboxService.getRoute(
         driver.lat,
@@ -178,7 +178,7 @@ class TrackingMapLogic {
         dropoffPt.lat,
         dropoffPt.lon,
       );
-      if (r != null) onEtaUpdate(r.etaText, r.distanceText, 'To Drop-off');
+      if (r != null) onEtaUpdate(r.etaText, r.distanceText, 'tracking_eta_to_dropoff');
     }
   }
 

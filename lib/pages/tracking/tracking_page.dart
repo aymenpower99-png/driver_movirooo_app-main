@@ -6,6 +6,7 @@ import 'package:moviroo_driver_app/core/models/geo_point.dart';
 import 'package:moviroo_driver_app/theme/app_colors.dart';
 import 'package:moviroo_driver_app/services/background/background_tracking_service.dart';
 import 'package:moviroo_driver_app/services/tracking/tracking_socket_service.dart';
+import 'package:moviroo_driver_app/l10n/app_localizations.dart';
 import 'ride_model.dart';
 import 'tracking_bottom_sheet.dart';
 import 'tracking_map_logic.dart';
@@ -98,12 +99,12 @@ class _TrackPassengerPageState extends State<TrackPassengerPage>
     _mapLogic = TrackingMapLogic(
       pickupPt: _pickupPt,
       dropoffPt: _dropoffPt,
-      onEtaUpdate: (eta, dist, label) {
+      onEtaUpdate: (eta, dist, labelKey) {
         if (mounted) {
           setState(() {
             _liveEtaText = eta;
             _liveDistanceText = dist;
-            _liveEtaLabel = label;
+            _liveEtaLabel = AppLocalizations.of(context).translate(labelKey);
           });
         }
       },

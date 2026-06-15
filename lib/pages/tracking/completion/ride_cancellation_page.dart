@@ -119,6 +119,7 @@ class _RideCancellationPageState extends State<RideCancellationPage>
 
   void _showRideDetailsDialog(BuildContext context) {
     final ride = widget.ride;
+    final t = AppLocalizations.of(context).translate;
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -128,30 +129,30 @@ class _RideCancellationPageState extends State<RideCancellationPage>
             const Icon(Icons.directions_car_rounded,
                 color: AppColors.primaryPurple, size: 20),
             const SizedBox(width: 8),
-            const Text('Ride Details',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            Text(t('ride_details_title'),
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
           ],
         ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _DetailItem(label: 'Pickup',
+            _DetailItem(label: t('ride_details_pickup'),
                 value: ride.pickupAddress,
                 icon: Icons.radio_button_checked_rounded,
                 color: AppColors.primaryPurple),
             const SizedBox(height: 8),
-            _DetailItem(label: 'Drop-off',
+            _DetailItem(label: t('ride_details_dropoff'),
                 value: ride.dropOffAddress,
                 icon: Icons.location_on_rounded,
                 color: const Color(0xFF7C3AED)),
             const SizedBox(height: 8),
-            _DetailItem(label: 'Passenger',
+            _DetailItem(label: t('ride_details_passenger'),
                 value: ride.passenger.name,
                 icon: Icons.person_outline_rounded,
                 color: AppColors.subtext(ctx)),
             const SizedBox(height: 8),
-            _DetailItem(label: 'Distance',
+            _DetailItem(label: t('ride_details_distance'),
                 value: '${ride.distanceKm.toStringAsFixed(1)} km',
                 icon: Icons.straighten_rounded,
                 color: AppColors.subtext(ctx)),
@@ -160,7 +161,7 @@ class _RideCancellationPageState extends State<RideCancellationPage>
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Close'),
+            child: Text(t('close')),
           ),
         ],
       ),

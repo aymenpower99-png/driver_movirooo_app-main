@@ -17,7 +17,7 @@ class MetaFooter extends StatelessWidget {
     // booking estimate only when real values are missing.
     final durationValue = _formatDuration(context, ride.durationMinReal);
     final distanceValue = ride.distanceKmReal != null && ride.distanceKmReal! > 0
-        ? _formatDistance(ride.distanceKmReal!)
+        ? _formatDistance(context, ride.distanceKmReal!)
         : '${ride.distanceKm.toStringAsFixed(1)} km';
 
     return IntrinsicHeight(
@@ -44,26 +44,28 @@ class MetaFooter extends StatelessWidget {
   }
 
   String _formatDuration(BuildContext context, double? minutes) {
+    final t = AppLocalizations.of(context).translate;
     if (minutes == null || minutes <= 0) {
-      return AppLocalizations.of(context).translate('duration_less_than_min');
+      return t('duration_less_than_min');
     }
     if (minutes >= 60) {
       final h = minutes ~/ 60;
       final m = (minutes % 60).round();
-      if (m > 0) return '${h}h ${m}min';
-      return '${h}h';
+      if (m > 0) return '${h}${t('duration_hour')} ${m}${t('duration_minute')}';
+      return '${h}${t('duration_hour')}';
     }
     if (minutes < 1) {
       final seconds = (minutes * 60).round();
-      return '${seconds}s';
+      return '${seconds}${t('duration_second')}';
     }
-    return '${minutes.round()} min';
+    return '${minutes.round()} ${t('duration_minute')}';
   }
 
-  String _formatDistance(double km) {
+  String _formatDistance(BuildContext context, double km) {
+    final t = AppLocalizations.of(context).translate;
     if (km < 1) {
       final meters = (km * 1000).round();
-      return '${meters} m';
+      return '${meters} ${t('distance_meter')}';
     }
     return '${km.toStringAsFixed(1)} km';
   }

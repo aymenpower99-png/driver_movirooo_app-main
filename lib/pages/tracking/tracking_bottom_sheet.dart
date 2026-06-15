@@ -94,7 +94,10 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
     } catch (e) {
       setState(() => _apiLoading = false);
       if (mounted) {
-        AppToast.error(context, 'Failed: $e');
+        AppToast.error(
+          context,
+          '${AppLocalizations.of(context).translate('tracking_error_advance')}: $e',
+        );
       }
     }
   }
@@ -146,13 +149,19 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
 
       setState(() => _apiLoading = false);
       if (mounted) {
-        AppToast.success(context, 'Ride completed');
+        AppToast.success(
+          context,
+          AppLocalizations.of(context).translate('tracking_ride_completed'),
+        );
         Navigator.of(context).push(RideCompletionPage.route(completedRide));
       }
     } catch (e) {
       setState(() => _apiLoading = false);
       if (mounted) {
-        AppToast.error(context, 'Failed to complete ride: $e');
+        AppToast.error(
+          context,
+          '${AppLocalizations.of(context).translate('tracking_error_complete')}: $e',
+        );
       }
     }
   }
@@ -273,7 +282,9 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
                         child: _status.isTerminal
                             ? const _CompletedBanner()
                             : _PrimaryButton(
-                                label: _status.primaryButtonLabel,
+                                label: _status.primaryButtonLabel(
+                                  AppLocalizations.of(context).translate,
+                                ),
                                 loading: _apiLoading,
                                 onTap: _handlePrimaryTap,
                               ),
@@ -331,9 +342,15 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
     // Refresh driver profile stats (cancellationCount / acceptanceRate)
     context.read<OnlineProvider>().refreshDriverProfile();
     if (success) {
-      AppToast.success(context, 'Ride cancelled');
+      AppToast.success(
+        context,
+        AppLocalizations.of(context).translate('tracking_ride_cancelled'),
+      );
     } else {
-      AppToast.error(context, 'Failed to cancel ride');
+      AppToast.error(
+        context,
+        AppLocalizations.of(context).translate('tracking_error_cancel'),
+      );
     }
     Navigator.of(context).push(
       RideCancellationPage.route(
@@ -347,7 +364,10 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
     final phone = widget.ride.passenger.phone;
     if (phone == null || phone.isEmpty) {
       if (mounted) {
-        AppToast.info(context, 'No phone number available');
+        AppToast.info(
+          context,
+          AppLocalizations.of(context).translate('tracking_no_phone'),
+        );
       }
       return;
     }

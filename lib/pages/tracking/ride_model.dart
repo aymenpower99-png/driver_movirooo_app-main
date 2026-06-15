@@ -3,33 +3,33 @@
 enum RideStatus { assigned, onTheWay, arrived, startRide, completed }
 
 extension RideStatusX on RideStatus {
-  String get stepLabel {
+  String stepLabel(String Function(String) t) {
     switch (this) {
       case RideStatus.assigned:
-        return 'Assigned';
+        return t('tracking_step_assigned');
       case RideStatus.onTheWay:
-        return 'On the Way';
+        return t('tracking_step_on_way');
       case RideStatus.arrived:
-        return 'Arrived';
+        return t('tracking_step_arrived');
       case RideStatus.startRide:
-        return 'Start Ride';
+        return t('tracking_step_start_ride');
       case RideStatus.completed:
-        return 'Complete';
+        return t('tracking_step_complete');
     }
   }
 
-  String get primaryButtonLabel {
+  String primaryButtonLabel(String Function(String) t) {
     switch (this) {
       case RideStatus.assigned:
-        return 'Go to Pickup';
+        return t('tracking_button_go_pickup');
       case RideStatus.onTheWay:
-        return "I've Arrived";
+        return t('tracking_button_arrived');
       case RideStatus.arrived:
-        return 'Start Ride';
+        return t('tracking_button_start_ride');
       case RideStatus.startRide:
-        return 'Complete Ride';
+        return t('tracking_button_complete_ride');
       case RideStatus.completed:
-        return 'Done';
+        return t('tracking_button_done');
     }
   }
 
