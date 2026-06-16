@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import '../../services/dispatch/dispatch_service.dart';
 
 // Channel must match what the backend sends (android.notification.channelId)
 const _kChannelId = 'ride_offers';
@@ -449,5 +450,21 @@ class NotificationService {
 
   void onTokenRefresh(Function(String) callback) {
     FirebaseMessaging.instance.onTokenRefresh.listen(callback);
+  }
+
+  /// Register the current FCM token with the backend.
+  /// Call this after every successful login (email, OTP, or any auth flow).
+  Future<void> registerFcmTokenAfterLogin() async {
+    try {
+      final token = await getToken();
+      if (token != null && token.isNotEmpty) {
+        await DispatchService().registerFcmToken(token);
+        debugPrint('✅ FCM token registered after login');
+      } else {
+        debugPrint('⚠️ FCM token is null after login — skipping registration');
+      }
+    } catch (e) {
+      debugPrint('⚠️ FCM token registration after login failed: $e');
+    }
   }
 }

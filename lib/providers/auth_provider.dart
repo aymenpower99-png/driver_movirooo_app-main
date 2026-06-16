@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import '../core/models/user_model.dart';
+  import '../core/models/user_model.dart';
 import '../core/api/api_client.dart';
 import '../core/storage/token_storage.dart';
 import '../services/auth/auth_service.dart';
+import '../core/notifications/notification_service.dart';
 
 enum AuthStatus { unknown, authenticated, unauthenticated }
 
@@ -193,6 +194,9 @@ class AuthProvider extends ChangeNotifier {
     _error = null;
     notifyListeners();
     startAccountStatusCheck();
+
+    // Register FCM token after every successful login (no await — fire-and-forget)
+    NotificationService.instance.registerFcmTokenAfterLogin().catchError((_) {});
   }
 
   void startAccountStatusCheck() {
