@@ -181,50 +181,60 @@ class _SmartWayAppState extends State<SmartWayApp> {
             },
           ),
         ],
-        child: ListenableBuilder(
-          listenable: Listenable.merge([themeProvider, localeProvider]),
-          builder: (context, _) {
-            WidgetsBinding.instance.addPostFrameCallback(
-              (_) => _applySystemUI(themeProvider.mode),
-            );
+        child: Builder(
+          builder: (context) {
+            context.read<AuthProvider>().onClear = () {
+              context.read<EarningsProvider>().clear();
+              context.read<OnlineProvider>().clear();
+              context.read<ChatProvider>().clearAll();
+              context.read<RideProvider>().clear();
+            };
+            return ListenableBuilder(
+              listenable: Listenable.merge([themeProvider, localeProvider]),
+              builder: (context, _) {
+                WidgetsBinding.instance.addPostFrameCallback(
+                  (_) => _applySystemUI(themeProvider.mode),
+                );
 
-            return MaterialApp(
-              navigatorKey: navigatorKey,
-              title: 'Moviroo Driver',
-              debugShowCheckedModeBanner: false,
-              theme: AppTheme.lightTheme,
-              darkTheme: AppTheme.darkTheme,
-              themeMode: themeProvider.mode,
-              locale: localeProvider.locale,
-              supportedLocales: const [
-                Locale('en'),
-                Locale('fr'),
-                Locale('ar'),
-              ],
-              localizationsDelegates: const [
-                AppLocalizations.delegate,
-                GlobalMaterialLocalizations.delegate,
-                GlobalWidgetsLocalizations.delegate,
-                GlobalCupertinoLocalizations.delegate,
-              ],
-              localeResolutionCallback: (locale, supportedLocales) {
-                if (locale == null) return supportedLocales.first;
-                for (final supported in supportedLocales) {
-                  if (supported.languageCode == locale.languageCode) {
-                    return supported;
-                  }
-                }
-                return supportedLocales.first;
-              },
-              initialRoute: AppRouter.splash,
-              onGenerateRoute: (settings) {
-                final builder = AppRouter.routes[settings.name];
-                if (builder == null) return null;
-                return PageRouteBuilder(
-                  settings: settings,
-                  pageBuilder: (context, _, _) => builder(context),
-                  transitionDuration: Duration.zero,
-                  reverseTransitionDuration: Duration.zero,
+                return MaterialApp(
+                  navigatorKey: navigatorKey,
+                  title: 'Moviroo Driver',
+                  debugShowCheckedModeBanner: false,
+                  theme: AppTheme.lightTheme,
+                  darkTheme: AppTheme.darkTheme,
+                  themeMode: themeProvider.mode,
+                  locale: localeProvider.locale,
+                  supportedLocales: const [
+                    Locale('en'),
+                    Locale('fr'),
+                    Locale('ar'),
+                  ],
+                  localizationsDelegates: const [
+                    AppLocalizations.delegate,
+                    GlobalMaterialLocalizations.delegate,
+                    GlobalWidgetsLocalizations.delegate,
+                    GlobalCupertinoLocalizations.delegate,
+                  ],
+                  localeResolutionCallback: (locale, supportedLocales) {
+                    if (locale == null) return supportedLocales.first;
+                    for (final supported in supportedLocales) {
+                      if (supported.languageCode == locale.languageCode) {
+                        return supported;
+                      }
+                    }
+                    return supportedLocales.first;
+                  },
+                  initialRoute: AppRouter.splash,
+                  onGenerateRoute: (settings) {
+                    final builder = AppRouter.routes[settings.name];
+                    if (builder == null) return null;
+                    return PageRouteBuilder(
+                      settings: settings,
+                      pageBuilder: (context, _, _) => builder(context),
+                      transitionDuration: Duration.zero,
+                      reverseTransitionDuration: Duration.zero,
+                    );
+                  },
                 );
               },
             );

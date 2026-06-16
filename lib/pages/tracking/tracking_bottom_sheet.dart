@@ -171,7 +171,7 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
           context,
           AppLocalizations.of(context).translate('tracking_ride_completed'),
         );
-        Navigator.of(context).push(RideCompletionPage.route(completedRide));
+        Navigator.of(context).pushReplacement(RideCompletionPage.route(completedRide));
       }
 
       // Refresh rides list so completed ride appears in Completed tab
@@ -378,7 +378,7 @@ class _TrackingBottomSheetState extends State<TrackingBottomSheet> {
         AppLocalizations.of(context).translate('tracking_error_cancel'),
       );
     }
-    Navigator.of(context).push(
+    Navigator.of(context).pushReplacement(
       RideCancellationPage.route(
         ride: widget.ride,
         cancelledBy: CancelledBy.driver,

@@ -20,6 +20,9 @@ class AuthProvider extends ChangeNotifier {
   String? _preAuthToken; // held between login step 1 & OTP step 2
   Timer? _statusTimer;
 
+  /// Called by [main.dart] to wire up provider clearing on logout / login.
+  void Function()? onClear;
+
   // ── Getters ───────────────────────────────────────────────────────────────
   AuthStatus get status => _status;
   UserModel? get user => _user;
@@ -30,37 +33,41 @@ class AuthProvider extends ChangeNotifier {
 
   // ── Init — check persisted session on app start ───────────────────────────
   Future<void> init() async {
-    if (await TokenStorage.hasSession()) {
-      // Instant auth from cached user — no network wait, no splash delay
-      final cached = await TokenStorage.getUser();
-      if (cached != null) {
-        _user = UserModel.fromJsonString(cached);
-        _status = AuthStatus.authenticated;
-        notifyListeners(); // splash disappears immediately
-        startAccountStatusCheck();
+    try {
+      if (await TokenStorage.hasSession()) {
+        // Instant auth from cached user — no network wait, no splash delay
+        final cached = await TokenStorage.getUser();
+        if (cached != null) {
+          _user = UserModel.fromJsonString(cached);
+          _status = AuthStatus.authenticated;
+          notifyListeners(); // splash disappears immediately
+          startAccountStatusCheck();
 
-        // Refresh user from backend silently in background
-        _auth
-            .getMe()
-            .then((freshUser) {
-              _user = freshUser;
-              TokenStorage.saveUser(freshUser.toJsonString());
-              notifyListeners();
-            })
-            .catchError((_) {}); // ignore — cached user is good enough
-        return;
-      }
+          // Refresh user from backend silently in background
+          _auth
+              .getMe()
+              .then((freshUser) {
+                _user = freshUser;
+                TokenStorage.saveUser(freshUser.toJsonString());
+                notifyListeners();
+              })
+              .catchError((_) {}); // ignore — cached user is good enough
+          return;
+        }
 
-      // No cached user — must wait for network (first launch after login)
-      try {
-        _user = await _auth.getMe();
-        await TokenStorage.saveUser(_user!.toJsonString());
-        _status = AuthStatus.authenticated;
-        startAccountStatusCheck();
-      } catch (_) {
+        // No cached user — must wait for network (first launch after login)
+        try {
+          _user = await _auth.getMe();
+          await TokenStorage.saveUser(_user!.toJsonString());
+          _status = AuthStatus.authenticated;
+          startAccountStatusCheck();
+        } catch (_) {
+          _status = AuthStatus.unauthenticated;
+        }
+      } else {
         _status = AuthStatus.unauthenticated;
       }
-    } else {
+    } catch (_) {
       _status = AuthStatus.unauthenticated;
     }
     notifyListeners();
@@ -167,6 +174,7 @@ class AuthProvider extends ChangeNotifier {
     _user = null;
     _preAuthToken = null;
     _status = AuthStatus.unauthenticated;
+    onClear?.call();
     notifyListeners();
   }
 
@@ -192,6 +200,7 @@ class AuthProvider extends ChangeNotifier {
     _status = AuthStatus.authenticated;
     _loading = false;
     _error = null;
+    onClear?.call();
     notifyListeners();
     startAccountStatusCheck();
 

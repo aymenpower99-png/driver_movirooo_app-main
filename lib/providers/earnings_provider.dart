@@ -82,4 +82,13 @@ class EarningsProvider extends ChangeNotifier {
     }
     changeMonth('$year-${month.toString().padLeft(2, '0')}');
   }
+
+  /// Reset all state to initial values. Call on logout / account switch.
+  void clear() {
+    _earnings = null;
+    _loading = false;
+    _error = null;
+    _selectedMonth = _currentMonth();
+    notifyListeners();
+  }
 }

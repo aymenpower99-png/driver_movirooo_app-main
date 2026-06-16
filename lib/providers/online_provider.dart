@@ -143,6 +143,13 @@ class OnlineProvider extends ChangeNotifier with WidgetsBindingObserver {
     notifyListeners();
   }
 
+  /// Reset all state to initial values. Call on logout / account switch.
+  void clear() {
+    _lifecycle.clear();
+    _timeTracking.stopMonthlyRefreshTimer();
+    notifyListeners();
+  }
+
   /// Refreshes driver profile stats from the backend. Delegates to lifecycle module.
   Future<void> refreshDriverProfile() async {
     await _lifecycle.refreshDriverProfile();

@@ -130,4 +130,9 @@ class OnlineLifecycle {
   void dispose({required void Function() stopMonthlyRefreshTimer}) {
     _appLifecycle.dispose(stopMonthlyRefreshTimer: stopMonthlyRefreshTimer);
   }
+
+  /// Reset all state to initial values. Call on logout / account switch.
+  void clear() {
+    _state.clear();
+  }
 }

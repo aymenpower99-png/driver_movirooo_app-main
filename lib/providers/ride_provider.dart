@@ -207,4 +207,17 @@ class RideProvider extends ChangeNotifier {
     _pollTimer?.cancel();
     super.dispose();
   }
+
+  /// Reset all state to initial values. Call on logout / account switch.
+  void clear() {
+    _pollTimer?.cancel();
+    _pollTimer = null;
+    _pendingOffers = [];
+    _allRides = [];
+    _loading = false;
+    _ridesLoading = false;
+    _error = null;
+    _activeOffer = null;
+    notifyListeners();
+  }
 }

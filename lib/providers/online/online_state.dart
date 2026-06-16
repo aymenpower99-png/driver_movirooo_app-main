@@ -64,4 +64,17 @@ class OnlineState {
   void clearError() {
     _error = null;
   }
+
+  /// Reset all state to initial values. Call on logout / account switch.
+  void clear() {
+    _isOnline = false;
+    _loading = false;
+    _error = null;
+    _driverProfile = null;
+    _initialized = false;
+    _activeRideId = null;
+    _gpsRequired = false;
+    _permissionRequired = false;
+    _forcedOffline = false;
+  }
 }
