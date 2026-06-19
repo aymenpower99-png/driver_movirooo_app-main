@@ -13,9 +13,26 @@ class TranslationBanner extends StatelessWidget {
     required this.onToggle,
   });
 
+  String _languageName(String code) {
+    const names = {
+      'en': 'English',
+      'fr': 'French',
+      'ar': 'Arabic',
+      'es': 'Spanish',
+      'de': 'German',
+      'it': 'Italian',
+      'pt': 'Portuguese',
+      'tr': 'Turkish',
+    };
+    return names[code.toLowerCase()] ?? code.toUpperCase();
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context).translate;
+    final locale = Localizations.localeOf(context).languageCode;
+    final targetLang = _languageName(locale);
+
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -62,7 +79,7 @@ class TranslationBanner extends StatelessWidget {
                     ),
                     const SizedBox(width: 3),
                     Text(
-                      t('chat_translate_to'),
+                      '${t('chat_translate_to')} $targetLang',
                       style: AppTextStyles.bodySmall(context).copyWith(
                         color: AppColors.subtext(context),
                         fontSize: 11,

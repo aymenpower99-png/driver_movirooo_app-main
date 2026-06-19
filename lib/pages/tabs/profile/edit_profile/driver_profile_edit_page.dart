@@ -177,17 +177,17 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
       await DriverService().saveLogo(url: secureUrl, publicId: publicId);
       if (!mounted) return;
       await context.read<OnlineProvider>().refreshDriverProfile();
-      AppToast.success(context, 'Profile photo updated');
+      AppToast.success(context, AppLocalizations.of(context).translate('photo_updated'));
     } on DioException catch (e) {
       debugPrint(
         'Upload error DioException: ${e.response?.statusCode} ${e.response?.data}',
       );
       if (!mounted) return;
-      AppToast.error(context, 'Upload failed. Please try again.');
+      AppToast.error(context, AppLocalizations.of(context).translate('upload_failed'));
     } catch (e) {
       debugPrint('Upload error: $e');
       if (!mounted) return;
-      AppToast.error(context, 'Upload failed. Please try again.');
+      AppToast.error(context, AppLocalizations.of(context).translate('upload_failed'));
     } finally {
       if (mounted) setState(() => _uploading = false);
     }
@@ -344,9 +344,9 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
                                             Icons.photo_library_outlined,
                                             color: AppColors.primaryPurple,
                                           ),
-                                          title: const Text(
-                                            'Choose from gallery',
-                                            style: TextStyle(
+                                          title: Text(
+                                            AppLocalizations.of(ctx).translate('photo_gallery'),
+                                            style: const TextStyle(
                                               color: AppColors.primaryPurple,
                                             ),
                                           ),
@@ -362,9 +362,9 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
                                             Icons.photo_camera_outlined,
                                             color: AppColors.primaryPurple,
                                           ),
-                                          title: const Text(
-                                            'Take a photo',
-                                            style: TextStyle(
+                                          title: Text(
+                                            AppLocalizations.of(ctx).translate('photo_take'),
+                                            style: const TextStyle(
                                               color: AppColors.primaryPurple,
                                             ),
                                           ),
@@ -385,9 +385,9 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
                                               Icons.delete_outline,
                                               color: Colors.redAccent,
                                             ),
-                                            title: const Text(
-                                              'Remove photo',
-                                              style: TextStyle(
+                                            title: Text(
+                                              AppLocalizations.of(ctx).translate('photo_remove'),
+                                              style: const TextStyle(
                                                 color: Colors.redAccent,
                                                 fontWeight: FontWeight.w600,
                                               ),
@@ -405,13 +405,13 @@ class _DriverProfileEditPageState extends State<DriverProfileEditPage> {
                                                     .refreshDriverProfile();
                                                 AppToast.success(
                                                   context,
-                                                  'Profile photo removed',
+                                                  AppLocalizations.of(context).translate('photo_removed'),
                                                 );
                                               } catch (e) {
                                                 if (!mounted) return;
                                                 AppToast.error(
                                                   context,
-                                                  'Failed to remove photo. Please try again.',
+                                                  AppLocalizations.of(context).translate('upload_failed'),
                                                 );
                                               } finally {
                                                 if (mounted)
